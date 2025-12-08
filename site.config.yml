@@ -161,7 +161,7 @@ features:
   contact_forms: true
   newsletter: true
   alumni_registration:
-    enabled: false
+    enabled: true
     url: "/alumni/register" # Google Form or Registration Page URL
 
 # Contact Information

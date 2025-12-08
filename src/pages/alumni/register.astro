@@ -1,0 +1,118 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getSiteConfig } from "../../utils/config";
+
+const config = getSiteConfig();
+---
+
+<Layout title={`Join ${config.organization.name} — Alumni Registration`} description={`Register to join ${config.organization.name} alumni network.`}>
+  <section class="section">
+    <div class="container-custom max-w-3xl mx-auto">
+      <div class="mb-8 text-center">
+        <h1 class="text-4xl font-bold text-accent-900 mb-2">Alumni Registration</h1>
+        <p class="text-accent-600">Welcome! Fill in your details to join the {config.organization.name} alumni network.</p>
+      </div>
+
+      <form id="alumniForm" class="space-y-6 bg-white p-8 rounded-xl shadow-md">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-accent-700 mb-2">Full name</label>
+            <input name="name" required class="input" placeholder="e.g. Jane Doe" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-accent-700 mb-2">Email</label>
+            <input name="email" type="email" required class="input" placeholder="you@domain.com" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-accent-700 mb-2">Graduation year</label>
+            <input name="year" type="number" min="1900" max="2100" class="input" placeholder="e.g. 2020" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-accent-700 mb-2">Faculty / Department</label>
+            <input name="faculty" class="input" placeholder="e.g. Computer Science" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-accent-700 mb-2">Degree</label>
+            <input name="degree" class="input" placeholder="e.g. BSc, MSc" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-accent-700 mb-2">LinkedIn profile (optional)</label>
+          <input name="linkedin" type="url" class="input" placeholder="https://www.linkedin.com/in/your-profile" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-accent-700 mb-2">Photo URL (optional)</label>
+          <input name="photo" type="url" class="input" placeholder="https://example.com/photo.jpg" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-accent-700 mb-2">Short bio</label>
+          <textarea name="short_bio" rows="4" class="input" placeholder="A short bio about you"></textarea>
+        </div>
+
+        <div class="flex items-start gap-3">
+          <input id="consent" name="consent" type="checkbox" required />
+          <label for="consent" class="text-accent-700">I confirm that the information provided is accurate and I consent to having this information displayed in the alumni directory.</label>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <button type="submit" class="btn btn-primary">Submit Registration</button>
+          <a href="/alumni/profiles" class="btn btn-outline">Browse Profiles</a>
+        </div>
+
+        <div id="formMessage" class="text-sm text-center mt-4" aria-live="polite"></div>
+      </form>
+    </div>
+  </section>
+
+  <script>
+    // client-side form handling: stores submission to localStorage and simulates successful registration
+    (function () {
+      const form = document.getElementById('alumniForm');
+      const msg = document.getElementById('formMessage');
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const payload = {};
+        fd.forEach((v, k) => (payload[k] = v));
+        payload.submittedAt = new Date().toISOString();
+
+        // basic validation
+        if (!payload.name || !payload.email) {
+          msg.textContent = 'Please provide at least your name and email.';
+          msg.className = 'text-sm text-red-600';
+          return;
+        }
+
+        // store locally (this is a placeholder; hook up a real backend later)
+        try {
+          const key = 'alumni_submissions';
+          const existing = JSON.parse(localStorage.getItem(key) || '[]');
+          existing.push(payload);
+          localStorage.setItem(key, JSON.stringify(existing));
+
+          msg.textContent = 'Thank you! Your registration was submitted successfully. Redirecting...';
+          msg.className = 'text-sm text-green-600';
+
+          // after a short delay, redirect to profiles page
+          setTimeout(() => {
+            window.location.href = '/alumni/profiles';
+          }, 1300);
+        } catch (err) {
+          console.error(err);
+          msg.textContent = 'An error occurred while submitting. Please try again.';
+          msg.className = 'text-sm text-red-600';
+        }
+      });
+    })();
+  </script>
+</Layout>
