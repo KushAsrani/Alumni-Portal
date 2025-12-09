@@ -17,12 +17,12 @@ const config = getSiteConfig();
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-accent-700 mb-2">Full name</label>
-            <input name="name" required class="input" placeholder="e.g. Jane Doe" />
+            <input name="name" required class="input" placeholder="" />
           </div>
 
           <div>
             <label class="block text-sm font-medium text-accent-700 mb-2">Email</label>
-            <input name="email" type="email" required class="input" placeholder="you@domain.com" />
+            <input name="email" type="email" required class="input" placeholder="" />
           </div>
         </div>
 
@@ -63,9 +63,8 @@ const config = getSiteConfig();
           <label for="consent" class="text-accent-700">I confirm that the information provided is accurate and I consent to having this information displayed in the alumni directory.</label>
         </div>
 
-        <div class="flex items-center justify-between">
+        <div class="text-center">
           <button type="submit" class="btn btn-primary">Submit Registration</button>
-          <a href="/alumni/profiles" class="btn btn-outline">Browse Profiles</a>
         </div>
 
         <div id="formMessage" class="text-sm text-center mt-4" aria-live="polite"></div>
