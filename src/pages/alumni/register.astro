@@ -16,13 +16,17 @@ const config = getSiteConfig();
       <form id="alumniForm" class="space-y-6 bg-white p-8 rounded-xl shadow-md">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-accent-700 mb-2">Full name</label>
-            <input name="name" required class="input" placeholder="" />
+            <label class="block text-sm font-medium text-accent-700 mb-2">
+              Full name <span class="text-red-500">*</span>
+            </label>
+            <input name="name" required class="input" placeholder="John Doe" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-accent-700 mb-2">Email</label>
-            <input name="email" type="email" required class="input" placeholder="" />
+            <label class="block text-sm font-medium text-accent-700 mb-2">
+              Email <span class="text-red-500">*</span>
+            </label>
+            <input name="email" type="email" required class="input" placeholder="john@example.com" />
           </div>
         </div>
 
@@ -55,63 +59,112 @@ const config = getSiteConfig();
 
         <div>
           <label class="block text-sm font-medium text-accent-700 mb-2">Short bio</label>
-          <textarea name="short_bio" rows="4" class="input" placeholder="A short bio about you"></textarea>
+          <textarea name="short_bio" rows="4" class="input" placeholder="Tell us about yourself, your current role, and your achievements..."></textarea>
         </div>
 
         <div class="flex items-start gap-3">
-          <input id="consent" name="consent" type="checkbox" required />
-          <label for="consent" class="text-accent-700">I confirm that the information provided is accurate and I consent to having this information displayed in the alumni directory.</label>
+          <input id="consent" name="consent" type="checkbox" required class="mt-1" />
+          <label for="consent" class="text-accent-700 text-sm">
+            I confirm that the information provided is accurate and I consent to having this information displayed in the alumni directory.
+          </label>
         </div>
 
         <div class="text-center">
-          <button type="submit" class="btn btn-primary">Submit Registration</button>
+          <button type="submit" id="submitBtn" class="btn btn-primary">
+            <span id="submitText">Submit Registration</span>
+            <span id="submitLoader" class="hidden">
+              <svg class="animate-spin h-5 w-5 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing...
+            </span>
+          </button>
         </div>
 
-        <div id="formMessage" class="text-sm text-center mt-4" aria-live="polite"></div>
+        <div id="formMessage" class="text-sm text-center mt-4 hidden" role="alert"></div>
       </form>
     </div>
   </section>
 
   <script>
-    // client-side form handling: stores submission to localStorage and simulates successful registration
-    (function () {
-      const form = document.getElementById('alumniForm');
-      const msg = document.getElementById('formMessage');
+    const form = document.getElementById('alumniForm') as HTMLFormElement;
+    const msg = document.getElementById('formMessage') as HTMLDivElement;
+    const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
+    const submitText = document.getElementById('submitText') as HTMLSpanElement;
+    const submitLoader = document.getElementById('submitLoader') as HTMLSpanElement;
 
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        const fd = new FormData(form);
-        const payload = {};
-        fd.forEach((v, k) => (payload[k] = v));
-        payload.submittedAt = new Date().toISOString();
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      
+      msg.classList.add('hidden');
+      msg.textContent = '';
 
-        // basic validation
-        if (!payload.name || !payload.email) {
-          msg.textContent = 'Please provide at least your name and email.';
-          msg.className = 'text-sm text-red-600';
-          return;
-        }
-
-        // store locally (this is a placeholder; hook up a real backend later)
-        try {
-          const key = 'alumni_submissions';
-          const existing = JSON.parse(localStorage.getItem(key) || '[]');
-          existing.push(payload);
-          localStorage.setItem(key, JSON.stringify(existing));
-
-          msg.textContent = 'Thank you! Your registration was submitted successfully. Redirecting...';
-          msg.className = 'text-sm text-green-600';
-
-          // after a short delay, redirect to profiles page
-          setTimeout(() => {
-            window.location.href = '/alumni/profiles';
-          }, 1300);
-        } catch (err) {
-          console.error(err);
-          msg.textContent = 'An error occurred while submitting. Please try again.';
-          msg.className = 'text-sm text-red-600';
+      const formData = new FormData(form);
+      const payload: Record<string, any> = {};
+      formData.forEach((value, key) => {
+        if (key !== 'consent') {
+          payload[key] = value;
         }
       });
-    })();
+
+      if (!payload.name || !payload.email) {
+        showMessage('Please provide at least your name and email.', 'error');
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(payload.email)) {
+        showMessage('Please enter a valid email address.', 'error');
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          showMessage('Thank you! Your registration was submitted successfully. Redirecting...', 'success');
+          form.reset();
+          setTimeout(() => {
+            window.location.href = '/alumni/profiles';
+          }, 2000);
+        } else {
+          showMessage(result.message || 'An error occurred. Please try again.', 'error');
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        showMessage('An error occurred while submitting. Please check your connection and try again.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    function showMessage(text: string, type: 'success' | 'error') {
+      msg.textContent = text;
+      msg.classList.remove('hidden', 'text-green-600', 'text-red-600');
+      msg.classList.add(type === 'success' ? 'text-green-600' : 'text-red-600');
+    }
+
+    function setLoading(loading: boolean) {
+      submitBtn.disabled = loading;
+      submitText.classList.toggle('hidden', loading);
+      submitLoader.classList.toggle('hidden', !loading);
+      
+      if (loading) {
+        submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+      } else {
+        submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+      }
+    }
   </script>
 </Layout>
