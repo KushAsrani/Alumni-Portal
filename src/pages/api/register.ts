@@ -1,19 +1,35 @@
 export const prerender = false;
 
-import type { APIRoute } from 'astro';
+import type { APIContext } from 'astro';
 import pg from 'pg';
 const { Client } = pg;
 
-export const POST: APIRoute = async ({ request }) => {
+export async function POST({ request }: APIContext) {
   try {
-    // Log request details for debugging
+    const clonedRequest = request.clone();
+    let bodyText = '';
+    
+    try {
+      bodyText = await clonedRequest.text();
+    } catch (e) {
+      console.error('Failed to read body:', e);
+    }
+    
     console.log('Content-Type:', request.headers.get('content-type'));
     
-    // Get the raw body text first
-    const bodyText = await request.text();
-    console.log('Raw body:', bodyText);
+    if (!bodyText) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Empty request body'
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
     
-    // Try to parse as JSON
     let body;
     try {
       body = JSON.parse(bodyText);
@@ -22,7 +38,7 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(
         JSON.stringify({
           success: false,
-          message: 'Invalid request format'
+          message: 'Invalid JSON format'
         }),
         {
           status: 400,
@@ -31,9 +47,25 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const { name, email, year, faculty, degree, linkedin, photo, short_bio } = body;
+    const { 
+      name, 
+      email, 
+      mobile,
+      dob,
+      gender,
+      address,
+      year, 
+      faculty, 
+      degree,
+      university,
+      job_designation,
+      company,
+      linkedin, 
+      photo_blob_url,
+      short_bio 
+    } = body;
 
-    console.log('Parsed data:', { name, email, year, faculty, degree });
+    console.log('Parsed data:', { name, email, mobile, gender, university });
 
     // Validate required fields
     if (!name || !email) {
@@ -64,40 +96,51 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Get connection string from environment
-    // Get connection string from environment
-const connectionString = 
-  import.meta.env.POSTGRES_URL_NON_POOLING || 
-  import.meta.env.POSTGRES_PRISMA_URL || 
-  import.meta.env.POSTGRES_URL ||
-  import.meta.env.DATABASE_URL ||
-  process.env.POSTGRES_URL_NON_POOLING || 
-  process.env.POSTGRES_PRISMA_URL || 
-  process.env.POSTGRES_URL ||
-  process.env.DATABASE_URL;
-
-console.log('Connection string found:', !!connectionString);
-
-if (!connectionString) {
-  console.error('Database connection string not found');
-  console.log('Available env vars:', Object.keys(import.meta.env));
-  return new Response(
-    JSON.stringify({
-      success: false,
-      message: 'Database configuration error'
-    }),
-    {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
+    // Validate mobile number if provided
+    if (mobile) {
+      const mobileRegex = /^[+]?[\d\s\-()]{10,}$/;
+      if (!mobileRegex.test(mobile)) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Invalid mobile number format'
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
     }
-  );
-}
-    // Create database client
+
+    // Get connection string
+    const connectionString = 
+      import.meta.env.POSTGRES_URL_NON_POOLING || 
+      import.meta.env.POSTGRES_PRISMA_URL || 
+      import.meta.env.POSTGRES_URL ||
+      import.meta.env.DATABASE_URL ||
+      process.env.POSTGRES_URL_NON_POOLING || 
+      process.env.POSTGRES_PRISMA_URL || 
+      process.env.POSTGRES_URL ||
+      process.env.DATABASE_URL;
+
+    if (!connectionString) {
+      console.error('Database connection string not found');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Database configuration error'
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     const client = new Client({
       connectionString: connectionString,
-      ssl: {
-        rejectUnauthorized: false
-      }
+      ssl: { rejectUnauthorized: false }
     });
 
     await client.connect();
@@ -115,7 +158,7 @@ if (!connectionString) {
         return new Response(
           JSON.stringify({
             success: false,
-            message: 'This email is already registered'
+            message: 'Name or email is already registered please use a different name or email.'
           }),
           {
             status: 409,
@@ -124,14 +167,32 @@ if (!connectionString) {
         );
       }
 
-      // Insert new registration
+      // Insert new registration with all fields
       const result = await client.query(
         `INSERT INTO alumni_registrations (
-          name, email, year, faculty, degree, linkedin, photo, short_bio
+          name, email, mobile, dob, gender, address,
+          year, faculty, degree, university, job_designation, company,
+          linkedin, photo_blob_url, short_bio
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         RETURNING id, name, email, created_at`,
-        [name, email, year || null, faculty || null, degree || null, linkedin || null, photo || null, short_bio || null]
+        [
+          name, 
+          email, 
+          mobile || null,
+          dob || null,
+          gender || null,
+          address || null,
+          year || null, 
+          faculty || null, 
+          degree || null,
+          university || null,
+          job_designation || null,
+          company || null,
+          linkedin || null, 
+          photo_blob_url || null,
+          short_bio || null
+        ]
       );
 
       await client.end();
@@ -169,9 +230,9 @@ if (!connectionString) {
       }
     );
   }
-};
+}
 
-export const GET: APIRoute = async ({ request }) => {
+export async function GET({ request }: APIContext) {
   try {
     const authHeader = request.headers.get('Authorization');
     const expectedAuth = `Bearer ${import.meta.env.ADMIN_API_KEY}`;
@@ -184,15 +245,15 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     const connectionString = 
-  import.meta.env.POSTGRES_URL_NON_POOLING || 
-  import.meta.env.POSTGRES_PRISMA_URL || 
-  import.meta.env.POSTGRES_URL ||
-  import.meta.env.DATABASE_URL ||
-  process.env.POSTGRES_URL_NON_POOLING || 
-  process.env.POSTGRES_PRISMA_URL || 
-  process.env.POSTGRES_URL ||
-  process.env.DATABASE_URL;
-  
+      import.meta.env.POSTGRES_URL_NON_POOLING || 
+      import.meta.env.POSTGRES_PRISMA_URL || 
+      import.meta.env.POSTGRES_URL ||
+      import.meta.env.DATABASE_URL ||
+      process.env.POSTGRES_URL_NON_POOLING || 
+      process.env.POSTGRES_PRISMA_URL || 
+      process.env.POSTGRES_URL ||
+      process.env.DATABASE_URL;
+
     if (!connectionString) {
       return new Response(
         JSON.stringify({ success: false, message: 'Database configuration error' }),
@@ -208,7 +269,10 @@ export const GET: APIRoute = async ({ request }) => {
     await client.connect();
 
     const registrations = await client.query(
-      `SELECT id, name, email, year, faculty, degree, linkedin, photo, short_bio, status, created_at
+      `SELECT 
+        id, name, email, mobile, dob, gender, address,
+        year, faculty, degree, university, job_designation, company,
+        linkedin, photo_blob_url, short_bio, status, created_at
        FROM alumni_registrations
        ORDER BY created_at DESC`
     );
@@ -240,4 +304,4 @@ export const GET: APIRoute = async ({ request }) => {
       }
     );
   }
-};
+}
