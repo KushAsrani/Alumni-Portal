@@ -9,68 +9,168 @@ const config = getSiteConfig();
 
 <Layout title={`Join ${config.organization.name} — Alumni Registration`} description={`Register to join ${config.organization.name} alumni network.`}>
   <section class="section">
-    <div class="container-custom max-w-3xl mx-auto">
+    <div class="container-custom max-w-4xl mx-auto">
       <div class="mb-8 text-center">
         <h1 class="text-4xl font-bold text-accent-900 mb-2">Alumni Registration</h1>
         <p class="text-accent-600">Welcome! Fill in your details to join the {config.organization.name} alumni network.</p>
       </div>
 
       <form id="alumniForm" class="space-y-6 bg-white p-8 rounded-xl shadow-md">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-accent-700 mb-2">
-              Full name <span class="text-red-500">*</span>
-            </label>
-            <input name="name" required class="input" placeholder="" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-accent-700 mb-2">
-              Email <span class="text-red-500">*</span>
-            </label>
-            <input name="email" type="email" required class="input" placeholder="" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-accent-700 mb-2">Graduation year</label>
-            <input name="year" type="number" min="1900" max="2100" class="input" placeholder="" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-accent-700 mb-2">Faculty / Department</label>
-            <input name="faculty" class="input" placeholder="e.g. IT, Computer Science" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-accent-700 mb-2">Degree</label>
-            <input name="degree" class="input" placeholder="e.g. BSc, MSc, MCA" />
-          </div>
-        </div>
         
-      <!--
-        <div>
-          <label class="block text-sm font-medium text-accent-700 mb-2">Current job title</label>
-          <input name="current_job_title" class="input" placeholder="e.g. Software Engineer, Data Analyst" />
-        </div>
-      -->
+        <!-- Personal Information Section -->
+        <div class="border-b border-accent-200 pb-6">
+          <h2 class="text-xl font-semibold text-accent-900 mb-4">Personal Information</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Full Name <span class="text-red-500">*</span>
+              </label>
+              <input name="name" required class="input" placeholder="" />
+            </div>
 
-        <div>
-          <label class="block text-sm font-medium text-accent-700 mb-2">LinkedIn profile link (optional)</label>
-          <input name="linkedin" type="url" class="input" placeholder="https://www.linkedin.com/in/your-profile" />
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Email <span class="text-red-500">*</span>
+              </label>
+              <input name="email" type="email" required class="input" placeholder="" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Mobile Number
+              </label>
+              <input name="mobile" type="tel" class="input" placeholder="" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Date of Birth
+              </label>
+              <input name="dob" type="date" class="input" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Gender
+              </label>
+              <select name="gender" class="select">
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <label class="block text-sm font-medium text-accent-700 mb-2">
+              Address
+            </label>
+            <textarea name="address" rows="2" class="input" placeholder="Street, City, State, Country"></textarea>
+          </div>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-accent-700 mb-2"></label>
-          <input name="photo" type="hidden" class="input" placeholder="" />
+        <!-- Education Section -->
+        <div class="border-b border-accent-200 pb-6">
+          <h2 class="text-xl font-semibold text-accent-900 mb-4">Education</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">University/Institution</label>
+              <input name="university" class="input" placeholder="" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">Graduation Year</label>
+              <input name="year" type="number" min="1900" max="2100" class="input" placeholder="" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">Faculty / Department</label>
+              <input name="faculty" class="input" placeholder="" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">Degree</label>
+              <input name="degree" class="input" placeholder="" />
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-accent-700 mb-2">Short bio</label>
-          <textarea name="short_bio" rows="4" class="input" placeholder="Tell us about yourself, your current role, and your achievements..."></textarea>
+        <!-- Professional Information Section -->
+        <div class="border-b border-accent-200 pb-6">
+          <h2 class="text-xl font-semibold text-accent-900 mb-4">Professional Information</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">Current Company</label>
+              <input name="company" class="input" placeholder="" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">Job Designation</label>
+              <input name="job_designation" class="input" placeholder="" />
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <label class="block text-sm font-medium text-accent-700 mb-2">LinkedIn profile link</label>
+            <input name="linkedin" type="url" class="input" placeholder="" />
+          </div>
         </div>
 
+        <!-- Photo Upload Section -->
+        <div class="border-b border-accent-200 pb-6">
+          <h2 class="text-xl font-semibold text-accent-900 mb-4">Profile Photo</h2>
+          
+          <div class="flex items-start gap-6">
+            <div class="flex-shrink-0">
+              <div id="photoPreview" class="w-32 h-32 rounded-full bg-accent-100 flex items-center justify-center overflow-hidden border-2 border-accent-200">
+                <svg class="w-12 h-12 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+              </div>
+            </div>
+            
+            <div class="flex-grow">
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Upload Photo
+              </label>
+              <input 
+                type="file" 
+                id="photoInput" 
+                accept="image/jpeg,image/jpg,image/png,image/webp" 
+                class="block w-full text-sm text-accent-600
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-primary-50 file:text-primary-700
+                  hover:file:bg-primary-100
+                  cursor-pointer"
+              />
+              <p class="mt-2 text-xs text-accent-500">
+                Accepted formats: JPEG, PNG, WebP. Max size: 5MB
+              </p>
+              <div id="uploadProgress" class="hidden mt-2">
+                <div class="w-full bg-accent-200 rounded-full h-2">
+                  <div id="progressBar" class="bg-primary-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-accent-600 mt-1">Uploading...</p>
+              </div>
+              <div id="uploadError" class="hidden mt-2 text-xs text-red-600"></div>
+            </div>
+          </div>
+          
+          <input type="hidden" name="photo_blob_url" id="photoUrl" />
+        </div>
+
+        <!-- Short Bio Section -->
+        <div>
+          <label class="block text-sm font-medium text-accent-700 mb-2">Your achievements</label>
+          <textarea name="short_bio" rows="4" class="input" placeholder="Tell us about yourself, your achievements, and your professional journey..."></textarea>
+        </div>
+
+        <!-- Consent -->
         <div class="flex items-start gap-3">
           <input id="consent" name="consent" type="checkbox" required class="mt-1" />
           <label for="consent" class="text-accent-700 text-sm">
@@ -78,6 +178,7 @@ const config = getSiteConfig();
           </label>
         </div>
 
+        <!-- Submit Button -->
         <div class="text-center">
           <button type="submit" id="submitBtn" class="btn btn-primary">
             <span id="submitText">Submit Registration</span>
@@ -97,91 +198,163 @@ const config = getSiteConfig();
   </section>
 
   <script>
-  const form = document.getElementById('alumniForm') as HTMLFormElement;
-  const msg = document.getElementById('formMessage') as HTMLDivElement;
-  const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
-  const submitText = document.getElementById('submitText') as HTMLSpanElement;
-  const submitLoader = document.getElementById('submitLoader') as HTMLSpanElement;
+    const form = document.getElementById('alumniForm') as HTMLFormElement;
+    const msg = document.getElementById('formMessage') as HTMLDivElement;
+    const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
+    const submitText = document.getElementById('submitText') as HTMLSpanElement;
+    const submitLoader = document.getElementById('submitLoader') as HTMLSpanElement;
+    const photoInput = document.getElementById('photoInput') as HTMLInputElement;
+    const photoPreview = document.getElementById('photoPreview') as HTMLDivElement;
+    const photoUrl = document.getElementById('photoUrl') as HTMLInputElement;
+    const uploadProgress = document.getElementById('uploadProgress') as HTMLDivElement;
+    const progressBar = document.getElementById('progressBar') as HTMLDivElement;
+    const uploadError = document.getElementById('uploadError') as HTMLDivElement;
 
-  form.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    
-    msg.classList.add('hidden');
-    msg.textContent = '';
+    let uploadedPhotoUrl = '';
 
-    const formData = new FormData(form);
-    const payload: Record<string, any> = {};
-    formData.forEach((value, key) => {
-      if (key !== 'consent') {
-        payload[key] = value;
+    // Photo preview and upload
+    photoInput.addEventListener('change', async function(e) {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        photoPreview.innerHTML = `<img src="${e.target?.result}" class="w-full h-full object-cover" alt="Preview" />`;
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to server
+      uploadError.classList.add('hidden');
+      uploadProgress.classList.remove('hidden');
+      progressBar.style.width = '0%';
+
+      try {
+        const formData = new FormData();
+        formData.append('photo', file);
+
+        // Simulate progress
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+          progress += 10;
+          if (progress <= 90) {
+            progressBar.style.width = `${progress}%`;
+          }
+        }, 100);
+
+        const response = await fetch('/api/upload-photo', {
+          method: 'POST',
+          body: formData
+        });
+
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          uploadedPhotoUrl = result.url;
+          photoUrl.value = result.url;
+          setTimeout(() => {
+            uploadProgress.classList.add('hidden');
+          }, 500);
+        } else {
+          uploadError.textContent = result.message || 'Upload failed';
+          uploadError.classList.remove('hidden');
+          uploadProgress.classList.add('hidden');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        uploadError.textContent = 'Failed to upload photo. Please try again.';
+        uploadError.classList.remove('hidden');
+        uploadProgress.classList.add('hidden');
       }
     });
 
-    // Debug: log what we're sending
-    console.log('Submitting payload:', payload);
-
-    if (!payload.name || !payload.email) {
-      showMessage('Please provide at least your name and email.', 'error');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(payload.email)) {
-      showMessage('Please enter a valid email address.', 'error');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      console.log('Sending to /api/register...');
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
       
-      const response = await fetch('/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
+      msg.classList.add('hidden');
+      msg.textContent = '';
+
+      const formData = new FormData(form);
+      const payload: Record<string, any> = {};
+      formData.forEach((value, key) => {
+        if (key !== 'consent') {
+          payload[key] = value;
+        }
       });
 
-      console.log('Response status:', response.status);
-
-      const result = await response.json();
-      console.log('Result:', result);
-
-      if (response.ok && result.success) {
-        showMessage('Thank you! Your registration was submitted successfully.', 'success');
-        form.reset();
-        setTimeout(() => {
-          window.location.href = '#';
-        }, 2000);
-      } else {
-        showMessage(result.message || 'An error occurred. Please try again.', 'error');
+      // Add uploaded photo URL
+      if (uploadedPhotoUrl) {
+        payload.photo_blob_url = uploadedPhotoUrl;
       }
-    } catch (error) {
-      console.error('Registration error:', error);
-      showMessage('An error occurred while submitting. Please check your connection and try again.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  });
 
-  function showMessage(text: string, type: 'success' | 'error') {
-    msg.textContent = text;
-    msg.classList.remove('hidden', 'text-green-600', 'text-red-600');
-    msg.classList.add(type === 'success' ? 'text-green-600' : 'text-red-600');
-  }
+      console.log('Submitting payload:', payload);
 
-  function setLoading(loading: boolean) {
-    submitBtn.disabled = loading;
-    submitText.classList.toggle('hidden', loading);
-    submitLoader.classList.toggle('hidden', !loading);
-    
-    if (loading) {
-      submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
-    } else {
-      submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+      if (!payload.name || !payload.email) {
+        showMessage('Please provide at least your name and email.', 'error');
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(payload.email)) {
+        showMessage('Please enter a valid email address.', 'error');
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          showMessage('Thank you! Your registration was submitted successfully.', 'success');
+          form.reset();
+          photoPreview.innerHTML = `
+            <svg class="w-12 h-12 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+          `;
+          uploadedPhotoUrl = '';
+          setTimeout(() => {
+            window.location.href = '#';
+          }, 2000);
+        } else {
+          showMessage(result.message || 'An error occurred. Please try again.', 'error');
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        showMessage('An error occurred while submitting. Please check your connection and try again.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    function showMessage(text: string, type: 'success' | 'error') {
+      msg.textContent = text;
+      msg.classList.remove('hidden', 'text-green-600', 'text-red-600');
+      msg.classList.add(type === 'success' ? 'text-green-600' : 'text-red-600');
     }
-  }
-</script>
+
+    function setLoading(loading: boolean) {
+      submitBtn.disabled = loading;
+      submitText.classList.toggle('hidden', loading);
+      submitLoader.classList.toggle('hidden', !loading);
+      
+      if (loading) {
+        submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+      } else {
+        submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+      }
+    }
+  </script>
 </Layout>
