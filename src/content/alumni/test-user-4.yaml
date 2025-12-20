@@ -1,0 +1,26 @@
+name: "Test User 4"
+slug: "test-user-4"
+faculty: "Computer Science"
+year: 2020
+short_bio: "This is a test registration..."
+long_bio: "This is a test registration..."
+photo: "https://ytvf4iagehmrqd9s.public.blob.vercel-storage.com/alumni-photos/1766164456834-7jnicj.jpg"
+email: "test4@example.com"
+mobile: "+91 1234 567 8900"
+location: "Test"
+company: "PrepSOM"
+position: "Software Engineer"
+skills: []
+projects: []
+work_experience:
+  - company: "PrepSOM"
+    position: "Software Engineer"
+    duration: "2020 - Present"
+    description: ""
+education:
+  - degree: "BSc"
+    institution: "Mumbai University"
+    year: 2020
+    gpa: ""
+achievements: []
+interests: []
