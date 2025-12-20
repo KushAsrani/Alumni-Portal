@@ -58,10 +58,12 @@ export async function POST({ request }: APIContext) {
       faculty, 
       degree,
       university,
+      college_name,
       job_designation,
       company,
       linkedin, 
       photo_blob_url,
+      degree_certificate_url,
       short_bio 
     } = body;
 
@@ -158,7 +160,7 @@ export async function POST({ request }: APIContext) {
         return new Response(
           JSON.stringify({
             success: false,
-            message: 'Name or email is already registered please use a different name or email.'
+            message: 'Name or email is already registered please use a different name or email'
           }),
           {
             status: 409,
@@ -171,10 +173,10 @@ export async function POST({ request }: APIContext) {
       const result = await client.query(
         `INSERT INTO alumni_registrations (
           name, email, mobile, dob, gender, address,
-          year, faculty, degree, university, job_designation, company,
-          linkedin, photo_blob_url, short_bio
+          year, faculty, degree, university, college_name, job_designation, company,
+          linkedin, photo_blob_url, degree_certificate_url, short_bio
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         RETURNING id, name, email, created_at`,
         [
           name, 
@@ -187,10 +189,12 @@ export async function POST({ request }: APIContext) {
           faculty || null, 
           degree || null,
           university || null,
+          college_name || null,
           job_designation || null,
           company || null,
           linkedin || null, 
           photo_blob_url || null,
+          degree_certificate_url || null,
           short_bio || null
         ]
       );
@@ -271,8 +275,8 @@ export async function GET({ request }: APIContext) {
     const registrations = await client.query(
       `SELECT 
         id, name, email, mobile, dob, gender, address,
-        year, faculty, degree, university, job_designation, company,
-        linkedin, photo_blob_url, short_bio, status, created_at
+        year, faculty, degree, university, college_name, job_designation, company,
+        linkedin, photo_blob_url, degree_certificate_url, short_bio, status, created_at
        FROM alumni_registrations
        ORDER BY created_at DESC`
     );
