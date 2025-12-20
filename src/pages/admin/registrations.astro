@@ -1,35 +1,89 @@
 ---
+export const prerender = false;
+
 import Layout from '../../layouts/Layout.astro';
 ---
 
 <Layout title="Admin - Alumni Registrations">
   <section class="section">
     <div class="container-custom">
-      <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold text-accent-900">Alumni Registrations</h1>
-        <button id="refreshBtn" class="btn btn-outline btn-sm">
-          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
-          Refresh
-        </button>
+      <!-- Header -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-accent-900">Alumni Registrations</h1>
+          <p class="text-accent-600 mt-1">Review and manage alumni registration requests</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="refreshBtn" class="btn btn-outline btn-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Refresh
+          </button>
+          <button id="filterBtn" class="btn btn-outline btn-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+            </svg>
+            Filter
+          </button>
+        </div>
       </div>
 
-      <div id="stats" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <!-- Stats Cards -->
+      <div id="stats" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div class="bg-gradient-to-br from-primary-50 to-primary-100 p-6 rounded-2xl">
-          <h3 class="text-sm font-medium text-primary-700 mb-2">Total Registrations</h3>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium text-primary-700">Total</h3>
+            <svg class="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
           <p class="text-3xl font-bold text-primary-900" id="totalCount">-</p>
         </div>
-        <div class="bg-gradient-to-br from-secondary-50 to-secondary-100 p-6 rounded-2xl">
-          <h3 class="text-sm font-medium text-secondary-700 mb-2">Pending</h3>
-          <p class="text-3xl font-bold text-secondary-900" id="pendingCount">-</p>
+        
+        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-2xl">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium text-yellow-700">Pending</h3>
+            <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <p class="text-3xl font-bold text-yellow-900" id="pendingCount">-</p>
         </div>
+        
         <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl">
-          <h3 class="text-sm font-medium text-green-700 mb-2">Approved</h3>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium text-green-700">Approved</h3>
+            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
           <p class="text-3xl font-bold text-green-900" id="approvedCount">-</p>
+        </div>
+        
+        <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-2xl">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium text-red-700">Rejected</h3>
+            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <p class="text-3xl font-bold text-red-900" id="rejectedCount">-</p>
         </div>
       </div>
 
+      <!-- Filter Options -->
+      <div id="filterPanel" class="hidden mb-6 bg-white rounded-2xl shadow-sm border border-accent-100 p-6">
+        <h3 class="text-lg font-semibold mb-4">Filter Registrations</h3>
+        <div class="flex flex-wrap gap-4">
+          <button class="filter-btn" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="pending">Pending</button>
+          <button class="filter-btn" data-filter="approved">Approved</button>
+          <button class="filter-btn" data-filter="rejected">Rejected</button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
       <div id="loading" class="text-center py-12">
         <svg class="animate-spin h-12 w-12 text-primary-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -38,6 +92,7 @@ import Layout from '../../layouts/Layout.astro';
         <p class="text-accent-600">Loading registrations...</p>
       </div>
 
+      <!-- Error State -->
       <div id="error" class="hidden text-center py-12">
         <div class="text-red-600 mb-4">
           <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,47 +103,78 @@ import Layout from '../../layouts/Layout.astro';
         </div>
       </div>
 
-      <div id="registrations" class="hidden bg-white rounded-2xl shadow-sm border border-accent-100 overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-accent-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-accent-700 uppercase tracking-wider">Name</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-accent-700 uppercase tracking-wider">Email</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-accent-700 uppercase tracking-wider">Year</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-accent-700 uppercase tracking-wider">Faculty</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-accent-700 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-accent-700 uppercase tracking-wider">Date</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody" class="bg-white divide-y divide-accent-200">
-              <!-- Data will be inserted here -->
-            </tbody>
-          </table>
-        </div>
+      <!-- Registrations List -->
+      <div id="registrationsContainer" class="hidden space-y-4">
+        <!-- Cards will be inserted here -->
+      </div>
+
+      <!-- No Results -->
+      <div id="noResults" class="hidden text-center py-12">
+        <svg class="w-16 h-16 text-accent-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <p class="text-accent-600">No registrations found</p>
       </div>
     </div>
   </section>
 
+  <!-- View Details Modal -->
+  <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-white border-b border-accent-200 p-6 flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-accent-900">Registration Details</h2>
+        <button id="closeModal" class="text-accent-500 hover:text-accent-700">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div id="modalContent" class="p-6">
+        <!-- Content will be inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .filter-btn {
+      @apply px-4 py-2 rounded-lg border-2 border-accent-200 text-accent-700 hover:border-primary-500 hover:text-primary-600 transition-colors;
+    }
+    .filter-btn.active {
+      @apply bg-primary-500 text-white border-primary-500;
+    }
+  </style>
+
   <script>
-    const apiKey = prompt('Enter Admin API Key:');
+    let apiKey = '';
+    let allRegistrations: any[] = [];
+    let currentFilter = 'all';
+
+    // Check for stored API key
+    const storedKey = sessionStorage.getItem('adminApiKey');
     
-    if (!apiKey) {
-      document.getElementById('loading')!.classList.add('hidden');
-      document.getElementById('error')!.classList.remove('hidden');
-      document.getElementById('errorMessage')!.textContent = 'API key is required';
+    if (!storedKey) {
+      apiKey = prompt('Enter Admin API Key:');
+      if (!apiKey) {
+        document.getElementById('loading')!.classList.add('hidden');
+        document.getElementById('error')!.classList.remove('hidden');
+        document.getElementById('errorMessage')!.textContent = 'API key is required';
+      } else {
+        sessionStorage.setItem('adminApiKey', apiKey);
+        loadRegistrations();
+      }
     } else {
+      apiKey = storedKey;
       loadRegistrations();
     }
 
     async function loadRegistrations() {
       const loading = document.getElementById('loading')!;
       const error = document.getElementById('error')!;
-      const registrations = document.getElementById('registrations')!;
+      const container = document.getElementById('registrationsContainer')!;
       
       loading.classList.remove('hidden');
       error.classList.add('hidden');
-      registrations.classList.add('hidden');
+      container.classList.add('hidden');
 
       try {
         const response = await fetch('/api/register', {
@@ -98,15 +184,21 @@ import Layout from '../../layouts/Layout.astro';
         });
 
         if (!response.ok) {
-          throw new Error(response.status === 401 ? 'Invalid API key' : 'Failed to fetch');
+          if (response.status === 401) {
+            sessionStorage.removeItem('adminApiKey');
+            throw new Error('Invalid API key. Please refresh and try again.');
+          }
+          throw new Error('Failed to fetch registrations');
         }
 
         const result = await response.json();
         
         if (result.success) {
-          displayRegistrations(result.data);
+          allRegistrations = result.data;
+          displayRegistrations(allRegistrations);
+          updateStats(allRegistrations);
           loading.classList.add('hidden');
-          registrations.classList.remove('hidden');
+          container.classList.remove('hidden');
         } else {
           throw new Error(result.message);
         }
@@ -117,45 +209,256 @@ import Layout from '../../layouts/Layout.astro';
       }
     }
 
+    function updateStats(data: any[]) {
+      document.getElementById('totalCount')!.textContent = data.length.toString();
+      document.getElementById('pendingCount')!.textContent = data.filter(r => r.status === 'pending').length.toString();
+      document.getElementById('approvedCount')!.textContent = data.filter(r => r.status === 'approved').length.toString();
+      document.getElementById('rejectedCount')!.textContent = data.filter(r => r.status === 'rejected').length.toString();
+    }
+
     function displayRegistrations(data: any[]) {
-      const tableBody = document.getElementById('tableBody')!;
-      const totalCount = document.getElementById('totalCount')!;
-      const pendingCount = document.getElementById('pendingCount')!;
-      const approvedCount = document.getElementById('approvedCount')!;
+      const container = document.getElementById('registrationsContainer')!;
+      const noResults = document.getElementById('noResults')!;
 
-      // Update stats
-      totalCount.textContent = data.length.toString();
-      pendingCount.textContent = data.filter(r => r.status === 'pending').length.toString();
-      approvedCount.textContent = data.filter(r => r.status === 'approved').length.toString();
-
-      // Display table
       if (data.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-accent-500">No registrations yet</td></tr>';
+        container.classList.add('hidden');
+        noResults.classList.remove('hidden');
         return;
       }
 
-      tableBody.innerHTML = data.map(reg => `
-        <tr class="hover:bg-accent-50">
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-accent-900">${reg.name}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-accent-600">${reg.email}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-accent-600">${reg.year || 'N/A'}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-accent-600">${reg.faculty || 'N/A'}</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 text-xs font-medium rounded-full ${
-              reg.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-              reg.status === 'approved' ? 'bg-green-100 text-green-800' :
-              'bg-gray-100 text-gray-800'
-            }">
-              ${reg.status}
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-accent-600">
-            ${new Date(reg.created_at).toLocaleDateString()}
-          </td>
-        </tr>
+      noResults.classList.add('hidden');
+      container.classList.remove('hidden');
+
+      container.innerHTML = data.map(reg => `
+        <div class="bg-white rounded-2xl shadow-sm border border-accent-100 p-6 hover:shadow-lg transition-shadow">
+          <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Photo -->
+            <div class="flex-shrink-0">
+              ${reg.photo_blob_url ? 
+                `<img src="${reg.photo_blob_url}" alt="${reg.name}" class="w-24 h-24 rounded-full object-cover border-4 border-accent-100" />` :
+                `<div class="w-24 h-24 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white font-bold text-2xl border-4 border-accent-100">
+                  ${reg.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                </div>`
+              }
+            </div>
+
+            <!-- Info -->
+            <div class="flex-grow">
+              <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                <div>
+                  <h3 class="text-xl font-semibold text-accent-900">${reg.name}</h3>
+                  <p class="text-accent-600">${reg.email}</p>
+                  <p class="text-sm text-accent-500">${reg.mobile || 'N/A'}</p>
+                </div>
+                <span class="px-3 py-1 text-xs font-medium rounded-full ${
+                  reg.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  reg.status === 'approved' ? 'bg-green-100 text-green-800' :
+                  'bg-red-100 text-red-800'
+                }">
+                  ${reg.status.toUpperCase()}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p class="text-sm text-accent-500">Education</p>
+                  <p class="text-accent-900 font-medium">${reg.degree || 'N/A'} in ${reg.faculty || 'N/A'}</p>
+                  <p class="text-sm text-accent-600">${reg.university || 'N/A'} - ${reg.college_name || 'N/A'}</p>
+                  <p class="text-sm text-accent-500">Class of ${reg.year || 'N/A'}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-accent-500">Profession</p>
+                  <p class="text-accent-900 font-medium">${reg.job_designation || 'N/A'}</p>
+                  <p class="text-sm text-accent-600">${reg.company || 'N/A'}</p>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-2">
+                <button onclick="viewDetails(${reg.id})" class="btn btn-outline btn-sm">
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  View Details
+                </button>
+                
+                ${reg.status === 'pending' ? `
+                  <button onclick="updateStatus(${reg.id}, 'approved')" class="btn btn-sm bg-green-500 hover:bg-green-600 text-white">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Approve
+                  </button>
+                  <button onclick="updateStatus(${reg.id}, 'rejected')" class="btn btn-sm bg-red-500 hover:bg-red-600 text-white">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Reject
+                  </button>
+                ` : ''}
+                
+                ${reg.status === 'approved' ? `
+                  <button onclick="updateStatus(${reg.id}, 'rejected')" class="btn btn-sm btn-outline text-red-600 border-red-600 hover:bg-red-600 hover:text-white">
+                    Revoke
+                  </button>
+                ` : ''}
+                
+                ${reg.status === 'rejected' ? `
+                  <button onclick="updateStatus(${reg.id}, 'approved')" class="btn btn-sm bg-green-500 hover:bg-green-600 text-white">
+                    Approve
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
       `).join('');
     }
 
+    (window as any).viewDetails = function(id: number) {
+      const reg = allRegistrations.find(r => r.id === id);
+      if (!reg) return;
+
+      const modal = document.getElementById('detailsModal')!;
+      const content = document.getElementById('modalContent')!;
+
+      content.innerHTML = `
+        <div class="space-y-6">
+          <!-- Personal Info -->
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Personal Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><span class="text-accent-500">Full Name:</span> <span class="font-medium">${reg.name}</span></div>
+              <div><span class="text-accent-500">Email:</span> <span class="font-medium">${reg.email}</span></div>
+              <div><span class="text-accent-500">Mobile:</span> <span class="font-medium">${reg.mobile || 'N/A'}</span></div>
+              <div><span class="text-accent-500">Date of Birth:</span> <span class="font-medium">${reg.dob ? new Date(reg.dob).toLocaleDateString() : 'N/A'}</span></div>
+              <div><span class="text-accent-500">Gender:</span> <span class="font-medium">${reg.gender || 'N/A'}</span></div>
+              <div class="md:col-span-2"><span class="text-accent-500">Address:</span> <span class="font-medium">${reg.address || 'N/A'}</span></div>
+            </div>
+          </div>
+
+          <!-- Education -->
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Education</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><span class="text-accent-500">University:</span> <span class="font-medium">${reg.university || 'N/A'}</span></div>
+              <div><span class="text-accent-500">College:</span> <span class="font-medium">${reg.college_name || 'N/A'}</span></div>
+              <div><span class="text-accent-500">Faculty:</span> <span class="font-medium">${reg.faculty || 'N/A'}</span></div>
+              <div><span class="text-accent-500">Degree:</span> <span class="font-medium">${reg.degree || 'N/A'}</span></div>
+              <div><span class="text-accent-500">Year:</span> <span class="font-medium">${reg.year || 'N/A'}</span></div>
+            </div>
+          </div>
+
+          <!-- Professional -->
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Professional Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><span class="text-accent-500">Company:</span> <span class="font-medium">${reg.company || 'N/A'}</span></div>
+              <div><span class="text-accent-500">Designation:</span> <span class="font-medium">${reg.job_designation || 'N/A'}</span></div>
+              <div class="md:col-span-2"><span class="text-accent-500">LinkedIn:</span> ${reg.linkedin ? `<a href="${reg.linkedin}" target="_blank" class="text-primary-600 hover:underline">${reg.linkedin}</a>` : 'N/A'}</div>
+            </div>
+          </div>
+
+          <!-- Documents -->
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Documents</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span class="text-accent-500">Profile Photo:</span><br>
+                ${reg.photo_blob_url ? `<a href="${reg.photo_blob_url}" target="_blank" class="text-primary-600 hover:underline">View Photo</a>` : 'Not uploaded'}
+              </div>
+              <div>
+                <span class="text-accent-500">Degree Certificate:</span><br>
+                ${reg.degree_certificate_url ? `<a href="${reg.degree_certificate_url}" target="_blank" class="text-primary-600 hover:underline">View Certificate</a>` : 'Not uploaded'}
+              </div>
+            </div>
+          </div>
+
+          <!-- Bio -->
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Short Bio</h3>
+            <p class="text-accent-700">${reg.short_bio || 'No bio provided'}</p>
+          </div>
+
+          <!-- Metadata -->
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Metadata</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div><span class="text-accent-500">Status:</span> <span class="font-medium capitalize">${reg.status}</span></div>
+              <div><span class="text-accent-500">Registered:</span> <span class="font-medium">${new Date(reg.created_at).toLocaleString()}</span></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+    };
+
+    (window as any).updateStatus = async function(id: number, newStatus: string) {
+      if (!confirm(`Are you sure you want to ${newStatus === 'approved' ? 'approve' : 'reject'} this registration?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/update-status', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id, status: newStatus })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert(`Registration ${newStatus} successfully!`);
+          loadRegistrations();
+        } else {
+          alert(`Error: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Update error:', error);
+        alert('Failed to update status. Please try again.');
+      }
+    };
+
+    // Event Listeners
     document.getElementById('refreshBtn')?.addEventListener('click', loadRegistrations);
+    
+    document.getElementById('filterBtn')?.addEventListener('click', () => {
+      const panel = document.getElementById('filterPanel')!;
+      panel.classList.toggle('hidden');
+    });
+
+    document.getElementById('closeModal')?.addEventListener('click', () => {
+      document.getElementById('detailsModal')!.classList.add('hidden');
+    });
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const filter = (e.target as HTMLElement).getAttribute('data-filter') || 'all';
+        currentFilter = filter;
+        
+        // Update active state
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        (e.target as HTMLElement).classList.add('active');
+        
+        // Filter data
+        const filtered = filter === 'all' 
+          ? allRegistrations 
+          : allRegistrations.filter(r => r.status === filter);
+        
+        displayRegistrations(filtered);
+      });
+    });
+
+    // Close modal on outside click
+    document.getElementById('detailsModal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        document.getElementById('detailsModal')!.classList.add('hidden');
+      }
+    });
   </script>
 </Layout>
