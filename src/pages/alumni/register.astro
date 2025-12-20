@@ -24,7 +24,7 @@ const config = getSiteConfig();
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
-                Full Name <span class="text-red-500">*</span>
+                Full name <span class="text-red-500">*</span>
               </label>
               <input name="name" required class="input" placeholder="" />
             </div>
@@ -38,9 +38,10 @@ const config = getSiteConfig();
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
-                Mobile Number
+                Mobile Number <span class="text-red-500">*</span>
               </label>
-              <input name="mobile" type="tel" class="input" placeholder="" />
+              <input name="mobile" type="tel" required class="input" placeholder="" pattern="[+]?[\d\s\-()]{10,}" title="Please enter a valid phone number (at least 10 digits)" />
+              <p class="mt-1 text-xs text-accent-500">Include country code (e.g., +1 for USA)</p>
             </div>
 
             <div>
@@ -52,13 +53,19 @@ const config = getSiteConfig();
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
-                Gender
+                Gender <span class="text-red-500">*</span>
               </label>
-              <select name="gender" class="select">
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
+              <div class="space-y-2 mt-2">
+                <label class="flex items-center">
+                  <input type="radio" name="gender" value="Male" required class="w-4 h-4 text-primary-600 focus:ring-primary-500" />
+                  <span class="ml-2 text-accent-700">Male</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="radio" name="gender" value="Female" required class="w-4 h-4 text-primary-600 focus:ring-primary-500" />
+                  <span class="ml-2 text-accent-700">Female</span>
+                </label>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -76,23 +83,38 @@ const config = getSiteConfig();
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-accent-700 mb-2">University/Institution</label>
-              <input name="university" class="input" placeholder="" />
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                University/Institution <span class="text-red-500">*</span>
+              </label>
+              <input name="university" required class="input" placeholder="" />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-accent-700 mb-2">Graduation Year</label>
-              <input name="year" type="number" min="1900" max="2100" class="input" placeholder="" />
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                College Name <span class="text-red-500">*</span>
+              </label>
+              <input name="college_name" required class="input" placeholder="" />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-accent-700 mb-2">Faculty / Department</label>
-              <input name="faculty" class="input" placeholder="" />
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Graduation year <span class="text-red-500">*</span>
+              </label>
+              <input name="year" type="number" min="1950" max="2100" required class="input" placeholder="" />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-accent-700 mb-2">Degree</label>
-              <input name="degree" class="input" placeholder="" />
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Faculty / Department <span class="text-red-500">*</span>
+              </label>
+              <input name="faculty" required class="input" placeholder="" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Degree <span class="text-red-500">*</span>
+              </label>
+              <input name="degree" required class="input" placeholder="" />
             </div>
           </div>
         </div>
@@ -121,7 +143,7 @@ const config = getSiteConfig();
 
         <!-- Photo Upload Section -->
         <div class="border-b border-accent-200 pb-6">
-          <h2 class="text-xl font-semibold text-accent-900 mb-4">Profile Photo</h2>
+          <h2 class="text-xl font-semibold text-accent-900 mb-4">Profile Photo <span class="text-red-500">*</span></h2>
           
           <div class="flex items-start gap-6">
             <div class="flex-shrink-0">
@@ -134,11 +156,12 @@ const config = getSiteConfig();
             
             <div class="flex-grow">
               <label class="block text-sm font-medium text-accent-700 mb-2">
-                Upload Photo
+                Upload Photo <span class="text-red-500">*</span>
               </label>
               <input 
                 type="file" 
                 id="photoInput" 
+                required
                 accept="image/jpeg,image/jpg,image/png,image/webp" 
                 class="block w-full text-sm text-accent-600
                   file:mr-4 file:py-2 file:px-4
@@ -161,7 +184,49 @@ const config = getSiteConfig();
             </div>
           </div>
           
-          <input type="hidden" name="photo_blob_url" id="photoUrl" />
+          <input type="hidden" name="photo_blob_url" id="photoUrl" required />
+        </div>
+
+        <!-- Degree Certificate Upload Section -->
+        <div class="border-b border-accent-200 pb-6">
+          <h2 class="text-xl font-semibold text-accent-900 mb-4">Degree Certificate <span class="text-red-500">*</span></h2>
+          
+          <div>
+            <label class="block text-sm font-medium text-accent-700 mb-2">
+              Upload Degree Certificate <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="file" 
+              id="certificateInput"
+              required
+              accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/jpg,image/png" 
+              class="block w-full text-sm text-accent-600
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-lg file:border-0
+                file:text-sm file:font-semibold
+                file:bg-secondary-50 file:text-secondary-700
+                hover:file:bg-secondary-100
+                cursor-pointer"
+            />
+            <p class="mt-2 text-xs text-accent-500">
+              Accepted formats: PDF, DOC, DOCX, JPG, PNG. Max size: 10MB
+            </p>
+            <div id="certificateProgress" class="hidden mt-2">
+              <div class="w-full bg-accent-200 rounded-full h-2">
+                <div id="certificateProgressBar" class="bg-secondary-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+              <p class="text-xs text-accent-600 mt-1">Uploading certificate...</p>
+            </div>
+            <div id="certificateError" class="hidden mt-2 text-xs text-red-600"></div>
+            <div id="certificateSuccess" class="hidden mt-2 text-xs text-green-600 flex items-center">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              Certificate uploaded successfully
+            </div>
+          </div>
+          
+          <input type="hidden" name="degree_certificate_url" id="certificateUrl" required />
         </div>
 
         <!-- Short Bio Section -->
@@ -203,6 +268,8 @@ const config = getSiteConfig();
     const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
     const submitText = document.getElementById('submitText') as HTMLSpanElement;
     const submitLoader = document.getElementById('submitLoader') as HTMLSpanElement;
+    
+    // Photo upload elements
     const photoInput = document.getElementById('photoInput') as HTMLInputElement;
     const photoPreview = document.getElementById('photoPreview') as HTMLDivElement;
     const photoUrl = document.getElementById('photoUrl') as HTMLInputElement;
@@ -210,7 +277,16 @@ const config = getSiteConfig();
     const progressBar = document.getElementById('progressBar') as HTMLDivElement;
     const uploadError = document.getElementById('uploadError') as HTMLDivElement;
 
+    // Certificate upload elements
+    const certificateInput = document.getElementById('certificateInput') as HTMLInputElement;
+    const certificateUrl = document.getElementById('certificateUrl') as HTMLInputElement;
+    const certificateProgress = document.getElementById('certificateProgress') as HTMLDivElement;
+    const certificateProgressBar = document.getElementById('certificateProgressBar') as HTMLDivElement;
+    const certificateError = document.getElementById('certificateError') as HTMLDivElement;
+    const certificateSuccess = document.getElementById('certificateSuccess') as HTMLDivElement;
+
     let uploadedPhotoUrl = '';
+    let uploadedCertificateUrl = '';
 
     // Photo preview and upload
     photoInput.addEventListener('change', async function(e) {
@@ -233,7 +309,6 @@ const config = getSiteConfig();
         const formData = new FormData();
         formData.append('photo', file);
 
-        // Simulate progress
         let progress = 0;
         const progressInterval = setInterval(() => {
           progress += 10;
@@ -271,12 +346,65 @@ const config = getSiteConfig();
       }
     });
 
+    // Certificate upload
+    certificateInput.addEventListener('change', async function(e) {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      certificateError.classList.add('hidden');
+      certificateSuccess.classList.add('hidden');
+      certificateProgress.classList.remove('hidden');
+      certificateProgressBar.style.width = '0%';
+
+      try {
+        const formData = new FormData();
+        formData.append('document', file);
+
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+          progress += 10;
+          if (progress <= 90) {
+            certificateProgressBar.style.width = `${progress}%`;
+          }
+        }, 100);
+
+        const response = await fetch('/api/upload-document', {
+          method: 'POST',
+          body: formData
+        });
+
+        clearInterval(progressInterval);
+        certificateProgressBar.style.width = '100%';
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          uploadedCertificateUrl = result.url;
+          certificateUrl.value = result.url;
+          setTimeout(() => {
+            certificateProgress.classList.add('hidden');
+            certificateSuccess.classList.remove('hidden');
+          }, 500);
+        } else {
+          certificateError.textContent = result.message || 'Upload failed';
+          certificateError.classList.remove('hidden');
+          certificateProgress.classList.add('hidden');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        certificateError.textContent = 'Failed to upload certificate. Please try again.';
+        certificateError.classList.remove('hidden');
+        certificateProgress.classList.add('hidden');
+      }
+    });
+
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       
       msg.classList.add('hidden');
       msg.textContent = '';
 
+      // Enhanced validation
       const formData = new FormData(form);
       const payload: Record<string, any> = {};
       formData.forEach((value, key) => {
@@ -285,21 +413,58 @@ const config = getSiteConfig();
         }
       });
 
-      // Add uploaded photo URL
+      // Add uploaded URLs
       if (uploadedPhotoUrl) {
         payload.photo_blob_url = uploadedPhotoUrl;
+      }
+      if (uploadedCertificateUrl) {
+        payload.degree_certificate_url = uploadedCertificateUrl;
       }
 
       console.log('Submitting payload:', payload);
 
+      // Validate required fields
       if (!payload.name || !payload.email) {
-        showMessage('Please provide at least your name and email.', 'error');
+        showMessage('Please provide your name and email.', 'error');
         return;
       }
 
+      if (!payload.mobile) {
+        showMessage('Please provide your mobile number.', 'error');
+        return;
+      }
+
+      if (!payload.gender) {
+        showMessage('Please select your gender.', 'error');
+        return;
+      }
+
+      if (!payload.university || !payload.college_name || !payload.year || !payload.faculty || !payload.degree) {
+        showMessage('Please complete all required education fields.', 'error');
+        return;
+      }
+
+      if (!uploadedPhotoUrl) {
+        showMessage('Please upload your photo.', 'error');
+        return;
+      }
+
+      if (!uploadedCertificateUrl) {
+        showMessage('Please upload your degree certificate.', 'error');
+        return;
+      }
+
+      // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(payload.email)) {
         showMessage('Please enter a valid email address.', 'error');
+        return;
+      }
+
+      // Validate mobile number
+      const mobileRegex = /^[+]?[\d\s\-()]{10,}$/;
+      if (!mobileRegex.test(payload.mobile)) {
+        showMessage('Please enter a valid mobile number (at least 10 digits).', 'error');
         return;
       }
 
@@ -324,7 +489,9 @@ const config = getSiteConfig();
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
             </svg>
           `;
+          certificateSuccess.classList.add('hidden');
           uploadedPhotoUrl = '';
+          uploadedCertificateUrl = '';
           setTimeout(() => {
             window.location.href = '#';
           }, 2000);
@@ -343,6 +510,7 @@ const config = getSiteConfig();
       msg.textContent = text;
       msg.classList.remove('hidden', 'text-green-600', 'text-red-600');
       msg.classList.add(type === 'success' ? 'text-green-600' : 'text-red-600');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function setLoading(loading: boolean) {
