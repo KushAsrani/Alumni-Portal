@@ -15,8 +15,8 @@ const config = getSiteConfig();
         <p class="text-accent-600">Welcome! Fill in your details to join the {config.organization.name} alumni network.</p>
       </div>
 
-      <form id="alumniForm" class="space-y-6 bg-white p-8 rounded-xl shadow-md">
-        
+      <form id="alumniForm" class="space-y-6 bg-white p-8 rounded-xl shadow-md" novalidate>
+        <!-- (form markup unchanged — same as your original) -->
         <!-- Personal Information Section -->
         <div class="border-b border-accent-200 pb-6">
           <h2 class="text-xl font-semibold text-accent-900 mb-4">Personal Information</h2>
@@ -26,24 +26,24 @@ const config = getSiteConfig();
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 Full name <span class="text-red-500">*</span>
               </label>
-              <input name="name" required class="input" placeholder="" />
-              <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="name"></p>
+              <input name="name" required class="input" placeholder="" aria-describedby="name-error" />
+              <p id="name-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="name" role="alert"></p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 Email <span class="text-red-500">*</span>
               </label>
-              <input name="email" type="email" required class="input" placeholder="" />
-              <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="email"></p>
+              <input name="email" type="email" required class="input" placeholder="" aria-describedby="email-error" />
+              <p id="email-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="email" role="alert"></p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 Mobile Number <span class="text-red-500">*</span>
               </label>
-              <input name="mobile" type="tel" required class="input" placeholder="" />
-              <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="mobile"></p>
+              <input name="mobile" type="tel" required class="input" placeholder="" aria-describedby="mobile-error" />
+              <p id="mobile-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="mobile" role="alert"></p>
               <p class="mt-1 text-xs text-accent-500">Include country code (e.g., +91 for India)</p>
             </div>
 
@@ -58,7 +58,8 @@ const config = getSiteConfig();
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 Gender <span class="text-red-500">*</span>
               </label>
-              <div class="space-y-2 mt-2">
+              <div class="space-y-2 mt-2" role="radiogroup" aria-labelledby="gender-label">
+                <label id="gender-label" class="sr-only">Gender</label>
                 <label class="flex items-center">
                   <input type="radio" name="gender" value="Male" required class="w-4 h-4 text-primary-600 focus:ring-primary-500" />
                   <span class="ml-2 text-accent-700">Male</span>
@@ -68,7 +69,7 @@ const config = getSiteConfig();
                   <span class="ml-2 text-accent-700">Female</span>
                 </label>
               </div>
-              <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="gender"></p>
+              <p id="gender-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="gender" role="alert"></p>
             </div>
           </div>
 
@@ -89,40 +90,40 @@ const config = getSiteConfig();
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 University/Institution <span class="text-red-500">*</span>
               </label>
-              <input name="university" required class="input" placeholder="" />
-              <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="university"></p>
+              <input name="university" required class="input" placeholder="" aria-describedby="university-error" />
+              <p id="university-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="university" role="alert"></p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 College Name <span class="text-red-500">*</span>
               </label>
-              <input name="college_name" required class="input" placeholder="" />
-              <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="college_name"></p>
+              <input name="college_name" required class="input" placeholder="" aria-describedby="college_name-error" />
+              <p id="college_name-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="college_name" role="alert"></p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 Graduation year <span class="text-red-500">*</span>
               </label>
-              <input name="year" type="number" min="1950" max="2100" required class="input" placeholder="" />
-              <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="year"></p>
+              <input name="year" type="number" min="1950" max="2100" required class="input" placeholder="" aria-describedby="year-error" />
+              <p id="year-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="year" role="alert"></p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 Faculty / Department <span class="text-red-500">*</span>
               </label>
-              <input name="faculty" required class="input" placeholder="" />
-              <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="faculty"></p>
+              <input name="faculty" required class="input" placeholder="" aria-describedby="faculty-error" />
+              <p id="faculty-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="faculty" role="alert"></p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 Degree <span class="text-red-500">*</span>
               </label>
-              <input name="degree" required class="input" placeholder="" />
-              <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="degree"></p>
+              <input name="degree" required class="input" placeholder="" aria-describedby="degree-error" />
+              <p id="degree-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="degree" role="alert"></p>
             </div>
           </div>
         </div>
@@ -178,18 +179,19 @@ const config = getSiteConfig();
                   file:bg-primary-50 file:text-primary-700
                   hover:file:bg-primary-100
                   cursor-pointer"
+                aria-describedby="photo_blob_url-error"
               />
               <p class="mt-2 text-xs text-accent-500">
                 Accepted formats: JPEG, PNG, WebP. Max size: 5MB
               </p>
-              <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="photo_blob_url"></p>
+              <p id="photo_blob_url-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="photo_blob_url" role="alert"></p>
               <div id="uploadProgress" class="hidden mt-2">
                 <div class="w-full bg-accent-200 rounded-full h-2">
                   <div id="progressBar" class="bg-primary-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
                 <p class="text-xs text-accent-600 mt-1">Uploading...</p>
               </div>
-              <div id="uploadError" class="hidden mt-2 text-xs text-red-600"></div>
+              <div id="uploadError" class="hidden mt-2 text-xs text-red-600" role="alert"></div>
             </div>
           </div>
           
@@ -216,19 +218,20 @@ const config = getSiteConfig();
                 file:bg-secondary-50 file:text-secondary-700
                 hover:file:bg-secondary-100
                 cursor-pointer"
+              aria-describedby="degree_certificate_url-error"
             />
             <p class="mt-2 text-xs text-accent-500">
               Accepted formats: PDF, DOC, DOCX, JPG, PNG. Max size: 10MB
             </p>
-            <p class="error-text hidden text-red-600 text-xs mt-1" data-error-for="degree_certificate_url"></p>
+            <p id="degree_certificate_url-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="degree_certificate_url" role="alert"></p>
             <div id="certificateProgress" class="hidden mt-2">
               <div class="w-full bg-accent-200 rounded-full h-2">
                 <div id="certificateProgressBar" class="bg-secondary-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
               </div>
               <p class="text-xs text-accent-600 mt-1">Uploading certificate...</p>
             </div>
-            <div id="certificateError" class="hidden mt-2 text-xs text-red-600"></div>
-            <div id="certificateSuccess" class="hidden mt-2 text-xs text-green-600 flex items-center">
+            <div id="certificateError" class="hidden mt-2 text-xs text-red-600" role="alert"></div>
+            <div id="certificateSuccess" class="hidden mt-2 text-xs text-green-600 flex items-center" role="status">
               <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
               </svg>
@@ -277,387 +280,461 @@ const config = getSiteConfig();
       border-color: #ef4444 !important;
       border-width: 2px;
     }
+    .error-text.hidden { display: none; }
   </style>
 
-  <script>
-    const form = document.getElementById('alumniForm') as HTMLFormElement;
-    const msg = document.getElementById('formMessage') as HTMLDivElement;
-    const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
-    const submitText = document.getElementById('submitText') as HTMLSpanElement;
-    const submitLoader = document.getElementById('submitLoader') as HTMLSpanElement;
-    
+  <script lang="js">
+    // Plain JavaScript client script for Astro (no TypeScript)
+    const form = document.getElementById('alumniForm');
+    const msg = document.getElementById('formMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const submitLoader = document.getElementById('submitLoader');
+
     // Photo upload elements
-    const photoInput = document.getElementById('photoInput') as HTMLInputElement;
-    const photoPreview = document.getElementById('photoPreview') as HTMLDivElement;
-    const photoUrl = document.getElementById('photoUrl') as HTMLInputElement;
-    const uploadProgress = document.getElementById('uploadProgress') as HTMLDivElement;
-    const progressBar = document.getElementById('progressBar') as HTMLDivElement;
-    const uploadError = document.getElementById('uploadError') as HTMLDivElement;
+    const photoInput = document.getElementById('photoInput');
+    const photoPreview = document.getElementById('photoPreview');
+    const photoUrl = document.getElementById('photoUrl');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const uploadError = document.getElementById('uploadError');
 
     // Certificate upload elements
-    const certificateInput = document.getElementById('certificateInput') as HTMLInputElement;
-    const certificateUrl = document.getElementById('certificateUrl') as HTMLInputElement;
-    const certificateProgress = document.getElementById('certificateProgress') as HTMLDivElement;
-    const certificateProgressBar = document.getElementById('certificateProgressBar') as HTMLDivElement;
-    const certificateError = document.getElementById('certificateError') as HTMLDivElement;
-    const certificateSuccess = document.getElementById('certificateSuccess') as HTMLDivElement;
+    const certificateInput = document.getElementById('certificateInput');
+    const certificateUrl = document.getElementById('certificateUrl');
+    const certificateProgress = document.getElementById('certificateProgress');
+    const certificateProgressBar = document.getElementById('certificateProgressBar');
+    const certificateError = document.getElementById('certificateError');
+    const certificateSuccess = document.getElementById('certificateSuccess');
 
     let uploadedPhotoUrl = '';
     let uploadedCertificateUrl = '';
 
-    // Helper functions for field-level validation
-    function showFieldError(fieldName: string, message: string) {
-      const errorElement = document.querySelector(`[data-error-for="${fieldName}"]`) as HTMLParagraphElement;
-      const inputElement = document.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
-      
-      if (errorElement) {
-        errorElement.textContent = message;
-        errorElement.classList.remove('hidden');
+    if (!form) {
+      console.warn('Alumni form not found on page.');
+    } else {
+      // Helper functions
+      function getErrorElement(fieldName) {
+        return document.querySelector('[data-error-for="' + fieldName + '"]');
       }
-      
-      if (inputElement) {
-        inputElement.classList.add('input-error');
-      }
-    }
 
-    function clearFieldError(fieldName: string) {
-      const errorElement = document.querySelector(`[data-error-for="${fieldName}"]`) as HTMLParagraphElement;
-      const inputElement = document.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
-      
-      if (errorElement) {
-        errorElement.textContent = '';
-        errorElement.classList.add('hidden');
+      function getInputElement(fieldName) {
+        const elByName = document.querySelector('[name="' + fieldName + '"]');
+        if (elByName) return elByName;
+        return document.getElementById(fieldName);
       }
-      
-      if (inputElement) {
-        inputElement.classList.remove('input-error');
-      }
-    }
 
-    function clearAllErrors() {
-      document.querySelectorAll('.error-text').forEach((element) => {
-        element.textContent = '';
-        element.classList.add('hidden');
-      });
-      
-      document.querySelectorAll('.input-error').forEach((element) => {
-        element.classList.remove('input-error');
-      });
-    }
+      function showFieldError(fieldName, message) {
+        const errorElement = getErrorElement(fieldName);
+        const inputElement = getInputElement(fieldName);
 
-    // Real-time error clearing on input
-    const allInputs = form.querySelectorAll('input, textarea, select');
-    allInputs.forEach((input) => {
-      input.addEventListener('input', (event) => {
-        const target = event.target as HTMLInputElement;
-        const fieldName = target.getAttribute('name');
-        if (fieldName) {
-          clearFieldError(fieldName);
+        if (errorElement) {
+          if (!errorElement.id) errorElement.id = fieldName + '-error';
+          errorElement.textContent = message;
+          errorElement.classList.remove('hidden');
         }
-      });
-      
-      input.addEventListener('change', (event) => {
-        const target = event.target as HTMLInputElement;
-        const fieldName = target.getAttribute('name');
-        if (fieldName) {
-          clearFieldError(fieldName);
-        }
-      });
-    });
 
-    // Photo preview and upload
-    photoInput.addEventListener('change', async function(e) {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      // Show preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        photoPreview.innerHTML = `<img src="${e.target?.result}" class="w-full h-full object-cover" alt="Preview" />`;
-      };
-      reader.readAsDataURL(file);
-
-      // Upload to server
-      uploadError.classList.add('hidden');
-      clearFieldError('photo_blob_url');
-      uploadProgress.classList.remove('hidden');
-      progressBar.style.width = '0%';
-
-      try {
-        const formData = new FormData();
-        formData.append('photo', file);
-
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-          progress += 10;
-          if (progress <= 90) {
-            progressBar.style.width = `${progress}%`;
+        if (inputElement) {
+          inputElement.classList.add('input-error');
+          inputElement.setAttribute('aria-invalid', 'true');
+          if (errorElement && errorElement.id) {
+            inputElement.setAttribute('aria-describedby', errorElement.id);
           }
-        }, 100);
+        }
+      }
 
-        const response = await fetch('/api/upload-photo', {
-          method: 'POST',
-          body: formData
+      function clearFieldError(fieldName) {
+        const errorElement = getErrorElement(fieldName);
+        const inputElement = getInputElement(fieldName);
+
+        if (errorElement) {
+          errorElement.textContent = '';
+          errorElement.classList.add('hidden');
+        }
+
+        if (inputElement) {
+          inputElement.classList.remove('input-error');
+          inputElement.removeAttribute('aria-invalid');
+          inputElement.removeAttribute('aria-describedby');
+        }
+      }
+
+      function clearAllErrors() {
+        document.querySelectorAll('.error-text').forEach(function(el) {
+          el.textContent = '';
+          el.classList.add('hidden');
         });
+        document.querySelectorAll('.input-error').forEach(function(el) {
+          el.classList.remove('input-error');
+          el.removeAttribute('aria-invalid');
+          el.removeAttribute('aria-describedby');
+        });
+        if (msg) {
+          msg.classList.add('hidden');
+          msg.textContent = '';
+        }
+      }
 
-        clearInterval(progressInterval);
-        progressBar.style.width = '100%';
+      // Real-time clearing
+      const allInputs = form.querySelectorAll('input, textarea, select');
+      allInputs.forEach(function(input) {
+        input.addEventListener('input', function(event) {
+          const target = event.target;
+          const fieldName = target.getAttribute('name');
+          if (fieldName) clearFieldError(fieldName);
+        });
+        input.addEventListener('change', function(event) {
+          const target = event.target;
+          const fieldName = target.getAttribute('name');
+          if (fieldName) clearFieldError(fieldName);
+        });
+      });
 
-        const result = await response.json();
+      // Photo upload
+      if (photoInput && photoPreview && uploadProgress && progressBar && uploadError && photoUrl) {
+        photoInput.addEventListener('change', async function(e) {
+          const target = e.target;
+          const file = (target.files && target.files[0]) || null;
+          if (!file) return;
 
-        if (response.ok && result.success) {
-          uploadedPhotoUrl = result.url;
-          photoUrl.value = result.url;
-          setTimeout(() => {
+          const maxSize = 5 * 1024 * 1024;
+          const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+          if (allowedTypes.indexOf(file.type) === -1) {
+            showFieldError('photo_blob_url', 'Unsupported photo format. Use JPEG, PNG, or WebP.');
+            return;
+          }
+          if (file.size > maxSize) {
+            showFieldError('photo_blob_url', 'Photo must be under 5MB.');
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = function(ev) {
+            if (photoPreview) {
+              photoPreview.innerHTML = '<img src="' + ev.target.result + '" class="w-full h-full object-cover" alt="Preview" />';
+            }
+          };
+          reader.readAsDataURL(file);
+
+          uploadError.classList.add('hidden');
+          clearFieldError('photo_blob_url');
+          uploadProgress.classList.remove('hidden');
+          progressBar.style.width = '0%';
+
+          try {
+            const formData = new FormData();
+            formData.append('photo', file);
+
+            let progress = 0;
+            const progressInterval = setInterval(function() {
+              progress += 10;
+              if (progress <= 90) progressBar.style.width = progress + '%';
+            }, 100);
+
+            const response = await fetch('/api/upload-photo', {
+              method: 'POST',
+              body: formData
+            });
+
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+              uploadedPhotoUrl = result.url;
+              photoUrl.value = result.url;
+              setTimeout(function() {
+                uploadProgress.classList.add('hidden');
+              }, 500);
+            } else {
+              uploadError.textContent = result && result.message ? result.message : 'Upload failed';
+              uploadError.classList.remove('hidden');
+              uploadProgress.classList.add('hidden');
+              showFieldError('photo_blob_url', result && result.message ? result.message : 'Upload failed');
+            }
+          } catch (error) {
+            console.error('Upload error:', error);
+            uploadError.textContent = 'Failed to upload photo. Please try again.';
+            uploadError.classList.remove('hidden');
             uploadProgress.classList.add('hidden');
-          }, 500);
-        } else {
-          uploadError.textContent = result.message || 'Upload failed';
-          uploadError.classList.remove('hidden');
-          uploadProgress.classList.add('hidden');
-        }
-      } catch (error) {
-        console.error('Upload error:', error);
-        uploadError.textContent = 'Failed to upload photo. Please try again.';
-        uploadError.classList.remove('hidden');
-        uploadProgress.classList.add('hidden');
-      }
-    });
-
-    // Certificate upload
-    certificateInput.addEventListener('change', async function(e) {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      certificateError.classList.add('hidden');
-      certificateSuccess.classList.add('hidden');
-      clearFieldError('degree_certificate_url');
-      certificateProgress.classList.remove('hidden');
-      certificateProgressBar.style.width = '0%';
-
-      try {
-        const formData = new FormData();
-        formData.append('document', file);
-
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-          progress += 10;
-          if (progress <= 90) {
-            certificateProgressBar.style.width = `${progress}%`;
+            showFieldError('photo_blob_url', 'Failed to upload photo. Please try again.');
           }
-        }, 100);
+        });
+      }
 
-        const response = await fetch('/api/upload-document', {
-          method: 'POST',
-          body: formData
+      // Certificate upload
+      if (certificateInput && certificateProgress && certificateProgressBar && certificateError && certificateSuccess && certificateUrl) {
+        certificateInput.addEventListener('change', async function(e) {
+          const target = e.target;
+          const file = (target.files && target.files[0]) || null;
+          if (!file) return;
+
+          const maxSize = 10 * 1024 * 1024;
+          const allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg',
+            'image/jpg',
+            'image/png'
+          ];
+          if (allowedTypes.indexOf(file.type) === -1) {
+            showFieldError('degree_certificate_url', 'Unsupported certificate format. Use PDF, DOC, DOCX, JPG, or PNG.');
+            return;
+          }
+          if (file.size > maxSize) {
+            showFieldError('degree_certificate_url', 'Certificate must be under 10MB.');
+            return;
+          }
+
+          certificateError.classList.add('hidden');
+          certificateSuccess.classList.add('hidden');
+          clearFieldError('degree_certificate_url');
+          certificateProgress.classList.remove('hidden');
+          certificateProgressBar.style.width = '0%';
+
+          try {
+            const formData = new FormData();
+            formData.append('document', file);
+
+            let progress = 0;
+            const progressInterval = setInterval(function() {
+              progress += 10;
+              if (progress <= 90) certificateProgressBar.style.width = progress + '%';
+            }, 100);
+
+            const response = await fetch('/api/upload-document', {
+              method: 'POST',
+              body: formData
+            });
+
+            clearInterval(progressInterval);
+            certificateProgressBar.style.width = '100%';
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+              uploadedCertificateUrl = result.url;
+              certificateUrl.value = result.url;
+              setTimeout(function() {
+                certificateProgress.classList.add('hidden');
+                certificateSuccess.classList.remove('hidden');
+              }, 500);
+            } else {
+              certificateError.textContent = result && result.message ? result.message : 'Upload failed';
+              certificateError.classList.remove('hidden');
+              certificateProgress.classList.add('hidden');
+              showFieldError('degree_certificate_url', result && result.message ? result.message : 'Upload failed');
+            }
+          } catch (error) {
+            console.error('Upload error:', error);
+            certificateError.textContent = 'Failed to upload certificate. Please try again.';
+            certificateError.classList.remove('hidden');
+            certificateProgress.classList.add('hidden');
+            showFieldError('degree_certificate_url', 'Failed to upload certificate. Please try again.');
+          }
+        });
+      }
+
+      // Submit handler
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        clearAllErrors();
+
+        const formData = new FormData(form);
+        const payload = {};
+        formData.forEach(function(value, key) {
+          if (key !== 'consent') {
+            payload[key] = value;
+          }
         });
 
-        clearInterval(progressInterval);
-        certificateProgressBar.style.width = '100%';
+        if (uploadedPhotoUrl) payload.photo_blob_url = uploadedPhotoUrl;
+        if (uploadedCertificateUrl) payload.degree_certificate_url = uploadedCertificateUrl;
 
-        const result = await response.json();
+        let hasErrors = false;
+        let firstErrorField = '';
 
-        if (response.ok && result.success) {
-          uploadedCertificateUrl = result.url;
-          certificateUrl.value = result.url;
-          setTimeout(() => {
-            certificateProgress.classList.add('hidden');
-            certificateSuccess.classList.remove('hidden');
-          }, 500);
-        } else {
-          certificateError.textContent = result.message || 'Upload failed';
-          certificateError.classList.remove('hidden');
-          certificateProgress.classList.add('hidden');
+        // Name
+        if (!payload.name || String(payload.name).trim() === '') {
+          showFieldError('name', 'Please provide your name');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'name';
         }
-      } catch (error) {
-        console.error('Upload error:', error);
-        certificateError.textContent = 'Failed to upload certificate. Please try again.';
-        certificateError.classList.remove('hidden');
-        certificateProgress.classList.add('hidden');
-      }
-    });
 
-    form.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      
-      clearAllErrors();
-      msg.classList.add('hidden');
-      msg.textContent = '';
+        // Email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!payload.email || String(payload.email).trim() === '') {
+          showFieldError('email', 'Please provide your email address');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'email';
+        } else if (!emailRegex.test(String(payload.email))) {
+          showFieldError('email', 'Please enter a valid email address');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'email';
+        }
 
-      const formData = new FormData(form);
-      const payload: Record<string, any> = {};
-      formData.forEach((value, key) => {
-        if (key !== 'consent') {
-          payload[key] = value;
+        // Mobile
+        const mobileRegex = /^[+]?[\d\s\-()]{10,}$/;
+        if (!payload.mobile || String(payload.mobile).trim() === '') {
+          showFieldError('mobile', 'Please provide your mobile number');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'mobile';
+        } else if (!mobileRegex.test(String(payload.mobile))) {
+          showFieldError('mobile', 'Please enter a valid mobile number (at least 10 digits)');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'mobile';
+        }
+
+        // Gender
+        const genderChecked = form.querySelector('input[name="gender"]:checked');
+        const genderValue = genderChecked ? genderChecked.value : '';
+        if (!genderValue) {
+          showFieldError('gender', 'Please select your gender');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'gender';
+        } else {
+          payload.gender = genderValue;
+        }
+
+        // University
+        if (!payload.university || String(payload.university).trim() === '') {
+          showFieldError('university', 'Please provide your university/institution name');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'university';
+        }
+
+        // College
+        if (!payload.college_name || String(payload.college_name).trim() === '') {
+          showFieldError('college_name', 'Please provide your college name');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'college_name';
+        }
+
+        // Year
+        if (!payload.year || String(payload.year).trim() === '') {
+          showFieldError('year', 'Please provide your graduation year');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'year';
+        } else {
+          const yearNum = Number(payload.year);
+          if (Number.isNaN(yearNum) || yearNum < 1950 || yearNum > 2100) {
+            showFieldError('year', 'Please enter a valid graduation year');
+            hasErrors = true;
+            if (!firstErrorField) firstErrorField = 'year';
+          }
+        }
+
+        // Faculty
+        if (!payload.faculty || String(payload.faculty).trim() === '') {
+          showFieldError('faculty', 'Please provide your faculty/department');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'faculty';
+        }
+
+        // Degree
+        if (!payload.degree || String(payload.degree).trim() === '') {
+          showFieldError('degree', 'Please provide your degree');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'degree';
+        }
+
+        // Photo
+        if (!uploadedPhotoUrl && (!payload.photo_blob_url || String(payload.photo_blob_url).trim() === '')) {
+          showFieldError('photo_blob_url', 'Please upload your photo');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'photo_blob_url';
+        }
+
+        // Certificate
+        if (!uploadedCertificateUrl && (!payload.degree_certificate_url || String(payload.degree_certificate_url).trim() === '')) {
+          showFieldError('degree_certificate_url', 'Please upload your degree certificate');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'degree_certificate_url';
+        }
+
+        // Consent
+        const consentChecked = document.getElementById('consent') && document.getElementById('consent').checked;
+        if (!consentChecked) {
+          showMessage('Please confirm consent to proceed.', 'error');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'consent';
+        }
+
+        if (hasErrors) {
+          if (firstErrorField) {
+            const firstEl = getInputElement(firstErrorField);
+            if (firstEl) {
+              firstEl.focus();
+              firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }
+          return;
+        }
+
+        // Submit
+        setLoading(true);
+
+        try {
+          const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            showMessage('Thank you! Your registration was submitted successfully. We will review your application and get back to you soon.', 'success');
+            form.reset();
+            if (photoPreview) {
+              photoPreview.innerHTML = '<svg class="w-12 h-12 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>';
+            }
+            if (certificateSuccess) certificateSuccess.classList.add('hidden');
+            uploadedPhotoUrl = '';
+            uploadedCertificateUrl = '';
+            if (photoUrl) photoUrl.value = '';
+            if (certificateUrl) certificateUrl.value = '';
+
+            setTimeout(function() {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
+          } else {
+            showMessage((result && result.message) ? result.message : 'An error occurred. Please try again.', 'error');
+          }
+        } catch (error) {
+          console.error('Registration error:', error);
+          showMessage('An error occurred while submitting. Please check your connection and try again.', 'error');
+        } finally {
+          setLoading(false);
         }
       });
 
-      // Add uploaded URLs
-      if (uploadedPhotoUrl) {
-        payload.photo_blob_url = uploadedPhotoUrl;
-      }
-      if (uploadedCertificateUrl) {
-        payload.degree_certificate_url = uploadedCertificateUrl;
-      }
-
-      // Validate all fields and show errors
-      let hasErrors = false;
-      let firstErrorField = '';
-
-      // Name validation
-      if (!payload.name || !payload.name.trim()) {
-        showFieldError('name', 'Please provide your name');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'name';
+      function showMessage(text, type) {
+        if (!msg) return;
+        msg.textContent = text;
+        msg.classList.remove('hidden', 'text-green-600', 'text-red-600');
+        msg.classList.add(type === 'success' ? 'text-green-600' : 'text-red-600');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
-      // Email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!payload.email) {
-        showFieldError('email', 'Please provide your email address');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'email';
-      } else if (!emailRegex.test(payload.email)) {
-        showFieldError('email', 'Please enter a valid email address');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'email';
-      }
-
-      // Mobile validation
-      const mobileRegex = /^[+]?[\d\s\-()]{10,}$/;
-      if (!payload.mobile) {
-        showFieldError('mobile', 'Please provide your mobile number');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'mobile';
-      } else if (!mobileRegex.test(payload.mobile)) {
-        showFieldError('mobile', 'Please enter a valid mobile number (at least 10 digits)');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'mobile';
-      }
-
-      // Gender validation
-      if (!payload.gender) {
-        showFieldError('gender', 'Please select your gender');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'gender';
-      }
-
-      // University validation
-      if (!payload.university || !payload.university.trim()) {
-        showFieldError('university', 'Please provide your university/institution name');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'university';
-      }
-
-      // College validation
-      if (!payload.college_name || !payload.college_name.trim()) {
-        showFieldError('college_name', 'Please provide your college name');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'college_name';
-      }
-
-      // Year validation
-      if (!payload.year) {
-        showFieldError('year', 'Please provide your graduation year');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'year';
-      }
-
-      // Faculty validation
-      if (!payload.faculty || !payload.faculty.trim()) {
-        showFieldError('faculty', 'Please provide your faculty/department');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'faculty';
-      }
-
-      // Degree validation
-      if (!payload.degree || !payload.degree.trim()) {
-        showFieldError('degree', 'Please provide your degree');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'degree';
-      }
-
-      // Photo validation
-      if (!uploadedPhotoUrl) {
-        showFieldError('photo_blob_url', 'Please upload your photo');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'photo_blob_url';
-      }
-
-      // Certificate validation
-      if (!uploadedCertificateUrl) {
-        showFieldError('degree_certificate_url', 'Please upload your degree certificate');
-        hasErrors = true;
-        if (!firstErrorField) firstErrorField = 'degree_certificate_url';
-      }
-
-      // If there are errors, focus on first error field and scroll to it
-      if (hasErrors) {
-        if (firstErrorField) {
-          const firstErrorElement = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
-          if (firstErrorElement) {
-            firstErrorElement.focus();
-            firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }
-        return;
-      }
-
-      setLoading(true);
-
-      try {
-        const response = await fetch('/api/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          showMessage('Thank you! Your registration was submitted successfully. We will review your application and get back to you soon.', 'success');
-          form.reset();
-          photoPreview.innerHTML = `
-            <svg class="w-12 h-12 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-            </svg>
-          `;
-          certificateSuccess.classList.add('hidden');
-          uploadedPhotoUrl = '';
-          uploadedCertificateUrl = '';
-          
-          setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }, 100);
+      function setLoading(loading) {
+        if (!submitBtn || !submitText || !submitLoader) return;
+        submitBtn.disabled = loading;
+        submitText.classList.toggle('hidden', loading);
+        submitLoader.classList.toggle('hidden', !loading);
+        
+        if (loading) {
+          submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
         } else {
-          showMessage(result.message || 'An error occurred. Please try again.', 'error');
+          submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
         }
-      } catch (error) {
-        console.error('Registration error:', error);
-        showMessage('An error occurred while submitting. Please check your connection and try again.', 'error');
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    function showMessage(text: string, type: 'success' | 'error') {
-      msg.textContent = text;
-      msg.classList.remove('hidden', 'text-green-600', 'text-red-600');
-      msg.classList.add(type === 'success' ? 'text-green-600' : 'text-red-600');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function setLoading(loading: boolean) {
-      submitBtn.disabled = loading;
-      submitText.classList.toggle('hidden', loading);
-      submitLoader.classList.toggle('hidden', !loading);
-      
-      if (loading) {
-        submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
-      } else {
-        submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
       }
     }
   </script>
