@@ -16,7 +16,6 @@ const config = getSiteConfig();
       </div>
 
       <form id="alumniForm" class="space-y-6 bg-white p-8 rounded-xl shadow-md" novalidate>
-        <!-- (form markup unchanged — same as your original) -->
         <!-- Personal Information Section -->
         <div class="border-b border-accent-200 pb-6">
           <h2 class="text-xl font-semibold text-accent-900 mb-4">Personal Information</h2>
@@ -49,9 +48,10 @@ const config = getSiteConfig();
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
-                Date of Birth
+                Date of Birth <span class="text-red-500">*</span>
               </label>
-              <input name="dob" type="date" class="input" />
+              <input name="dob" type="date" class="input" aria-describedby="dob-error"/>
+              <p id="dob-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="dob" role="alert"></p>
             </div>
 
             <div>
@@ -125,6 +125,15 @@ const config = getSiteConfig();
               <input name="degree" required class="input" placeholder="" aria-describedby="degree-error" />
               <p id="degree-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="degree" role="alert"></p>
             </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Grade Point Average (GPA) <span class="text-red-500">*</span>
+              </label>
+              <input name="gpa" type="text" required class="input" placeholder="e.g., 3.75 or 85%" aria-describedby="gpa-error" />
+              <p id="gpa-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="gpa" role="alert"></p>
+              <p class="mt-1 text-xs text-accent-500">Enter as decimal (0.0-4.0) or percentage (0-100%)</p>
+            </div>
           </div>
         </div>
 
@@ -142,11 +151,50 @@ const config = getSiteConfig();
               <label class="block text-sm font-medium text-accent-700 mb-2">Job Designation</label>
               <input name="job_designation" class="input" placeholder="" />
             </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">Location</label>
+              <input name="location" class="input" placeholder="City, Country" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">LinkedIn profile link</label>
+              <input name="linkedin" type="url" class="input" placeholder="" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">GitHub profile link</label>
+              <input name="github" type="url" class="input" placeholder="" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">Twitter profile link</label>
+              <input name="twitter" type="url" class="input" placeholder="" />
+            </div>
           </div>
 
           <div class="mt-4">
-            <label class="block text-sm font-medium text-accent-700 mb-2">LinkedIn profile link</label>
-            <input name="linkedin" type="url" class="input" placeholder="" />
+            <label class="block text-sm font-medium text-accent-700 mb-2">Skills</label>
+            <textarea name="skills" rows="2" class="input" placeholder="Separate skills with commas (e.g., JavaScript, React, Node.js, Python)"></textarea>
+            <p class="mt-1 text-xs text-accent-500">List your technical and professional skills</p>
+          </div>
+
+          <div class="mt-4">
+            <label class="block text-sm font-medium text-accent-700 mb-2">Projects</label>
+            <textarea name="projects" rows="3" class="input" placeholder="List your notable projects with brief descriptions"></textarea>
+            <p class="mt-1 text-xs text-accent-500">Describe your key projects and achievements</p>
+          </div>
+
+          <div class="mt-4">
+            <label class="block text-sm font-medium text-accent-700 mb-2">Work Experience</label>
+            <textarea name="work_experience" rows="4" class="input" placeholder="List your work experience with company names, positions, and durations"></textarea>
+            <p class="mt-1 text-xs text-accent-500">Include company, role, duration, and key responsibilities</p>
+          </div>
+
+          <div class="mt-4">
+            <label class="block text-sm font-medium text-accent-700 mb-2">Interests</label>
+            <textarea name="interests" rows="2" class="input" placeholder="Your professional and personal interests"></textarea>
+            <p class="mt-1 text-xs text-accent-500">Share what you're passionate about</p>
           </div>
         </div>
 
@@ -390,6 +438,28 @@ const config = getSiteConfig();
         });
       });
 
+      // Real-time clearing for DOB
+      const dobInput = form.querySelector('input[name="dob"]');
+      if (dobInput) {
+        dobInput.addEventListener('input', function () {
+          clearFieldError('dob');
+        });
+        dobInput.addEventListener('change', function () {
+          clearFieldError('dob');
+        });
+      }
+
+      // Real-time clearing for GPA
+      const gpaInput = form.querySelector('input[name="gpa"]');
+      if (gpaInput) {
+        gpaInput.addEventListener('input', function () {
+          clearFieldError('gpa');
+        });
+        gpaInput.addEventListener('change', function () {
+          clearFieldError('gpa');
+        });
+      }
+
       // Photo upload
       if (photoInput && photoPreview && uploadProgress && progressBar && uploadError && photoUrl) {
         photoInput.addEventListener('change', async function(e) {
@@ -588,6 +658,50 @@ const config = getSiteConfig();
           if (!firstErrorField) firstErrorField = 'mobile';
         }
 
+        // Date of Birth validation
+        // Rules: required, valid date, not in future, age between 16 and 120
+        (function validateDob() {
+          const dobValue = payload.dob ? String(payload.dob).trim() : '';
+          if (!dobValue) {
+            showFieldError('dob', 'Please provide your date of birth');
+            hasErrors = true;
+            if (!firstErrorField) firstErrorField = 'dob';
+          } else {
+            const dobDate = new Date(dobValue);
+            const now = new Date();
+            // invalid date check
+            if (isNaN(dobDate.getTime())) {
+              showFieldError('dob', 'Please enter a valid date');
+              hasErrors = true;
+              if (!firstErrorField) firstErrorField = 'dob';
+            } else {
+              // not in future
+              if (dobDate > now) {
+                showFieldError('dob', 'Date of birth cannot be in the future');
+                hasErrors = true;
+                if (!firstErrorField) firstErrorField = 'dob';
+              } else {
+                // age check
+                const ageDifMs = now - dobDate.getTime();
+                const ageDate = new Date(ageDifMs);
+                const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+                if (age < 16) {
+                  showFieldError('dob', 'You must be at least 16 years old to register');
+                  hasErrors = true;
+                  if (!firstErrorField) firstErrorField = 'dob';
+                } else if (age > 120) {
+                  showFieldError('dob', 'Please enter a realistic date of birth');
+                  hasErrors = true;
+                  if (!firstErrorField) firstErrorField = 'dob';
+                } else {
+                  // valid — ensure payload contains normalized ISO date
+                  payload.dob = dobDate.toISOString().split('T')[0];
+                }
+              }
+            }
+          }
+        })();
+
         // Gender
         const genderChecked = form.querySelector('input[name="gender"]:checked');
         const genderValue = genderChecked ? genderChecked.value : '';
@@ -640,6 +754,53 @@ const config = getSiteConfig();
           hasErrors = true;
           if (!firstErrorField) firstErrorField = 'degree';
         }
+
+        // GPA validation
+        // Rules: required, valid format (decimal 0.0-4.0 or percentage 0-100%)
+        (function validateGpa() {
+          const gpaValue = payload.gpa ? String(payload.gpa).trim() : '';
+          if (!gpaValue) {
+            showFieldError('gpa', 'Please provide your GPA');
+            hasErrors = true;
+            if (!firstErrorField) firstErrorField = 'gpa';
+          } else {
+            // Check if it's a percentage (contains %)
+            const isPercentage = gpaValue.includes('%');
+            let numericValue;
+            
+            if (isPercentage) {
+              // Remove % and parse
+              numericValue = parseFloat(gpaValue.replace('%', '').trim());
+              if (isNaN(numericValue)) {
+                showFieldError('gpa', 'Please enter a valid percentage (e.g., 85%)');
+                hasErrors = true;
+                if (!firstErrorField) firstErrorField = 'gpa';
+              } else if (numericValue < 0 || numericValue > 100) {
+                showFieldError('gpa', 'Percentage must be between 0 and 100');
+                hasErrors = true;
+                if (!firstErrorField) firstErrorField = 'gpa';
+              } else {
+                // Valid percentage - keep as is
+                payload.gpa = numericValue + '%';
+              }
+            } else {
+              // Assume it's a decimal GPA
+              numericValue = parseFloat(gpaValue);
+              if (isNaN(numericValue)) {
+                showFieldError('gpa', 'Please enter a valid GPA (e.g., 3.75)');
+                hasErrors = true;
+                if (!firstErrorField) firstErrorField = 'gpa';
+              } else if (numericValue < 0 || numericValue > 4.0) {
+                showFieldError('gpa', 'GPA must be between 0.0 and 4.0');
+                hasErrors = true;
+                if (!firstErrorField) firstErrorField = 'gpa';
+              } else {
+                // Valid decimal GPA
+                payload.gpa = numericValue.toFixed(2);
+              }
+            }
+          }
+        })();
 
         // Photo
         if (!uploadedPhotoUrl && (!payload.photo_blob_url || String(payload.photo_blob_url).trim() === '')) {
