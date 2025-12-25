@@ -1,9 +1,9 @@
-name: "Test User 4"
+name: "Test User"
 slug: "test-user-4"
-faculty: "Computer Science"
-year: 2020
-short_bio: "This is a test registration..."
-long_bio: "This is a test registration..."
+faculty: "Software Engineering"
+year: 2024
+short_bio: "Passionate software engineer with expertise in full-stack development, machine learning, and cloud technologies."
+long_bio: "I am a passionate software engineer with expertise in full-stack development, machine learning, and cloud technologies. I graduated with honors and has been working on innovative projects that solve real-world problems. In my free time, I enjoy contributing to open-source projects, exploring new technologies, and mentoring aspiring developers."
 photo: "https://ytvf4iagehmrqd9s.public.blob.vercel-storage.com/alumni-photos/1766164456834-7jnicj.jpg"
 email: "test4@example.com"
 mobile: "+91 1234 567 8900"
