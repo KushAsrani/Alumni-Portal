@@ -23,7 +23,7 @@ const config = getSiteConfig();
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
-                Full name <span class="text-red-500">*</span>
+                Full Name <span class="text-red-500">*</span>
               </label>
               <input name="name" required class="input" placeholder="" aria-describedby="name-error" />
               <p id="name-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="name" role="alert"></p>
@@ -91,6 +91,7 @@ const config = getSiteConfig();
                 University/Institution <span class="text-red-500">*</span>
               </label>
               <input name="university" required class="input" placeholder="" aria-describedby="university-error" />
+              <p class="mt-1 text-xs text-accent-500">Enter the name of your university or institution
               <p id="university-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="university" role="alert"></p>
             </div>
 
@@ -99,14 +100,16 @@ const config = getSiteConfig();
                 College Name <span class="text-red-500">*</span>
               </label>
               <input name="college_name" required class="input" placeholder="" aria-describedby="college_name-error" />
+              <p class="mt-1 text-xs text-accent-500">Enter the name of your college</p>
               <p id="college_name-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="college_name" role="alert"></p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
-                Graduation year <span class="text-red-500">*</span>
+                Graduation Year <span class="text-red-500">*</span>
               </label>
               <input name="year" type="number" min="1950" max="2100" required class="input" placeholder="" aria-describedby="year-error" />
+              <p class="mt-1 text-xs text-accent-500">Enter your year of graduation</p>
               <p id="year-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="year" role="alert"></p>
             </div>
 
@@ -115,6 +118,7 @@ const config = getSiteConfig();
                 Faculty / Department <span class="text-red-500">*</span>
               </label>
               <input name="faculty" required class="input" placeholder="" aria-describedby="faculty-error" />
+              <p class="mt-1 text-xs text-accent-500">Enter your field of study or department (e.g., Computer Science, IT, Computer Engineering, etc.)</p> 
               <p id="faculty-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="faculty" role="alert"></p>
             </div>
 
@@ -123,16 +127,17 @@ const config = getSiteConfig();
                 Degree <span class="text-red-500">*</span>
               </label>
               <input name="degree" required class="input" placeholder="" aria-describedby="degree-error" />
+              <p class="mt-1 text-xs text-accent-500">Enter your degree (e.g., B.Sc., MCA, B.Tech, M.Sc., etc.)</p>
               <p id="degree-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="degree" role="alert"></p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
-                Grade Point Average (GPA) <span class="text-red-500">*</span>
+                CGPA or Percentage <span class="text-red-500">*</span>
               </label>
-              <input name="gpa" type="text" required class="input" placeholder="e.g., 3.75 or 85%" aria-describedby="gpa-error" />
+              <input name="gpa" type="text" required class="input" placeholder="" aria-describedby="g pa-error" />
               <p id="gpa-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="gpa" role="alert"></p>
-              <p class="mt-1 text-xs text-accent-500">Enter as decimal (0.0-4.0) or percentage (0-100%)</p>
+              <p class="mt-1 text-xs text-accent-500">Enter CGPA (0.0-10.0) or Percentage (0-100%) as per your graduation marksheet</p>
             </div>
           </div>
         </div>
@@ -145,50 +150,56 @@ const config = getSiteConfig();
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">Current Company</label>
               <input name="company" class="input" placeholder="" />
+              <p class="mt-1 text-xs text-accent-500">Enter the name of your current company or organization</p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">Job Designation</label>
               <input name="job_designation" class="input" placeholder="" />
+              <p class="mt-1 text-xs text-accent-500">Enter your current role or position (e.g., Software Engineer, Web Developer, Data Analyst, etc.)</p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">Location</label>
               <input name="location" class="input" placeholder="City, Country" />
+              <p class="mt-1 text-xs text-accent-500">Enter your current city and country (e.g., Mumbai, India)</p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">LinkedIn profile link</label>
               <input name="linkedin" type="url" class="input" placeholder="" />
+              <p class="mt-1 text-xs text-accent-500">Provide a link to your LinkedIn profile</p>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-accent-700 mb-2">GitHub profile link</label>
+              <label class="block text-sm font-medium text-accent-700 mb-2">GitHub link</label>
               <input name="github" type="url" class="input" placeholder="" />
+              <p class="mt-1 text-xs text-accent-500">Provide a link to your GitHub profile
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-accent-700 mb-2">Twitter profile link</label>
+              <label class="block text-sm font-medium text-accent-700 mb-2">Twitter link</label>
               <input name="twitter" type="url" class="input" placeholder="" />
+              <p class="mt-1 text-xs text-accent-500">Provide a link to your Twitter profile</p>
             </div>
           </div>
 
           <div class="mt-4">
             <label class="block text-sm font-medium text-accent-700 mb-2">Skills</label>
             <textarea name="skills" rows="2" class="input" placeholder="Separate skills with commas (e.g., JavaScript, React, Node.js, Python)"></textarea>
-            <p class="mt-1 text-xs text-accent-500">List your technical and professional skills</p>
+            <p class="mt-1 text-xs text-accent-500">List your technical and professional skills. Separate skills with commas (e.g., JavaScript, React, Node.js, Python)</p>
           </div>
 
           <div class="mt-4">
             <label class="block text-sm font-medium text-accent-700 mb-2">Projects</label>
             <textarea name="projects" rows="3" class="input" placeholder="List your notable projects with brief descriptions"></textarea>
-            <p class="mt-1 text-xs text-accent-500">Describe your key projects and achievements</p>
+            <p class="mt-1 text-xs text-accent-500">List your notable projects with brief descriptions. Describe your key projects and achievements</p>
           </div>
 
           <div class="mt-4">
             <label class="block text-sm font-medium text-accent-700 mb-2">Work Experience</label>
             <textarea name="work_experience" rows="4" class="input" placeholder="List your work experience with company names, positions, and durations"></textarea>
-            <p class="mt-1 text-xs text-accent-500">Include company, role, duration, and key responsibilities</p>
+            <p class="mt-1 text-xs text-accent-500">List your work experience with company names, positions, and durations. Include company, role, duration, and key responsibilities</p>
           </div>
 
           <div class="mt-4">
@@ -756,11 +767,11 @@ const config = getSiteConfig();
         }
 
         // GPA validation
-        // Rules: required, valid format (decimal 0.0-4.0 or percentage 0-100%)
+        // Rules: required, valid format (decimal 0.0-10.0 or percentage 0-100%)
         (function validateGpa() {
           const gpaValue = payload.gpa ? String(payload.gpa).trim() : '';
           if (!gpaValue) {
-            showFieldError('gpa', 'Please provide your GPA');
+            showFieldError('gpa', 'Please provide your CGPA');
             hasErrors = true;
             if (!firstErrorField) firstErrorField = 'gpa';
           } else {
@@ -787,11 +798,11 @@ const config = getSiteConfig();
               // Assume it's a decimal GPA
               numericValue = parseFloat(gpaValue);
               if (isNaN(numericValue)) {
-                showFieldError('gpa', 'Please enter a valid GPA (e.g., 3.75)');
+                showFieldError('gpa', 'Please enter a valid CGPA');
                 hasErrors = true;
                 if (!firstErrorField) firstErrorField = 'gpa';
-              } else if (numericValue < 0 || numericValue > 4.0) {
-                showFieldError('gpa', 'GPA must be between 0.0 and 4.0');
+              } else if (numericValue < 0 || numericValue > 10.0) {
+                showFieldError('gpa', 'CGPA must be between 0.0 and 10.0');
                 hasErrors = true;
                 if (!firstErrorField) firstErrorField = 'gpa';
               } else {

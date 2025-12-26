@@ -59,15 +59,23 @@ export async function POST({ request }: APIContext) {
       degree,
       university,
       college_name,
+      gpa,
       job_designation,
       company,
-      linkedin, 
+      location,
+      linkedin,
+      github,
+      twitter,
+      skills,
+      projects,
+      work_experience,
+      interests,
       photo_blob_url,
       degree_certificate_url,
       short_bio 
     } = body;
 
-    console.log('Parsed data:', { name, email, mobile, gender, university });
+    console.log('Parsed data:', { name, email, mobile, gender, university, gpa, location });
 
     // Validate required fields
     if (!name || !email) {
@@ -160,7 +168,7 @@ export async function POST({ request }: APIContext) {
         return new Response(
           JSON.stringify({
             success: false,
-            message: 'Name or email is already registered please use a different name or email'
+            message: 'Name or email is already registered. Please use a different name or email'
           }),
           {
             status: 409,
@@ -173,10 +181,13 @@ export async function POST({ request }: APIContext) {
       const result = await client.query(
         `INSERT INTO alumni_registrations (
           name, email, mobile, dob, gender, address,
-          year, faculty, degree, university, college_name, job_designation, company,
-          linkedin, photo_blob_url, degree_certificate_url, short_bio
+          year, faculty, degree, university, college_name, gpa,
+          job_designation, company, location,
+          linkedin, github, twitter,
+          skills, projects, work_experience, interests,
+          photo_blob_url, degree_certificate_url, short_bio
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
         RETURNING id, name, email, created_at`,
         [
           name, 
@@ -190,9 +201,17 @@ export async function POST({ request }: APIContext) {
           degree || null,
           university || null,
           college_name || null,
+          gpa || null,
           job_designation || null,
           company || null,
-          linkedin || null, 
+          location || null,
+          linkedin || null,
+          github || null,
+          twitter || null,
+          skills || null,
+          projects || null,
+          work_experience || null,
+          interests || null,
           photo_blob_url || null,
           degree_certificate_url || null,
           short_bio || null
@@ -275,8 +294,12 @@ export async function GET({ request }: APIContext) {
     const registrations = await client.query(
       `SELECT 
         id, name, email, mobile, dob, gender, address,
-        year, faculty, degree, university, college_name, job_designation, company,
-        linkedin, photo_blob_url, degree_certificate_url, short_bio, status, created_at
+        year, faculty, degree, university, college_name, gpa,
+        job_designation, company, location,
+        linkedin, github, twitter,
+        skills, projects, work_experience, interests,
+        photo_blob_url, degree_certificate_url, short_bio, 
+        status, created_at
        FROM alumni_registrations
        ORDER BY created_at DESC`
     );
