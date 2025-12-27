@@ -74,37 +74,57 @@ export async function POST({ request }: APIContext) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    // Create YAML content
-    const yamlContent = `name: "${registration.name}"
+    // Helper function to safely format YAML strings
+    const formatYaml = (str: string | null | undefined): string => {
+      if (!str) return '';
+      // Remove any existing quotes and trim
+      const cleaned = str.replace(/^["']|["']$/g, '').trim();
+      // Escape internal quotes
+      const escaped = cleaned.replace(/"/g, '\\"');
+      return escaped;
+    };
+
+    // Parse skills into array format if exists
+    const skillsArray = registration.skills 
+      ? registration.skills.split(',').map((s: string) => `"${s.trim()}"`).join(', ')
+      : '';
+
+    // Parse interests into array format if exists
+    const interestsArray = registration.interests
+      ? registration.interests.split(',').map((s: string) => `"${s.trim()}"`).join(', ')
+      : '';
+
+    // Create YAML content with all fields
+    const yamlContent = `name: "${formatYaml(registration.name)}"
 slug: "${slug}"
-faculty: "${registration.faculty || 'N/A'}"
+faculty: "${formatYaml(registration.faculty) || 'N/A'}"
 year: ${registration.year || 'null'}
-short_bio: "${registration.short_bio || ''}"
-long_bio: "${registration.short_bio || ''}"
+short_bio: "${formatYaml(registration.short_bio)}"
+long_bio: "${formatYaml(registration.short_bio)}"
 photo: "${registration.photo_blob_url || '/images/avatars/default-avatar.svg'}"
 email: "${registration.email}"
 mobile: "${registration.mobile || ''}"
-location: "${registration.address || ''}"
-company: "${registration.company || ''}"
-position: "${registration.job_designation || ''}"
-skills: []
+location: "${formatYaml(registration.location)}"
+company: "${formatYaml(registration.company)}"
+position: "${formatYaml(registration.job_designation)}"
+skills: [${skillsArray}]
 projects: []
 work_experience:
-  - company: "${registration.company || 'N/A'}"
-    position: "${registration.job_designation || 'N/A'}"
+  - company: "${formatYaml(registration.company) || 'N/A'}"
+    position: "${formatYaml(registration.job_designation) || 'N/A'}"
     duration: "${registration.year || ''} - Present"
-    description: ""
+    description: "${formatYaml(registration.work_experience)}"
 education:
-  - degree: "${registration.degree || ''}"
-    institution: "${registration.university || ''}"
+  - degree: "${formatYaml(registration.degree)}"
+    institution: "${formatYaml(registration.university)}"
     year: ${registration.year || 'null'}
-    gpa: ""
+    gpa: "${formatYaml(registration.gpa)}"
 achievements: []
-interests: []
+interests: [${interestsArray}]
 social:
-  linkedin: "${registration.linkedin || ''}"
-  twitter: ""
-  github: ""
+  linkedin: "${formatYaml(registration.linkedin)}"
+  twitter: "${formatYaml(registration.twitter)}"
+  github: "${formatYaml(registration.github)}"
   portfolio: ""
 `;
 
@@ -124,7 +144,7 @@ social:
       return new Response(
         JSON.stringify({
           success: false,
-          message: 'Profile already exists for this alumni'
+          message: 'Profile already exists for this alumni. Delete the existing file first if you want to regenerate.'
         }),
         { status: 409, headers: { 'Content-Type': 'application/json' } }
       );

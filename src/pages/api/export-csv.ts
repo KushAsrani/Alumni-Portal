@@ -43,8 +43,10 @@ export async function GET({ request }: APIContext) {
     const registrations = await client.query(
       `SELECT 
         id, name, email, mobile, dob, gender, address,
-        year, faculty, degree, university, college_name, 
-        job_designation, company, linkedin, 
+        year, faculty, degree, university, college_name, gpa,
+        job_designation, company, location,
+        linkedin, github, twitter,
+        skills, projects, work_experience, interests,
         photo_blob_url, degree_certificate_url, short_bio, 
         status, created_at, updated_at
        FROM alumni_registrations
@@ -56,8 +58,10 @@ export async function GET({ request }: APIContext) {
     // Generate CSV
     const headers = [
       'ID', 'Name', 'Email', 'Mobile', 'Date of Birth', 'Gender', 'Address',
-      'Graduation Year', 'Faculty', 'Degree', 'University', 'College',
-      'Job Designation', 'Company', 'LinkedIn',
+      'Graduation Year', 'Faculty', 'Degree', 'University', 'College', 'GPA',
+      'Job Designation', 'Company', 'Location',
+      'LinkedIn', 'GitHub', 'Twitter',
+      'Skills', 'Projects', 'Work Experience', 'Interests',
       'Photo URL', 'Certificate URL', 'Short Bio',
       'Status', 'Created At', 'Updated At'
     ];
@@ -78,9 +82,17 @@ export async function GET({ request }: APIContext) {
         escapeCSV(row.degree),
         escapeCSV(row.university),
         escapeCSV(row.college_name),
+        escapeCSV(row.gpa),
         escapeCSV(row.job_designation),
         escapeCSV(row.company),
+        escapeCSV(row.location),
         escapeCSV(row.linkedin),
+        escapeCSV(row.github),
+        escapeCSV(row.twitter),
+        escapeCSV(row.skills),
+        escapeCSV(row.projects),
+        escapeCSV(row.work_experience),
+        escapeCSV(row.interests),
         escapeCSV(row.photo_blob_url),
         escapeCSV(row.degree_certificate_url),
         escapeCSV(row.short_bio),
