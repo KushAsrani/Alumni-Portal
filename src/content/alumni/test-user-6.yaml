@@ -1,0 +1,36 @@
+name: "Test User 6"
+slug: "test-user-6"
+faculty: "Computer Science"
+year: 2024
+short_bio: "This is a test registration..."
+long_bio: "This is a test registration..."
+photo: "https://ytvf4iagehmrqd9s.public.blob.vercel-storage.com/alumni-photos/1766754097513-1rhrs.jpg"
+email: "test6@example.com"
+mobile: "+91 1234 567 8900"
+location: "Mumbai, India"
+company: "PrepSOM"
+position: "Software Engineer"
+skills: ["Python", "Java", "JavaScript", "React", "Node.js", "AWS", "AI", "Docker"]
+projects: []
+work_experience:
+  - company: "PrepSOM"
+    position: "Software Engineer"
+    duration: "2025 - Present"
+    description: "Software Engineer - PrepSOM 2025 - Present
+Full-stack development
+
+Software Engineer - StartupXYZ
+2020 - 2022
+Leading development of cloud-native applications and AI solutions"
+education:
+  - degree: "B.Sc."
+    institution: "Mumbai University"
+    year: 2024
+    gpa: "8.00"
+achievements: []
+interests: ["Web Development", "AI", "Cloud Computing", "DevOps"]
+social:
+  linkedin: "https://linkedin.com/in/testuser"
+  twitter: "https://twitter.com/testuser"
+  github: "https://github.com/testuser"
+  portfolio: ""
