@@ -74,59 +74,99 @@ export async function POST({ request }: APIContext) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    // Helper function to safely format YAML strings
-    const formatYaml = (str: string | null | undefined): string => {
-      if (!str) return '';
-      // Remove any existing quotes and trim
-      const cleaned = str.replace(/^["']|["']$/g, '').trim();
+    // Helper function to format YAML values (escape quotes and handle special characters)
+    function formatYaml(value: any): string {
+      if (value === null || value === undefined) return '';
+      const str = String(value);
+      // Remove any existing quotes first
+      const cleaned = str.replace(/^["']|["']$/g, '');
       // Escape internal quotes
-      const escaped = cleaned.replace(/"/g, '\\"');
-      return escaped;
+      return cleaned.replace(/"/g, '\\"');
+    }
+
+    // Helper function to build social object with only valid URLs
+    const buildSocialObject = () => {
+      const social: any = {};
+      
+      if (registration.linkedin && registration.linkedin.trim()) {
+        social.linkedin = formatYaml(registration.linkedin);
+      }
+      if (registration.twitter && registration.twitter.trim()) {
+        social.twitter = formatYaml(registration.twitter);
+      }
+      if (registration.github && registration.github.trim()) {
+        social.github = formatYaml(registration.github);
+      }
+      if (registration.portfolio && registration.portfolio.trim()) {
+        social.portfolio = formatYaml(registration.portfolio);
+      }
+      
+      return social;
     };
 
-    // Parse skills into array format if exists
+    const socialObj = buildSocialObject();
+    
+    // Format social section - only include fields that have values
+    let socialSection = '';
+    if (Object.keys(socialObj).length > 0) {
+      socialSection = 'social:\n';
+      if (socialObj.portfolio) socialSection += `  portfolio: "${socialObj.portfolio}"\n`;
+      if (socialObj.linkedin) socialSection += `  linkedin: "${socialObj.linkedin}"\n`;
+      if (socialObj.twitter) socialSection += `  twitter: "${socialObj.twitter}"\n`;
+      if (socialObj.github) socialSection += `  github: "${socialObj.github}"\n`;
+    }
+
+    // Parse skills and interests arrays, filtering out empty values
     const skillsArray = registration.skills 
-      ? registration.skills.split(',').map((s: string) => `"${s.trim()}"`).join(', ')
-      : '';
+      ? registration.skills.split(',').map((s: string) => s.trim()).filter((s: string) => s)
+      : [];
+    
+    const interestsArray = registration.interests 
+      ? registration.interests.split(',').map((i: string) => i.trim()).filter((i: string) => i)
+      : [];
 
-    // Parse interests into array format if exists
-    const interestsArray = registration.interests
-      ? registration.interests.split(',').map((s: string) => `"${s.trim()}"`).join(', ')
-      : '';
+    // Parse projects from text (each line is a project)
+    // Only include url field if it's a valid URL, otherwise omit it
+    const projectsArray = registration.projects 
+      ? registration.projects.split('\n').filter((p: string) => p.trim()).map((p: string) => {
+          const project: any = {
+            name: p.trim(),
+            description: ''
+          };
+          // Only add url if we have a valid one (for future use)
+          // For now, omit it entirely to match schema
+          return project;
+        })
+      : [];
 
-    // Create YAML content with all fields
+    // Generate YAML content - properly handle optional fields
     const yamlContent = `name: "${formatYaml(registration.name)}"
 slug: "${slug}"
-faculty: "${formatYaml(registration.faculty) || 'N/A'}"
+faculty: "${formatYaml(registration.faculty || 'N/A')}"
 year: ${registration.year || 'null'}
-short_bio: "${formatYaml(registration.short_bio)}"
-long_bio: "${formatYaml(registration.short_bio)}"
+short_bio: "${formatYaml(registration.short_bio || '')}"
+long_bio: "${formatYaml(registration.short_bio || '')}"
 photo: "${registration.photo_blob_url || '/images/avatars/default-avatar.svg'}"
 email: "${registration.email}"
-mobile: "${registration.mobile || ''}"
-location: "${formatYaml(registration.location)}"
-company: "${formatYaml(registration.company)}"
-position: "${formatYaml(registration.job_designation)}"
-skills: [${skillsArray}]
-projects: []
+mobile: "${formatYaml(registration.mobile || '')}"
+location: "${formatYaml(registration.location || '')}"
+company: "${formatYaml(registration.company || '')}"
+position: "${formatYaml(registration.job_designation || '')}"
+skills: ${JSON.stringify(skillsArray)}
+projects: ${JSON.stringify(projectsArray)}
 work_experience:
-  - company: "${formatYaml(registration.company) || 'N/A'}"
-    position: "${formatYaml(registration.job_designation) || 'N/A'}"
+  - company: "${formatYaml(registration.company || 'N/A')}"
+    position: "${formatYaml(registration.job_designation || 'N/A')}"
     duration: "${registration.year || ''} - Present"
-    description: "${formatYaml(registration.work_experience)}"
+    description: "${formatYaml(registration.work_experience || '')}"
 education:
-  - degree: "${formatYaml(registration.degree)}"
-    institution: "${formatYaml(registration.university)}"
+  - degree: "${formatYaml(registration.degree && registration.faculty ? `${registration.degree} ${registration.faculty}` : (registration.degree || 'N/A'))}"
+    institution: "${formatYaml(registration.university || '')}"
     year: ${registration.year || 'null'}
-    gpa: "${formatYaml(registration.gpa)}"
+    gpa: "${formatYaml(registration.gpa || '')}"
 achievements: []
-interests: [${interestsArray}]
-social:
-  linkedin: "${formatYaml(registration.linkedin)}"
-  twitter: "${formatYaml(registration.twitter)}"
-  github: "${formatYaml(registration.github)}"
-  portfolio: ""
-`;
+interests: ${JSON.stringify(interestsArray)}
+${socialSection}`.trim() + '\n';
 
     // Save to file
     const alumniDir = path.join(process.cwd(), 'src', 'content', 'alumni');
@@ -144,7 +184,7 @@ social:
       return new Response(
         JSON.stringify({
           success: false,
-          message: 'Profile already exists for this alumni. Delete the existing file first if you want to regenerate.'
+          message: 'Profile already exists for this alumni'
         }),
         { status: 409, headers: { 'Content-Type': 'application/json' } }
       );
