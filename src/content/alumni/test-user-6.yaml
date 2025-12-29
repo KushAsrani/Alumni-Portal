@@ -10,27 +10,25 @@ mobile: "+91 1234 567 8900"
 location: "Mumbai, India"
 company: "PrepSOM"
 position: "Software Engineer"
-skills: ["Python", "Java", "JavaScript", "React", "Node.js", "AWS", "AI", "Docker"]
-projects: []
+skills: ["Python","Java","JavaScript","React","Node.js","AWS","AI","Docker"]
+projects: [{"name":"AI-Powered Chatbot","description":""},{"name":"Developed an intelligent chatbot using natural language processing","description":""},{"name":"Cloud Migration Tool","description":""},{"name":"Built a tool to automate cloud infrastructure migration","description":""}]
 work_experience:
   - company: "PrepSOM"
     position: "Software Engineer"
     duration: "2025 - Present"
-    description: "Software Engineer - PrepSOM 2025 - Present
-Full-stack development
-
-Software Engineer - StartupXYZ
-2020 - 2022
-Leading development of cloud-native applications and AI solutions"
+    description: "Software Engineer - PrepSOM"
+  - company: StartupXYZ
+    position: "Software Engineer"
+    duration: "2020 - 2022"
+    description: "Leading development of cloud-native applications and AI solutions"
 education:
-  - degree: "B.Sc."
+  - degree: "B.Sc. Computer Science"
     institution: "Mumbai University"
     year: 2024
     gpa: "8.00"
 achievements: []
-interests: ["Web Development", "AI", "Cloud Computing", "DevOps"]
+interests: ["Web Development","AI","Cloud Computing","DevOps"]
 social:
   linkedin: "https://linkedin.com/in/testuser"
   twitter: "https://twitter.com/testuser"
   github: "https://github.com/testuser"
-  portfolio: ""
