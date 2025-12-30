@@ -1,10 +1,10 @@
 export const prerender = false;
 
 import type { APIContext } from 'astro';
-import pg from 'pg';
+import { connectToDatabase } from '../../lib/mongodb';
+import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
-const { Client } = pg;
 
 export async function POST({ request }: APIContext) {
   try {
@@ -28,45 +28,19 @@ export async function POST({ request }: APIContext) {
       );
     }
 
-    const connectionString = 
-      import.meta.env.POSTGRES_URL_NON_POOLING || 
-      import.meta.env.POSTGRES_PRISMA_URL || 
-      import.meta.env.POSTGRES_URL ||
-      import.meta.env.DATABASE_URL ||
-      process.env.POSTGRES_URL_NON_POOLING || 
-      process.env.POSTGRES_PRISMA_URL || 
-      process.env.POSTGRES_URL ||
-      process.env.DATABASE_URL;
+    // Connect to MongoDB
+    const { db } = await connectToDatabase();
+    const collection = db.collection('alumni_registrations');
 
-    if (!connectionString) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Database configuration error' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    // Find the registration
+    const registration = await collection.findOne({ _id: new ObjectId(id) });
 
-    const client = new Client({
-      connectionString: connectionString,
-      ssl: { rejectUnauthorized: false }
-    });
-
-    await client.connect();
-
-    const result = await client.query(
-      'SELECT * FROM alumni_registrations WHERE id = $1',
-      [id]
-    );
-
-    await client.end();
-
-    if (result.rows.length === 0) {
+    if (!registration) {
       return new Response(
         JSON.stringify({ success: false, message: 'Registration not found' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    const registration = result.rows[0];
 
     // Generate slug from name
     const slug = registration.name
@@ -74,13 +48,11 @@ export async function POST({ request }: APIContext) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    // Helper function to format YAML values (escape quotes and handle special characters)
+    // Helper function to format YAML values
     function formatYaml(value: any): string {
       if (value === null || value === undefined) return '';
       const str = String(value);
-      // Remove any existing quotes first
       const cleaned = str.replace(/^["']|["']$/g, '');
-      // Escape internal quotes
       return cleaned.replace(/"/g, '\\"');
     }
 
@@ -106,7 +78,7 @@ export async function POST({ request }: APIContext) {
 
     const socialObj = buildSocialObject();
     
-    // Format social section - only include fields that have values
+    // Format social section
     let socialSection = '';
     if (Object.keys(socialObj).length > 0) {
       socialSection = 'social:\n';
@@ -116,7 +88,7 @@ export async function POST({ request }: APIContext) {
       if (socialObj.github) socialSection += `  github: "${socialObj.github}"\n`;
     }
 
-    // Parse skills and interests arrays, filtering out empty values
+    // Parse arrays
     const skillsArray = registration.skills 
       ? registration.skills.split(',').map((s: string) => s.trim()).filter((s: string) => s)
       : [];
@@ -125,21 +97,14 @@ export async function POST({ request }: APIContext) {
       ? registration.interests.split(',').map((i: string) => i.trim()).filter((i: string) => i)
       : [];
 
-    // Parse projects from text (each line is a project)
-    // Only include url field if it's a valid URL, otherwise omit it
     const projectsArray = registration.projects 
-      ? registration.projects.split('\n').filter((p: string) => p.trim()).map((p: string) => {
-          const project: any = {
-            name: p.trim(),
-            description: ''
-          };
-          // Only add url if we have a valid one (for future use)
-          // For now, omit it entirely to match schema
-          return project;
-        })
+      ? registration.projects.split('\n').filter((p: string) => p.trim()).map((p: string) => ({
+          name: p.trim(),
+          description: ''
+        }))
       : [];
 
-    // Generate YAML content - properly handle optional fields
+    // Generate YAML content
     const yamlContent = `name: "${formatYaml(registration.name)}"
 slug: "${slug}"
 faculty: "${formatYaml(registration.faculty || 'N/A')}"
@@ -160,7 +125,7 @@ work_experience:
     duration: "${registration.year || ''} - Present"
     description: "${formatYaml(registration.work_experience || '')}"
 education:
-  - degree: "${formatYaml(registration.degree && registration.faculty ? `${registration.degree} ${registration.faculty}` : (registration.degree || 'N/A'))}"
+  - degree: "${formatYaml(registration.degree && registration.faculty ? `${registration.degree} ${registration.faculty}` : 'N/A')}"
     institution: "${formatYaml(registration.university || '')}"
     year: ${registration.year || 'null'}
     gpa: "${formatYaml(registration.gpa || '')}"
@@ -171,7 +136,6 @@ ${socialSection}`.trim() + '\n';
     // Save to file
     const alumniDir = path.join(process.cwd(), 'src', 'content', 'alumni');
     
-    // Ensure directory exists
     if (!fs.existsSync(alumniDir)) {
       fs.mkdirSync(alumniDir, { recursive: true });
     }
@@ -179,7 +143,6 @@ ${socialSection}`.trim() + '\n';
     const fileName = `${slug}.yaml`;
     const filePath = path.join(alumniDir, fileName);
 
-    // Check if file already exists
     if (fs.existsSync(filePath)) {
       return new Response(
         JSON.stringify({
