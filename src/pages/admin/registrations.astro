@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 
-import Layout from '../../layouts/Layout.astro';
+import Layout from "../../layouts/Layout.astro";
 ---
 
 <Layout title="Admin - Alumni Registrations">
@@ -117,7 +117,7 @@ import Layout from '../../layouts/Layout.astro';
       <div id="filterPanel" class="hidden mb-6 bg-white rounded-2xl shadow-sm border border-accent-100 p-6">
         <h3 class="text-lg font-semibold mb-4">Filter Registrations</h3>
         <div class="flex flex-wrap gap-4">
-          <button class="filter-btn" data-filter="all">All</button>
+          <button class="filter-btn active" data-filter="all">All</button>
           <button class="filter-btn" data-filter="pending">Pending</button>
           <button class="filter-btn" data-filter="approved">Approved</button>
           <button class="filter-btn" data-filter="rejected">Rejected</button>
@@ -185,21 +185,21 @@ import Layout from '../../layouts/Layout.astro';
     }
   </style>
 
-  <script lang="js">
+  <script>
     let apiKey = '';
-    let allRegistrations = [];
+    let allRegistrations: any[] = [];
     let currentFilter = 'all';
-    let selectedIds = [];
+    let selectedIds: string[] = [];
 
     // Check for stored API key
     const storedKey = sessionStorage.getItem('adminApiKey');
     
     if (!storedKey) {
-      apiKey = prompt('Enter Admin API Key:');
+      apiKey = prompt('Enter Admin API Key:') || '';
       if (!apiKey) {
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('error').classList.remove('hidden');
-        document.getElementById('errorMessage').textContent = 'API key is required';
+        document.getElementById('loading')!.classList.add('hidden');
+        document.getElementById('error')!.classList.remove('hidden');
+        document.getElementById('errorMessage')!.textContent = 'API key is required';
       } else {
         sessionStorage.setItem('adminApiKey', apiKey);
         loadRegistrations();
@@ -210,9 +210,9 @@ import Layout from '../../layouts/Layout.astro';
     }
 
     async function loadRegistrations() {
-      const loading = document.getElementById('loading');
-      const error = document.getElementById('error');
-      const container = document.getElementById('registrationsContainer');
+      const loading = document.getElementById('loading')!;
+      const error = document.getElementById('error')!;
+      const container = document.getElementById('registrationsContainer')!;
       
       loading.classList.remove('hidden');
       error.classList.add('hidden');
@@ -244,23 +244,23 @@ import Layout from '../../layouts/Layout.astro';
         } else {
           throw new Error(result.message);
         }
-      } catch (err) {
+      } catch (err: any) {
         loading.classList.add('hidden');
         error.classList.remove('hidden');
-        document.getElementById('errorMessage').textContent = err.message;
+        document.getElementById('errorMessage')!.textContent = err.message;
       }
     }
 
-    function updateStats(data) {
-      document.getElementById('totalCount').textContent = data.length.toString();
-      document.getElementById('pendingCount').textContent = data.filter(r => r.status === 'pending').length.toString();
-      document.getElementById('approvedCount').textContent = data.filter(r => r.status === 'approved').length.toString();
-      document.getElementById('rejectedCount').textContent = data.filter(r => r.status === 'rejected').length.toString();
+    function updateStats(data: any[]) {
+      document.getElementById('totalCount')!.textContent = data.length.toString();
+      document.getElementById('pendingCount')!.textContent = data.filter(r => r.status === 'pending').length.toString();
+      document.getElementById('approvedCount')!.textContent = data.filter(r => r.status === 'approved').length.toString();
+      document.getElementById('rejectedCount')!.textContent = data.filter(r => r.status === 'rejected').length.toString();
     }
 
-    function displayRegistrations(data) {
-      const container = document.getElementById('registrationsContainer');
-      const noResults = document.getElementById('noResults');
+    function displayRegistrations(data: any[]) {
+      const container = document.getElementById('registrationsContainer')!;
+      const noResults = document.getElementById('noResults')!;
 
       if (data.length === 0) {
         container.classList.add('hidden');
@@ -274,7 +274,7 @@ import Layout from '../../layouts/Layout.astro';
       container.innerHTML = data.map(reg => `
         <div class="bg-white rounded-2xl shadow-sm border border-accent-100 p-6 hover:shadow-lg transition-shadow">
           <div class="flex flex-col lg:flex-row gap-6">
-            <!-- Checkbox for bulk selection -->
+            <!-- Checkbox -->
             <div class="flex-shrink-0 flex items-start">
               <input 
                 type="checkbox" 
@@ -289,7 +289,7 @@ import Layout from '../../layouts/Layout.astro';
               ${reg.photo_blob_url ? 
                 `<img src="${reg.photo_blob_url}" alt="${reg.name}" class="w-24 h-24 rounded-full object-cover border-4 border-accent-100" />` :
                 `<div class="w-24 h-24 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white font-bold text-2xl border-4 border-accent-100">
-                  ${reg.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  ${reg.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                 </div>`
               }
             </div>
@@ -316,7 +316,8 @@ import Layout from '../../layouts/Layout.astro';
                   <p class="text-sm text-accent-500">Education</p>
                   <p class="text-accent-900 font-medium">${reg.degree || 'N/A'} ${reg.faculty || ''}</p>
                   <p class="text-sm text-accent-600">${reg.university || 'N/A'} - ${reg.college_name || 'N/A'}</p>
-                  <p class="text-sm text-accent-500">Class of ${reg.year || 'N/A'} ${reg.gpa ? `| CGPA: ${reg.gpa}` : ''}</p>
+                  <p class="text-sm text-accent-500">Class of ${reg.year || 'N/A'}</p>
+                  ${reg.gpa ? `<p class="text-sm text-accent-500">CGPA: ${reg.gpa}</p>` : ''}
                 </div>
                 <div>
                   <p class="text-sm text-accent-500">Professional</p>
@@ -327,7 +328,7 @@ import Layout from '../../layouts/Layout.astro';
               </div>
 
               <div class="flex flex-wrap gap-2">
-                <button onclick="viewDetails(${reg.id})" class="btn btn-outline btn-sm">
+                <button onclick="viewDetails('${reg.id}')" class="btn btn-outline btn-sm">
                   <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -336,13 +337,13 @@ import Layout from '../../layouts/Layout.astro';
                 </button>
                 
                 ${reg.status === 'pending' ? `
-                  <button onclick="updateStatus(${reg.id}, 'approved')" class="btn btn-sm bg-green-500 hover:bg-green-600 text-white">
+                  <button onclick="updateStatus('${reg.id}', 'approved')" class="btn btn-sm bg-green-500 hover:bg-green-600 text-white">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
                     Approve
                   </button>
-                  <button onclick="updateStatus(${reg.id}, 'rejected')" class="btn btn-sm bg-red-500 hover:bg-red-600 text-white">
+                  <button onclick="updateStatus('${reg.id}', 'rejected')" class="btn btn-sm bg-red-500 hover:bg-red-600 text-white">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -351,19 +352,19 @@ import Layout from '../../layouts/Layout.astro';
                 ` : ''}
                 
                 ${reg.status === 'approved' ? `
-                  <button onclick="generateProfile(${reg.id})" class="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white">
+                  <button onclick="generateProfile('${reg.id}')" class="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     Generate Profile
                   </button>
-                  <button onclick="updateStatus(${reg.id}, 'rejected')" class="btn btn-sm btn-outline text-red-600 border-red-600 hover:bg-red-600 hover:text-white">
+                  <button onclick="updateStatus('${reg.id}', 'rejected')" class="btn btn-sm btn-outline text-red-600 border-red-600 hover:bg-red-600 hover:text-white">
                     Revoke
                   </button>
                 ` : ''}
                 
                 ${reg.status === 'rejected' ? `
-                  <button onclick="updateStatus(${reg.id}, 'approved')" class="btn btn-sm bg-green-500 hover:bg-green-600 text-white">
+                  <button onclick="updateStatus('${reg.id}', 'approved')" class="btn btn-sm bg-green-500 hover:bg-green-600 text-white">
                     Approve
                   </button>
                 ` : ''}
@@ -379,12 +380,12 @@ import Layout from '../../layouts/Layout.astro';
       });
     }
 
-    window.viewDetails = function(id) {
+    (window as any).viewDetails = function(id: string) {
       const reg = allRegistrations.find(r => r.id === id);
       if (!reg) return;
 
-      const modal = document.getElementById('detailsModal');
-      const content = document.getElementById('modalContent');
+      const modal = document.getElementById('detailsModal')!;
+      const content = document.getElementById('modalContent')!;
 
       content.innerHTML = `
         <div class="space-y-6">
@@ -410,7 +411,7 @@ import Layout from '../../layouts/Layout.astro';
               <div><span class="text-accent-500">Faculty:</span> <span class="font-medium">${reg.faculty || 'N/A'}</span></div>
               <div><span class="text-accent-500">Degree:</span> <span class="font-medium">${reg.degree || 'N/A'}</span></div>
               <div><span class="text-accent-500">Year:</span> <span class="font-medium">${reg.year || 'N/A'}</span></div>
-              <div><span class="text-accent-500">GPA:</span> <span class="font-medium">${reg.gpa || 'N/A'}</span></div>
+              <div><span class="text-accent-500">CGPA:</span> <span class="font-medium">${reg.gpa || 'N/A'}</span></div>
             </div>
           </div>
 
@@ -427,285 +428,278 @@ import Layout from '../../layouts/Layout.astro';
             </div>
           </div>
 
-          <!-- Skills -->
-          ${reg.skills ? `
+          <!-- Skills & Interests -->
+          ${reg.skills || reg.interests ? `
           <div>
-            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Skills</h3>
-            <p class="text-accent-700">${reg.skills}</p>
-          </div>
-          ` : ''}
+            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Skills & Interests</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${reg.skills ? `<div><span class="text-accent-500">Skills:</span> <span class="font-medium">${reg.skills}</span></div>` : ''}
+              ${reg.interests ? `<div><span class="text-accent-500">Interests:</span> <span class="font-medium">${reg.interests}</span></div>` : ''}
+            </div>
+            ` : ''}
 
           <!-- Projects -->
-          ${reg.projects ? `
-          <div>
-            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Projects</h3>
-            <p class="text-accent-700 whitespace-pre-wrap">${reg.projects}</p>
-          </div>
-          ` : ''}
+      ${reg.projects || reg.work_experience ? `
+      <div>
+        <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Projects</h3>
+        ${reg.projects ? `<div class="mb-4"><p class="text-accent-700 whitespace-pre-wrap">${reg.projects}</p></div>` : ''}
+      </div>
+      ` : ''}
 
-          <!-- Work Experience -->
-          ${reg.work_experience ? `
-          <div>
-            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Work Experience</h3>
-            <p class="text-accent-700 whitespace-pre-wrap">${reg.work_experience}</p>
-          </div>
-          ` : ''}
+      <!-- Work Experience -->
+      ${reg.work_experience ? `
+      <div>
+        <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Work Experience</h3>
+        <p class="text-accent-700 whitespace-pre-wrap">${reg.work_experience}</p></div>
+      ` : ''}<br>
 
-          <!-- Interests -->
-          ${reg.interests ? `
+      <!-- Documents -->
+      <div>
+        <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Documents</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Interests</h3>
-            <p class="text-accent-700">${reg.interests}</p>
+            <span class="text-accent-900">Profile Photo:</span><br>
+            ${reg.photo_blob_url ? `<a href="${reg.photo_blob_url}" target="_blank" class="text-primary-600 hover:underline">View Photo</a>` : 'Not uploaded'}
           </div>
-          ` : ''}
-
-          <!-- Documents -->
           <div>
-            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Documents</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <span class="text-accent-500">Profile Photo:</span><br>
-                ${reg.photo_blob_url ? `<a href="${reg.photo_blob_url}" target="_blank" class="text-primary-600 hover:underline">View Photo</a>` : 'Not uploaded'}
-              </div>
-              <div>
-                <span class="text-accent-500">Degree Certificate:</span><br>
-                ${reg.degree_certificate_url ? `<a href="${reg.degree_certificate_url}" target="_blank" class="text-primary-600 hover:underline">View Certificate</a>` : 'Not uploaded'}
-              </div>
-            </div>
-          </div>
-
-          <!-- Bio -->
-          ${reg.short_bio ? `
-          <div>
-            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Short Bio</h3>
-            <p class="text-accent-700">${reg.short_bio}</p>
-          </div>
-          ` : ''}
-
-          <!-- Metadata -->
-          <div>
-            <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Metadata</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div><span class="text-accent-500">Status:</span> <span class="font-medium capitalize">${reg.status}</span></div>
-              <div><span class="text-accent-500">Registered:</span> <span class="font-medium">${new Date(reg.created_at).toLocaleString()}</span></div>
-            </div>
+            <span class="text-accent-900">Degree Certificate:</span><br>
+            ${reg.degree_certificate_url ? `<a href="${reg.degree_certificate_url}" target="_blank" class="text-primary-600 hover:underline">View Certificate</a>` : 'Not uploaded'}
           </div>
         </div>
-      `;
+      </div><br>
 
-      modal.classList.remove('hidden');
-    };
+      <!-- Bio -->
+      ${reg.short_bio ? `
+      <div>
+        <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Short Bio</h3>
+        <p class="text-accent-700">${reg.short_bio}</p>
+      </div>
+      ` : ''}<br>
 
-    window.updateStatus = async function(id, newStatus) {
-      if (!confirm(`Are you sure you want to ${newStatus === 'approved' ? 'approve' : 'reject'} this registration?`)) {
-        return;
+      <!-- Metadata -->
+      <div>
+        <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Metadata</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div><span class="text-accent-500">Status:</span> <span class="font-medium capitalize">${reg.status}</span></div>
+          <div><span class="text-accent-500">Registered:</span> <span class="font-medium">${new Date(reg.created_at).toLocaleString()}</span></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+};
+
+(window as any).updateStatus = async function(id: string, newStatus: string) {
+  if (!confirm(`Are you sure you want to ${newStatus === 'approved' ? 'approve' : 'reject'} this registration?`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/update-status', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id, status: newStatus })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      alert(`Registration ${newStatus} successfully!`);
+      loadRegistrations();
+    } else {
+      alert(`Error: ${result.message}`);
+    }
+  } catch (error) {
+    console.error('Update error:', error);
+    alert('Failed to update status. Please try again.');
+  }
+};
+
+(window as any).generateProfile = async function(id: string) {
+  if (!confirm('Generate alumni profile YAML file for this registration?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/generate-profile', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      alert(`Profile generated successfully!\n\nFile: ${result.data.fileName}\nPath: ${result.data.path}\n\nNote: Restart your dev server to see the new profile.`);
+    } else {
+      alert(`Error: ${result.message}`);
+    }
+  } catch (error) {
+    console.error('Profile generation error:', error);
+    alert('Failed to generate profile. Please try again.');
+  }
+};
+
+// Event Listeners
+document.getElementById('refreshBtn')?.addEventListener('click', loadRegistrations);
+
+document.getElementById('filterBtn')?.addEventListener('click', () => {
+  const panel = document.getElementById('filterPanel')!;
+  panel.classList.toggle('hidden');
+});
+
+document.getElementById('closeModal')?.addEventListener('click', () => {
+  document.getElementById('detailsModal')!.classList.add('hidden');
+});
+
+// Export CSV
+document.getElementById('exportBtn')?.addEventListener('click', async () => {
+  try {
+    const response = await fetch('/api/export-csv', {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
       }
-
-      try {
-        const response = await fetch('/api/update-status', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ id, status: newStatus })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          alert(`Registration ${newStatus} successfully!`);
-          loadRegistrations();
-        } else {
-          alert(`Error: ${result.message}`);
-        }
-      } catch (error) {
-        console.error('Update error:', error);
-        alert('Failed to update status. Please try again.');
-      }
-    };
-
-    window.generateProfile = async function(id) {
-      if (!confirm('Generate alumni profile YAML file for this registration?')) {
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/generate-profile', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ id })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          alert(`Profile generated successfully!\n\nFile: ${result.data.fileName}\nPath: ${result.data.path}\n\nNote: Restart your dev server to see the new profile.`);
-        } else {
-          alert(`Error: ${result.message}`);
-        }
-      } catch (error) {
-        console.error('Profile generation error:', error);
-        alert('Failed to generate profile. Please try again.');
-      }
-    };
-
-    // Event Listeners
-    document.getElementById('refreshBtn')?.addEventListener('click', loadRegistrations);
-    
-    document.getElementById('filterBtn')?.addEventListener('click', () => {
-      const panel = document.getElementById('filterPanel');
-      panel.classList.toggle('hidden');
     });
 
-    document.getElementById('closeModal')?.addEventListener('click', () => {
-      document.getElementById('detailsModal').classList.add('hidden');
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `alumni-registrations-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } else {
+      alert('Failed to export CSV');
+    }
+  } catch (error) {
+    console.error('Export error:', error);
+    alert('Failed to export CSV');
+  }
+});
+
+// Bulk Actions
+document.getElementById('bulkActionsBtn')?.addEventListener('click', () => {
+  const panel = document.getElementById('bulkActionsPanel')!;
+  panel.classList.toggle('hidden');
+});
+
+document.getElementById('bulkApproveBtn')?.addEventListener('click', () => {
+  bulkUpdateStatus('approved');
+});
+
+document.getElementById('bulkRejectBtn')?.addEventListener('click', () => {
+  bulkUpdateStatus('rejected');
+});
+
+document.getElementById('clearSelectionBtn')?.addEventListener('click', () => {
+  selectedIds = [];
+  updateBulkUI();
+  document.querySelectorAll('.bulk-checkbox').forEach(cb => {
+    (cb as HTMLInputElement).checked = false;
+  });
+});
+
+function handleCheckboxChange(e: Event) {
+  const checkbox = e.target as HTMLInputElement;
+  const id = checkbox.dataset.id || '';
+  
+  if (checkbox.checked) {
+    if (!selectedIds.includes(id)) {
+      selectedIds.push(id);
+    }
+  } else {
+    selectedIds = selectedIds.filter(selectedId => selectedId !== id);
+  }
+  
+  updateBulkUI();
+}
+
+function updateBulkUI() {
+  const bulkBtn = document.getElementById('bulkActionsBtn')!;
+  const bulkPanel = document.getElementById('bulkActionsPanel')!;
+  const selectedCount = document.getElementById('selectedCount')!;
+  
+  selectedCount.textContent = selectedIds.length.toString();
+  
+  if (selectedIds.length > 0) {
+    bulkBtn.classList.remove('hidden');
+  } else {
+    bulkBtn.classList.add('hidden');
+    bulkPanel.classList.add('hidden');
+  }
+}
+
+async function bulkUpdateStatus(status: string) {
+  if (selectedIds.length === 0) {
+    alert('Please select at least one registration');
+    return;
+  }
+
+  const action = status === 'approved' ? 'approve' : 'reject';
+  if (!confirm(`Are you sure you want to ${action} ${selectedIds.length} registration(s)?`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/bulk-update', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ids: selectedIds, status })
     });
 
-    // Export CSV
-    document.getElementById('exportBtn')?.addEventListener('click', async () => {
-      try {
-        const response = await fetch('/api/export-csv', {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
-        });
+    const result = await response.json();
 
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `alumni-registrations-${new Date().toISOString().split('T')[0]}.csv`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-        } else {
-          alert('Failed to export CSV');
-        }
-      } catch (error) {
-        console.error('Export error:', error);
-        alert('Failed to export CSV');
-      }
-    });
-
-    // Bulk Actions
-    document.getElementById('bulkActionsBtn')?.addEventListener('click', () => {
-      const panel = document.getElementById('bulkActionsPanel');
-      panel.classList.toggle('hidden');
-    });
-
-    document.getElementById('bulkApproveBtn')?.addEventListener('click', () => {
-      bulkUpdateStatus('approved');
-    });
-
-    document.getElementById('bulkRejectBtn')?.addEventListener('click', () => {
-      bulkUpdateStatus('rejected');
-    });
-
-    document.getElementById('clearSelectionBtn')?.addEventListener('click', () => {
+    if (result.success) {
+      alert(result.message);
       selectedIds = [];
       updateBulkUI();
-      document.querySelectorAll('.bulk-checkbox').forEach(cb => {
-        cb.checked = false;
-      });
-    });
-
-    function handleCheckboxChange(e) {
-      const checkbox = e.target;
-      const id = parseInt(checkbox.dataset.id || '0');
-      
-      if (checkbox.checked) {
-        if (!selectedIds.includes(id)) {
-          selectedIds.push(id);
-        }
-      } else {
-        selectedIds = selectedIds.filter(selectedId => selectedId !== id);
-      }
-      
-      updateBulkUI();
+      loadRegistrations();
+    } else {
+      alert(`Error: ${result.message}`);
     }
+  } catch (error) {
+    console.error('Bulk update error:', error);
+    alert('Failed to update registrations. Please try again.');
+  }
+}
 
-    function updateBulkUI() {
-      const bulkBtn = document.getElementById('bulkActionsBtn');
-      const bulkPanel = document.getElementById('bulkActionsPanel');
-      const selectedCount = document.getElementById('selectedCount');
-      
-      selectedCount.textContent = selectedIds.length.toString();
-      
-      if (selectedIds.length > 0) {
-        bulkBtn.classList.remove('hidden');
-      } else {
-        bulkBtn.classList.add('hidden');
-        bulkPanel.classList.add('hidden');
-      }
-    }
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const filter = (e.target as HTMLElement).getAttribute('data-filter') || 'all';
+    currentFilter = filter;
+    
+    // Update active state
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    (e.target as HTMLElement).classList.add('active');
+    
+    // Filter data
+    const filtered = filter === 'all' 
+      ? allRegistrations 
+      : allRegistrations.filter(r => r.status === filter);
+    
+    displayRegistrations(filtered);
+  });
+});
 
-    async function bulkUpdateStatus(status) {
-      if (selectedIds.length === 0) {
-        alert('Please select at least one registration');
-        return;
-      }
-
-      const action = status === 'approved' ? 'approve' : 'reject';
-      if (!confirm(`Are you sure you want to ${action} ${selectedIds.length} registration(s)?`)) {
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/bulk-update', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ ids: selectedIds, status })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          alert(result.message);
-          selectedIds = [];
-          updateBulkUI();
-          loadRegistrations();
-        } else {
-          alert(`Error: ${result.message}`);
-        }
-      } catch (error) {
-        console.error('Bulk update error:', error);
-        alert('Failed to update registrations. Please try again.');
-      }
-    }
-
-    // Filter buttons
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const filter = e.target.getAttribute('data-filter') || 'all';
-        currentFilter = filter;
-        
-        // Update active state
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        
-        // Filter data
-        const filtered = filter === 'all' 
-          ? allRegistrations 
-          : allRegistrations.filter(r => r.status === filter);
-        
-        displayRegistrations(filtered);
-      });
-    });
-
-    // Close modal on outside click
-    document.getElementById('detailsModal')?.addEventListener('click', (e) => {
-      if (e.target === e.currentTarget) {
-        document.getElementById('detailsModal').classList.add('hidden');
-      }
-    });
-  </script>
+// Close modal on outside click
+document.getElementById('detailsModal')?.addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    document.getElementById('detailsModal')!.classList.add('hidden');
+  }
+});
+</script>
 </Layout>

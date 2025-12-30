@@ -1,8 +1,8 @@
 export const prerender = false;
 
 import type { APIContext } from 'astro';
-import pg from 'pg';
-const { Client } = pg;
+import { connectToDatabase } from '../../lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 export async function POST({ request }: APIContext) {
   try {
@@ -39,48 +39,40 @@ export async function POST({ request }: APIContext) {
       );
     }
 
-    const connectionString = 
-      import.meta.env.POSTGRES_URL_NON_POOLING || 
-      import.meta.env.POSTGRES_PRISMA_URL || 
-      import.meta.env.POSTGRES_URL ||
-      import.meta.env.DATABASE_URL ||
-      process.env.POSTGRES_URL_NON_POOLING || 
-      process.env.POSTGRES_PRISMA_URL || 
-      process.env.POSTGRES_URL ||
-      process.env.DATABASE_URL;
+    // Connect to MongoDB
+    const { db } = await connectToDatabase();
+    const collection = db.collection('alumni_registrations');
 
-    if (!connectionString) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Database configuration error' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    // Convert string IDs to ObjectIds
+    const objectIds = ids.map(id => new ObjectId(id));
 
-    const client = new Client({
-      connectionString: connectionString,
-      ssl: { rejectUnauthorized: false }
-    });
+    // Update multiple documents
+    const result = await collection.updateMany(
+      { _id: { $in: objectIds } },
+      { 
+        $set: { 
+          status: status,
+          updated_at: new Date()
+        }
+      }
+    );
 
-    await client.connect();
+    // Get updated documents
+    const updatedDocs = await collection
+      .find({ _id: { $in: objectIds } })
+      .toArray();
 
-    // Build placeholders for IN clause
-    const placeholders = ids.map((_, index) => `$${index + 2}`).join(', ');
-    const query = `
-      UPDATE alumni_registrations 
-      SET status = $1, updated_at = CURRENT_TIMESTAMP 
-      WHERE id IN (${placeholders})
-      RETURNING id, name, status
-    `;
-
-    const result = await client.query(query, [status, ...ids]);
-
-    await client.end();
+    const formattedDocs = updatedDocs.map(doc => ({
+      id: doc._id?.toString(),
+      name: doc.name,
+      status: doc.status
+    }));
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully updated ${result.rows.length} registration(s) to ${status}`,
-        data: result.rows
+        message: `Successfully updated ${result.modifiedCount} registration(s) to ${status}`,
+        data: formattedDocs
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );

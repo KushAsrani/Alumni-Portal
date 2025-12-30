@@ -1,8 +1,7 @@
 export const prerender = false;
 
 import type { APIContext } from 'astro';
-import pg from 'pg';
-const { Client } = pg;
+import { connectToDatabase } from '../../lib/mongodb';
 
 export async function GET({ request }: APIContext) {
   try {
@@ -10,57 +9,24 @@ export async function GET({ request }: APIContext) {
     const expectedAuth = `Bearer ${import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY}`;
     
     if (!authHeader || authHeader !== expectedAuth) {
-      return new Response(
-        'Unauthorized',
-        { status: 401 }
-      );
+      return new Response('Unauthorized', { status: 401 });
     }
 
-    const connectionString = 
-      import.meta.env.POSTGRES_URL_NON_POOLING || 
-      import.meta.env.POSTGRES_PRISMA_URL || 
-      import.meta.env.POSTGRES_URL ||
-      import.meta.env.DATABASE_URL ||
-      process.env.POSTGRES_URL_NON_POOLING || 
-      process.env.POSTGRES_PRISMA_URL || 
-      process.env.POSTGRES_URL ||
-      process.env.DATABASE_URL;
+    // Connect to MongoDB
+    const { db } = await connectToDatabase();
+    const collection = db.collection('alumni_registrations');
 
-    if (!connectionString) {
-      return new Response(
-        'Database configuration error',
-        { status: 500 }
-      );
-    }
-
-    const client = new Client({
-      connectionString: connectionString,
-      ssl: { rejectUnauthorized: false }
-    });
-
-    await client.connect();
-
-    const registrations = await client.query(
-      `SELECT 
-        id, name, email, mobile, dob, gender, address,
-        year, faculty, degree, university, college_name, gpa,
-        job_designation, company, location,
-        linkedin, github, twitter,
-        skills, projects, work_experience, interests,
-        photo_blob_url, degree_certificate_url, short_bio, 
-        status, created_at, updated_at
-       FROM alumni_registrations
-       ORDER BY created_at DESC`
-    );
-
-    await client.end();
+    // Get all registrations
+    const registrations = await collection
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
 
     // Generate CSV
     const headers = [
       'ID', 'Name', 'Email', 'Mobile', 'Date of Birth', 'Gender', 'Address',
       'Graduation Year', 'Faculty', 'Degree', 'University', 'College', 'GPA',
-      'Job Designation', 'Company', 'Location',
-      'LinkedIn', 'GitHub', 'Twitter',
+      'Job Designation', 'Company', 'Location', 'LinkedIn', 'GitHub', 'Twitter', 'Portfolio',
       'Skills', 'Projects', 'Work Experience', 'Interests',
       'Photo URL', 'Certificate URL', 'Short Bio',
       'Status', 'Created At', 'Updated At'
@@ -68,9 +34,9 @@ export async function GET({ request }: APIContext) {
 
     const csvRows = [headers.join(',')];
 
-    registrations.rows.forEach(row => {
+    registrations.forEach(row => {
       const values = [
-        row.id,
+        row._id?.toString(),
         escapeCSV(row.name),
         escapeCSV(row.email),
         escapeCSV(row.mobile),
@@ -89,6 +55,7 @@ export async function GET({ request }: APIContext) {
         escapeCSV(row.linkedin),
         escapeCSV(row.github),
         escapeCSV(row.twitter),
+        escapeCSV(row.portfolio),
         escapeCSV(row.skills),
         escapeCSV(row.projects),
         escapeCSV(row.work_experience),
@@ -107,24 +74,17 @@ export async function GET({ request }: APIContext) {
     const timestamp = new Date().toISOString().split('T')[0];
     const fileName = `alumni-registrations-${timestamp}.csv`;
 
-    return new Response(
-      csvContent,
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/csv',
-          'Content-Disposition': `attachment; filename="${fileName}"`
-        }
+    return new Response(csvContent, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="${fileName}"`
       }
-    );
+    });
 
   } catch (error) {
     console.error('CSV export error:', error);
-    
-    return new Response(
-      'An error occurred while exporting data',
-      { status: 500 }
-    );
+    return new Response('An error occurred while exporting data', { status: 500 });
   }
 }
 
