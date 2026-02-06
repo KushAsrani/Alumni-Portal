@@ -481,7 +481,7 @@ import Layout from "../../layouts/Layout.astro";
         <h3 class="text-lg font-semibold mb-3 text-accent-900 border-b pb-2">Metadata</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div><span class="text-accent-500">Status:</span> <span class="font-medium capitalize">${reg.status}</span></div>
-          <div><span class="text-accent-500">Registered:</span> <span class="font-medium">${new Date(reg.created_at).toLocaleString()}</span></div>
+          <div><span class="text-accent-500">Registered:</span> <span class="font-medium">${(reg.created_at)}</span></div>
         </div>
       </div>
     </div>
