@@ -2,6 +2,9 @@
   "name": "open-alumns-portal",
   "type": "module",
   "version": "0.0.1",
+      "engines": {
+    "node": "20.x"
+  },
   "description": "A production-ready, open-source alumni portal Astro theme for colleges and communities",
   "author": "",
   "license": "MIT",
@@ -50,7 +53,6 @@
     "portal",
     "theme",
     "education",
-    "community",
-    "nosk"
+    "community"    
   ]
 }
