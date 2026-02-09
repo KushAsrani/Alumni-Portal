@@ -7,16 +7,16 @@ site:
   name: "Alumni Portal"
   description: "An open-source alumni portal designed for colleges and communities for community building and engagement"
   url: ""
-  logo: ""
+  logo: "/logo.png"
   favicon: "/favicon.ico"
   hero_image: "/hero-bg.jpg"
 
 # Organization Details
 organization:
-  name: ""
-  website: ""
-  email: ""
-  address: ""
+  name: "PrepSOM"
+  website: "https://prepsom.com/"
+  email: "contact@prepsom.com"
+  address: "IIM Ahmedabad Ventures Ahmedabad, Gujarat India"
 
 # Color Scheme (CSS Variables)
 colors:
@@ -111,26 +111,26 @@ faculties:
 # Year Range Configuration
 years:
   start: 2001
-  end: 2025
-  current_year: 2025
+  end: 2026
+  current_year: 2026
 
 # Social Media Links
 social_links:
   - name: "GitHub"
-    url: "#"
+    url: "https://github.com/KushAsrani/Alumni-Portal/"
     icon: "github"
     color: "#171515"
   - name: "LinkedIn"
-    url: "#"
+    url: "https://www.linkedin.com/company/prepsom-labs/"
     icon: "linkedin"
     color: "#0077b5"
   - name: "Twitter"
     url: "#"
     icon: "twitter"
     color: "#1da1f2"
-  - name: "Facebook"
-    url: "#"
-    icon: "facebook"
+  - name: "Instagram"
+    url: "https://www.instagram.com/prepsom_labs"
+    icon: "instagram"
     color: "#1877f2"
 
 # SEO Configuration
@@ -166,7 +166,7 @@ features:
 
 # Contact Information
 contact:
-  email: ""
-  phone: ""
-  address: ""
-  office_hours: ""
+  email: "contact@prepsom.com"
+  phone: "+91 8758 0761 06"
+  address: "IIM Ahmedabad Ventures Ahmedabad, Gujarat India"
+  office_hours: "Monday - Friday, 9:00 AM - 6:00 PM IST"

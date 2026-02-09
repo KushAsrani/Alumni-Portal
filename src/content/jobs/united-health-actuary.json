@@ -1,0 +1,21 @@
+{
+  "id": "SGVhbHRoIEFjdHVhcnl8SGVhbHRoIFBs",
+  "title": "Health Actuary - Medical Plan Design",
+  "company": "United Healthcare Group",
+  "location": "Minnetonka, MN",
+  "description": "Lead medical plan design and pricing initiatives. Analyze health trends and develop predictive models for better outcomes.",
+  "salary": {
+    "min": 110000,
+    "max": 160000,
+    "currency": "USD"
+  },
+  "jobType": "full-time",
+  "experienceLevel": "mid",
+  "skills": ["Excel", "SQL", "R", "Python", "Tableau", "SAS"],
+  "qualifications": ["Bachelor's in Actuarial Science", "2+ years health insurance experience"],
+  "certifications": ["FSA", "ASA"],
+  "posted_date": "2026-02-06",
+  "url": "https://careers.unitedhealthgroup.com/actuarial",
+  "source": "SOA",
+  "featured": true
+}

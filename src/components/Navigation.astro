@@ -11,16 +11,16 @@ const config = getSiteConfig();
       <!-- Logo -->
       <div class="flex items-center">
         <a href="/" class="flex items-center space-x-3 group">
-          <div class="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center shadow-lg overflow-hidden transition-transform duration-300 group-hover:scale-105">
+          <div class="w-300 h-300 lg:w-300 lg:h-300 rounded-xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105">
         {config.site.logo ? (
-          <img src={config.site.logo} alt={`${config.site.name} logo`} class="w-full h-full object-contain" />
+          <img src={config.site.logo} alt={`${config.site.name} logo`} class="w-300 h-10 lg:w-300 lg:h-12 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-100" />
         ) : (
           <Icon name="mdi:account-group" class="w-7 h-7 text-white" />
         )}
           </div>
           <div>
         <h1 class="text-xl lg:text-2xl font-bold text-accent-900 group-hover:text-primary-600 transition-colors duration-200">
-          Alumni Portal
+        Alumni Portal
         </h1>
         <p class="text-xs text-accent-500 hidden sm:block">Alumni Network</p>
           </div>
@@ -33,6 +33,7 @@ const config = getSiteConfig();
           <div class="relative group">
             {item.mega_menu ? (
               <div class="relative">
+                <Icon name="mdi:graduation-cap" class="w-4 h-4 mr-2 text-accent-600 group-hover:text-primary-600 transition-colors duration-200 relative" style={{ top: '5px' }} />
                 <button class="nav-link flex items-center space-x-1 py-2">
                   <span>{item.label}</span>
                   <Icon name="mdi:chevron-down" class="w-4 h-4 transition-transform duration-200 group-hover:rotate-180" />

@@ -1,0 +1,447 @@
+[
+  {
+    "id": "QWN0dWFyaWFsIEFuYWx5c3R8QVR",
+    "title": "Senior Actuarial Analyst - Life Insurance",
+    "company": "MetLife Insurance Solutions",
+    "location": "Hartford, CT",
+    "description": "Join our dynamic actuarial team as a Senior Actuarial Analyst specializing in life insurance product development. You'll work on valuation, pricing, and risk assessment for our portfolio of life insurance products. This role offers excellent career progression for FSA or ASA candidates.",
+    "salary": {
+      "min": 120000,
+      "max": 180000,
+      "currency": "USD"
+    },
+    "jobType": "full-time",
+    "experienceLevel": "senior",
+    "skills": [
+      "Excel",
+      "SQL",
+      "Python",
+      "VBA",
+      "Tableau",
+      "SAS"
+    ],
+    "qualifications": [
+      "Bachelor's degree in Actuarial Science, Mathematics, or related field",
+      "3+ years of experience in insurance",
+      "Strong understanding of life insurance products"
+    ],
+    "certifications": [
+      "FSA",
+      "ASA"
+    ],
+    "posted_date": "2026-02-08",
+    "url": "https://www.metlife.com/careers/jobs/actuarial-analyst",
+    "source": "LinkedIn",
+    "featured": true
+  },
+  {
+    "id": "RW50cnkgTGV2ZWwgQWN0dWFyeXxQ",
+    "title": "Entry Level Actuarial Analyst - Casualty",
+    "company": "State Farm Insurance",
+    "location": "Bloomington, IL",
+    "description": "Start your actuarial career with State Farm! We're looking for recent graduates or ASA candidates with strong mathematical background. You'll work on reserving, pricing, and experience studies. Excellent mentorship program with experienced fellows.",
+    "salary": {
+      "min": 65000,
+      "max": 85000,
+      "currency": "USD"
+    },
+    "jobType": "full-time",
+    "experienceLevel": "entry",
+    "skills": [
+      "Excel",
+      "SQL",
+      "Python",
+      "Access",
+      "Statistical Analysis"
+    ],
+    "qualifications": [
+      "Bachelor's degree in Mathematics, Statistics, or Actuarial Science",
+      "Excellent analytical and problem-solving skills",
+      "Strong communication abilities"
+    ],
+    "certifications": [
+      "ASA"
+    ],
+    "posted_date": "2026-02-07",
+    "url": "https://www.statefarm.com/careers/actuarial",
+    "source": "Indeed",
+    "featured": true
+  },
+  {
+    "id": "SGVhbHRoIEFjdHVhcnl8SGVhbHRoIFBs",
+    "title": "Health Actuary - Medical Plan Design",
+    "company": "United Healthcare Group",
+    "location": "Minnetonka, MN",
+    "description": "We seek an experienced Health Actuary to lead medical plan design and pricing initiatives. You'll analyze health trends, develop predictive models, and recommend pricing strategies. Strong Excel and SQL skills required.",
+    "salary": {
+      "min": 110000,
+      "max": 160000,
+      "currency": "USD"
+    },
+    "jobType": "full-time",
+    "experienceLevel": "mid",
+    "skills": [
+      "Excel",
+      "SQL",
+      "R",
+      "Python",
+      "Tableau",
+      "Power BI",
+      "SAS"
+    ],
+    "qualifications": [
+      "Bachelor's in Actuarial Science or Mathematics",
+      "2+ years health insurance experience",
+      "Experience with medical plan design"
+    ],
+    "certifications": [
+      "FSA",
+      "ASA"
+    ],
+    "posted_date": "2026-02-06",
+    "url": "https://careers.unitedhealthgroup.com/actuarial",
+    "source": "Society of Actuaries",
+    "featured": true
+  },
+  {
+    "id": "Q2FzdWFsdHkgQWN0dWFyeXxBbGxz",
+    "title": "Casualty Actuary - Workers' Compensation",
+    "company": "Allstate Corporation",
+    "location": "Remote",
+    "description": "Join our casualty team as a Workers' Compensation Actuary. Responsibilities include claims analysis, reserve development, and pricing models. Collaborate with cross-functional teams to optimize product profitability.",
+    "salary": {
+      "min": 95000,
+      "max": 145000,
+      "currency": "USD"
+    },
+    "jobType": "full-time",
+    "experienceLevel": "mid",
+    "skills": [
+      "Excel",
+      "SQL",
+      "Python",
+      "Splunk",
+      "Hadoop",
+      "SAS"
+    ],
+    "qualifications": [
+      "Bachelor's degree in actuarial science or mathematics",
+      "3-5 years workers' compensation experience",
+      "Strong analytical and modeling skills"
+    ],
+    "certifications": [
+      "CAS",
+      "FSA"
+    ],
+    "posted_date": "2026-02-05",
+    "url": "https://www.allstate.com/careers/actuarial",
+    "source": "Casualty Actuarial Society",
+    "featured": false
+  },
+  {
+    "id": "UGVuc2lvbiBDb25zdWx0YW50fGEvQ29uc3VsdA==",
+    "title": "Pension Actuary - DC Plan Specialist",
+    "company": "Mercer Consulting",
+    "location": "New York, NY",
+    "description": "Lead defined contribution plan valuations and recommendations for enterprise clients. Strong communication required as you'll present findings to C-suite executives. Excellent opportunity for partnership track.",
+    "salary": {
+      "min": 130000,
+      "max": 200000,
+      "currency": "USD"
+    },
+    "jobType": "full-time",
+    "experienceLevel": "senior",
+    "skills": [
+      "Excel",
+      "VBA",
+      "SQL",
+      "Python",
+      "PowerPoint",
+      "Tableau"
+    ],
+    "qualifications": [
+      "Bachelor's in Actuarial Science or Mathematics",
+      "5+ years defined contribution experience",
+      "Client management experience preferred"
+    ],
+    "certifications": [
+      "EA",
+      "ASA"
+    ],
+    "posted_date": "2026-02-04",
+    "url": "https://www.mercer.com/careers/pension-actuaries",
+    "source": "LinkedIn",
+    "featured": true
+  },
+  {
+    "id": "RGF0YSBBY3R1YXJ5fElCTQ==",
+    "title": "Data Actuary - Predictive Modeling",
+    "company": "IBM Consulting",
+    "location": "San Francisco, CA",
+    "description": "Drive innovation in predictive analytics and machine learning for insurance clients. You'll develop advanced models, lead data science projects, and mentor junior actuaries. Strong programming background required.",
+    "salary": {
+      "min": 140000,
+      "max": 210000,
+      "currency": "USD"
+    },
+    "jobType": "full-time",
+    "experienceLevel": "senior",
+    "skills": [
+      "Python",
+      "R",
+      "SQL",
+      "TensorFlow",
+      "Spark",
+      "Tableau",
+      "Git"
+    ],
+    "qualifications": [
+      "Master's in Actuarial Science, Data Science, or related field",
+      "3+ years machine learning experience",
+      "Published research or portfolio of projects"
+    ],
+    "certifications": [
+      "FSA"
+    ],
+    "posted_date": "2026-02-03",
+    "url": "https://www.ibm.com/careers/data-actuaries",
+    "source": "Indeed",
+    "featured": true
+  },
+  {
+    "id": "QWN0dWFyaWFsIENvbnN1bHRhbnR8RXY=",
+    "title": "Actuarial Consultant - Risk Management",
+    "company": "Evercore Insurance Consulting",
+    "location": "Chicago, IL",
+    "description": "Provide strategic risk management consulting to Fortune 500 companies. Develop comprehensive risk assessments and mitigation strategies. Travel up to 25% required. Opportunity to lead engagements and build client relationships.",
+    "salary": {
+      "min": 100000,
+      "max": 170000,
+      "currency": "USD"
+    },
+    "jobType": "full-time",
+    "experienceLevel": "mid",
+    "skills": [
+      "Excel",
+      "SQL",
+      "Python",
+      "Risk Modeling",
+      "PowerPoint",
+      "Tableau"
+    ],
+    "qualifications": [
+      "Bachelor's in Actuarial Science or Mathematics",
+      "3-7 years consulting or insurance experience",
+      "Excellent communication and presentation skills"
+    ],
+    "certifications": [
+      "ASA",
+      "FSA"
+    ],
+    "posted_date": "2026-02-02",
+    "url": "https://www.evercore.com/careers/actuarial",
+    "source": "FlexJobs",
+    "featured": false
+  },
+  {
+    "id": "QWN0dWFyaWFsIE1hbmFnZXJ8QW9O",
+    "title": "Actuarial Manager - Product Development",
+    "company": "Aon",
+    "location": "Boston, MA",
+    "description": "Lead product development team in designing innovative insurance solutions. Manage team of 5-8 actuaries, oversee pricing strategies, and drive product profitability. Strategic vision and leadership required.",
+    "salary": {
+      "min": 150000,
+      "max": 220000,
+      "currency": "USD"
+    },
+    "jobType": "full-time",
+    "experienceLevel": "executive",
+    "skills": [
+      "Excel",
+      "SQL",
+      "Python",
+      "Leadership",
+      "Strategic Planning",
+      "Tableau"
+    ],
+    "qualifications": [
+      "Bachelor's or Master's in Actuarial Science",
+      "7+ years actuarial experience",
+      "3+ years management experience",
+      "Strong leadership and communication skills"
+    ],
+    "certifications": [
+      "FSA",
+      "MAAA"
+    ],
+    "posted_date": "2026-02-01",
+    "url": "https://careers.aon.com/actuarial-management",
+    "source": "LinkedIn",
+    "featured": true
+  },
+  {
+    "id": "VGFjdGljYWwgQWN0dWFyeXxXaWxsaXM=",
+    "title": "Tactical Actuary - Valuation",
+    "company": "Willis Towers Watson",
+    "location": "London, UK (Remote Available)",
+    "description": "Lead valuation engagements for major insurance clients globally. Develop complex models, provide actuarial opinions, and mentor junior staff. Experience with IFRS 17 preferred.",
+    "salary": {
+      "min": 120000,
+      "max": 190000,
+      "currency": "USD"
+    },
+    "jobType": "full-time",
+    "experienceLevel": "senior",
+    "skills": [
+      "Excel",
+      "VBA",
+      "SQL",
+      "Prophet",
+      "MoSes",
+      "R"
+    ],
+    "qualifications": [
+      "Bachelor's or Master's degree",
+      "5+ years valuation experience",
+      "Knowledge of IFRS 17/ASC 944"
+    ],
+    "certifications": [
+      "FSA",
+      "CERA"
+    ],
+    "posted_date": "2026-02-01",
+    "url": "https://www.willistowerswatson.com/careers",
+    "source": "Society of Actuaries",
+    "featured": false
+  },
+  {
+    "id": "QWN0dWFyeSBJbnRlcm58TWNLaW5z",
+    "title": "Actuarial Summer Internship Program",
+    "company": "McKinsey & Company",
+    "location": "New York, NY",
+    "description": "Join our summer internship program and work on actuarial projects for leading insurance companies. Mentorship from senior actuaries, exposure to client-facing work, and networking opportunities. Perfect for ASA candidates or recent graduates.",
+    "salary": {
+      "min": 22000,
+      "max": 28000,
+      "currency": "USD"
+    },
+    "jobType": "internship",
+    "experienceLevel": "entry",
+    "skills": [
+      "Excel",
+      "PowerPoint",
+      "SQL",
+      "Problem Solving",
+      "Communication"
+    ],
+    "qualifications": [
+      "Currently enrolled in Bachelor's or Master's program",
+      "Strong GPA (3.5+)",
+      "Actuarial exams passed (1-2 preferred)"
+    ],
+    "certifications": [],
+    "posted_date": "2026-02-01",
+    "url": "https://www.mckinsey.com/careers/internship",
+    "source": "LinkedIn",
+    "featured": true
+  },
+  {
+    "id": "Q29udHJhY3QgQWN0dWFyeXxEZWxvaXR0ZQ==",
+    "title": "Contract Actuary - 6 Month Assignment",
+    "company": "Deloitte Consulting",
+    "location": "Los Angeles, CA",
+    "description": "Short-term contract position for experienced actuary to support client engagement. Work on rate analysis and reserve studies. Flexible schedule with potential for renewal.",
+    "salary": {
+      "min": 80000,
+      "max": 110000,
+      "currency": "USD"
+    },
+    "jobType": "contract",
+    "experienceLevel": "mid",
+    "skills": [
+      "Excel",
+      "SQL",
+      "SAS",
+      "Actuarial Modeling"
+    ],
+    "qualifications": [
+      "3-5 years actuarial experience",
+      "Ability to work independently",
+      "Client-facing experience"
+    ],
+    "certifications": [
+      "ASA"
+    ],
+    "posted_date": "2026-02-01",
+    "url": "https://www.deloitte.com/careers/contract",
+    "source": "Indeed",
+    "featured": false
+  },
+  {
+    "id": "QWN0dWFyaWFsIENFVFxJSUE=",
+    "title": "Actuarial Modeling Specialist - Reserving",
+    "company": "IIA (Insurance Information Alliance)",
+    "location": "Denver, CO",
+    "description": "Develop and maintain sophisticated reserving models for multi-line insurance portfolio. Collaborate with claims and underwriting teams. Opportunity to influence company-wide actuarial strategy.",
+    "salary": {
+      "min": 105000,
+      "max": 155000,
+      "currency": "USD"
+    },
+    "jobType": "full-time",
+    "experienceLevel": "mid",
+    "skills": [
+      "Excel",
+      "SQL",
+      "Python",
+      "SAS",
+      "Actuarial Modeling",
+      "Statistics"
+    ],
+    "qualifications": [
+      "Bachelor's in Actuarial Science or Mathematics",
+      "3-6 years reserving experience",
+      "Experience with Taffrail or similar tools"
+    ],
+    "certifications": [
+      "ASA",
+      "FSA"
+    ],
+    "posted_date": "2026-01-31",
+    "url": "https://www.iia-insurance.com/careers",
+    "source": "LinkedIn",
+    "featured": false
+  },
+  {
+    "id": "QWN0dWFyeSBQYXJ0LVRpbWV8TXV0dWFsIE9m",
+    "title": "Part-Time Actuarial Consultant",
+    "company": "Mutual of Omaha",
+    "location": "Remote",
+    "description": "Flexible part-time role for experienced actuary. Ad-hoc projects supporting various departments. Ideal for semi-retired actuaries or those seeking supplemental income. 15-20 hours per week.",
+    "salary": {
+      "min": 50000,
+      "max": 70000,
+      "currency": "USD"
+    },
+    "jobType": "part-time",
+    "experienceLevel": "senior",
+    "skills": [
+      "Excel",
+      "SQL",
+      "Python",
+      "Actuarial Analysis"
+    ],
+    "qualifications": [
+      "10+ years actuarial experience",
+      "FSA or equivalent preferred",
+      "Self-motivated and organized"
+    ],
+    "certifications": [
+      "FSA"
+    ],
+    "posted_date": "2026-01-30",
+    "url": "https://www.mutualofomaha.com/careers",
+    "source": "FlexJobs",
+    "featured": false
+  }
+]

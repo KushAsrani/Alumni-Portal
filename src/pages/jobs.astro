@@ -1,0 +1,419 @@
+---
+import Layout from '../layouts/Layout.astro';
+import JobBoard from '../components/JobBoard.astro';
+import { getCollection } from 'astro:content';
+
+export const prerender = true;
+
+// Get all jobs from content collection
+const jobsData = await getCollection('jobs');
+const jobs = jobsData.map(entry => ({
+  id: entry.data.id,
+  ...entry.data,
+}));
+
+interface Props {
+  experience?: string;
+}
+
+const { experience } = Astro.props as Props;
+
+// Filter by experience level if specified
+let filteredJobs = jobs;
+if (experience) {
+  filteredJobs = jobs.filter(job => job.experienceLevel === experience);
+}
+
+// Sort by posted date (newest first)
+filteredJobs.sort((a, b) => {
+  const dateA = new Date(a.posted_date).getTime();
+  const dateB = new Date(b.posted_date).getTime();
+  return dateB - dateA;
+});
+---
+
+<Layout title="Actuarial Job Board | Alumni Portal">
+  <main class="jobs-page">
+    <!-- Hero Section -->
+    <section class="jobs-hero">
+      <div class="hero-content">
+        <h1>Actuarial Career Opportunities</h1>
+        <p>Discover amazing job opportunities in the actuarial field</p>
+        <div class="hero-search">
+          <input
+            type="text"
+            id="job-search"
+            placeholder="Search jobs by title, company, or location..."
+            class="search-input"
+          />
+          <button class="search-btn">Search</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter Section -->
+    <section class="filters-section">
+      <div class="container">
+        <h2>Find Your Next Role</h2>
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label for="experience-filter">Experience Level</label>
+            <select id="experience-filter" class="filter-select">
+              <option value="">All Levels ({jobs.length})</option>
+              <option value="entry">Entry Level ({jobs.filter(j => j.experienceLevel === 'entry').length})</option>
+              <option value="mid">Mid Level ({jobs.filter(j => j.experienceLevel === 'mid').length})</option>
+              <option value="senior">Senior Level ({jobs.filter(j => j.experienceLevel === 'senior').length})</option>
+              <option value="executive">Executive ({jobs.filter(j => j.experienceLevel === 'executive').length})</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="job-type-filter">Job Type</label>
+            <select id="job-type-filter" class="filter-select">
+              <option value="">All Types</option>
+              <option value="full-time">Full Time</option>
+              <option value="part-time">Part Time</option>
+              <option value="contract">Contract</option>
+              <option value="internship">Internship</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="featured-filter">Show Featured Only</label>
+            <input
+              type="checkbox"
+              id="featured-filter"
+              class="filter-checkbox"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Job Board -->
+    <section class="jobs-list-section">
+      <div class="container">
+        <div id="jobs-container">
+          <JobBoard jobs={filteredJobs} />
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+      <div class="container">
+        <h2>Actuarial Market Insights</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number">{jobs.length}+</div>
+            <div class="stat-label">Active Positions</div>
+            <p>Actuarial roles across all experience levels</p>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-number">$95K-$180K</div>
+            <div class="stat-label">Salary Range</div>
+            <p>Average actuarial compensation packages</p>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-number">Top Skills</div>
+            <div class="stat-label">Excel • SQL • Python • R • SAS</div>
+            <p>Most in-demand technical competencies</p>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-number">FSA • ASA • EA</div>
+            <div class="stat-label">Key Certifications</div>
+            <p>Credentials that boost your career</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+      <div class="container">
+        <h2>Ready to Take the Next Step?</h2>
+        <p>Connect with alumni working in actuarial roles and get career guidance</p>
+        <div class="cta-buttons">
+          <a href="/alumni" class="btn btn-primary">Browse Alumni Directory</a>
+          <a href="/contact" class="btn btn-secondary">Contact Us</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .jobs-page {
+    min-height: 100vh;
+    background: #f9fafb;
+  }
+
+  .jobs-hero {
+    background: linear-gradient(135deg, var(--color-primary, #2e4096) 0%, #2e4096 100%);
+    color: white;
+    padding: 4rem 2rem;
+    text-align: center;
+  }
+
+  .hero-content {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .jobs-hero h1 {
+    margin: 0 0 1rem 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .jobs-hero p {
+    margin: 0 0 2rem 0;
+    font-size: 1.125rem;
+    opacity: 0.95;
+  }
+
+  .hero-search {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    color: #374151;
+  }
+
+  .search-btn {
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid white;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .search-btn:hover {
+    background: white;
+    color: var(--color-primary, gray);
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .filters-section {
+    background: white;
+    padding: 2rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .filters-section h2 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .filter-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .filter-select {
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    background: white;
+    cursor: pointer;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: var(--color-primary, #22c55e);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  }
+
+  .filter-checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
+    cursor: pointer;
+    accent-color: var(--color-primary, #22c55e);
+  }
+
+  .jobs-list-section {
+    padding: 3rem 0;
+  }
+
+  .stats-section {
+    background: white;
+    padding: 3rem 0;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    margin: 3rem 0;
+  }
+
+  .stats-section h2 {
+    margin-top: 0;
+    margin-bottom: 2rem;
+    font-size: 1.875rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+  }
+
+  .stat-card {
+    text-align: center;
+    padding: 2rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-primary, #22c55e);
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+  }
+
+  .stat-card p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .cta-section {
+    background: linear-gradient(135deg, var(--color-primary, #22c55e) 0%, #16a34a 100%);
+    color: white;
+    padding: 4rem 2rem;
+    text-align: center;
+  }
+
+  .cta-section h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .cta-section p {
+    margin: 0 0 2rem 0;
+    font-size: 1.125rem;
+    opacity: 0.95;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary {
+    background: white;
+    color: var(--color-primary, #22c55e);
+  }
+
+  .btn-primary:hover {
+    background: #f0fdf4;
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid white;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 768px) {
+    .jobs-hero h1 {
+      font-size: 1.75rem;
+    }
+
+    .hero-search {
+      flex-direction: column;
+    }
+
+    .filters-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .cta-buttons {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  const experienceFilter = document.getElementById('experience-filter') as HTMLSelectElement;
+  const jobTypeFilter = document.getElementById('job-type-filter') as HTMLSelectElement;
+
+  experienceFilter?.addEventListener('change', () => {
+    const experience = experienceFilter.value;
+    const params = new URLSearchParams();
+    if (experience) params.append('experience', experience);
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
+    location.reload();
+  });
+</script>

@@ -20,7 +20,7 @@ const currentYear = new Date().getFullYear();
             )}
             </div>
           <div>
-            <h3 class="text-2xl font-bold text-white">{config.site.name}</h3>
+            <h3 class="text-2xl font-bold text-white">PrepSOM Alumni Portal</h3>
             <p class="text-accent-300 text-sm">Alumni Network</p>
           </div>
         </div>
@@ -69,6 +69,7 @@ const currentYear = new Date().getFullYear();
               <Icon name="mdi:map-marker" class="w-4 h-4 text-white" />
             </div>
             <div>
+              <p class="text-bold text-white">Office Location</p>
               <p class="text-accent-300 text-sm leading-relaxed">
                 {config.organization.address}
               </p>
@@ -80,6 +81,7 @@ const currentYear = new Date().getFullYear();
               <Icon name="mdi:email" class="w-4 h-4 text-white" />
             </div>
             <div>
+              <p class="text-bold text-white">Email Address</p>
               <a href={`mailto:${config.contact.email}`} class="text-accent-300 hover:text-primary-400 transition-colors duration-200 text-sm">
                 {config.contact.email}
               </a>
@@ -91,6 +93,7 @@ const currentYear = new Date().getFullYear();
               <Icon name="mdi:phone" class="w-4 h-4 text-white" />
             </div>
             <div>
+              <p class="text-bold text-white">Phone Number</p>
               <a href={`tel:${config.contact.phone}`} class="text-accent-300 hover:text-primary-400 transition-colors duration-200 text-sm">
                 {config.contact.phone}
               </a>

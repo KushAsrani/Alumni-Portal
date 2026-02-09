@@ -76,8 +76,37 @@ const blogCollection = defineCollection({
   })
 });
 
+// Job Posting Content Collection Schema
+const jobsCollection = defineCollection({
+  type: 'data',
+  schema: z.object({
+    id: z.string(),
+    title: z.string(),
+    company: z.string(),
+    location: z.string(),
+    description: z.string(),
+    salary: z
+      .object({
+        min: z.number(),
+        max: z.number(),
+        currency: z.string().default('USD'),
+      })
+      .optional(),
+    jobType: z.enum(['full-time', 'part-time', 'contract', 'internship']),
+    experienceLevel: z.enum(['entry', 'mid', 'senior', 'executive']),
+    skills: z.array(z.string()).default([]),
+    qualifications: z.array(z.string()).default([]),
+    certifications: z.array(z.string()).optional(),
+    posted_date: z.coerce.date(),
+    url: z.string().url(),
+    source: z.string(),
+    featured: z.boolean().default(false),
+  }),
+});
+
 export const collections = {
   'alumni': alumniCollection,
   'events': eventsCollection,
   'blog': blogCollection,
+  'jobs': jobsCollection
 };
