@@ -10,6 +10,7 @@ const config = getSiteConfig();
 const alumni = await getCollection("alumni");
 const events = await getCollection("events");
 const blogPosts = await getCollection("blog");
+const jobs = await getCollection("jobs");
 
 // Get featured alumni (first 3)
 const featuredAlumni = alumni.slice(0, 3);
@@ -29,6 +30,16 @@ const latestBlogPosts = blogPosts
       new Date(b.data.publishDate).getTime() -
       new Date(a.data.publishDate).getTime()
   )
+  .slice(0, 3);
+
+// Get featured jobs (first 3)
+const featuredJobs = jobs
+  .filter((job) => job.data.featured)
+  .sort((a, b) => {
+    const dateA = new Date(a.data.posted_date).getTime();
+    const dateB = new Date(b.data.posted_date).getTime();
+    return dateB - dateA;
+  })
   .slice(0, 3);
 ---
 
@@ -249,6 +260,138 @@ const latestBlogPosts = blogPosts
   </section>
   -->
 
+<!-- Job Opportunities Section -->
+  <section class="section-md bg-gradient-to-br from-accent-50 to-white">
+    <div class="container-custom">
+      <!-- Section Header -->
+      <div class="text-center mb-12">
+        <div class="inline-block mb-4">
+          <span class="badge badge-primary flex items-center space-x-2">
+            <Icon name="mdi:briefcase" class="w-4 h-4" />
+            <span>Career Opportunities</span>
+          </span>
+        </div>
+        <h2 class="text-3xl md:text-5xl font-bold text-accent-900 mb-4">
+          Job Board
+        </h2>
+        <p class="text-lg text-accent-600 max-w-2xl mx-auto">
+          Discover exclusive job opportunities in the actuarial field. Connect with leading employers and advance your career.
+        </p>
+      </div>
+
+      <!-- Featured Jobs Grid
+      {featuredJobs.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {featuredJobs.map((job) => (
+            <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-accent-100 hover:border-primary-300">
+              Job Card Header
+              <div class="p-6">
+                Job Title & Company
+                <div class="mb-4">
+                  <h3 class="text-xl font-bold text-accent-900 mb-1">
+                    {job.data.title}
+                  </h3>
+                  <p class="text-accent-600 font-medium">{job.data.company}</p>
+                </div>
+
+                Job Meta
+                <div class="space-y-3 mb-4 pb-4 border-b border-accent-100">
+                  Location
+                  <div class="flex items-center space-x-2 text-accent-600">
+                    <Icon name="mdi:map-marker" class="w-4 h-4 text-primary-500 flex-shrink-0" />
+                    <span class="text-sm">{job.data.location}</span>
+                  </div>
+
+                  Salary
+                  {job.data.salary && (
+                    <div class="flex items-center space-x-2 text-accent-600">
+                      <Icon name="mdi:cash" class="w-4 h-4 text-primary-500 flex-shrink-0" />
+                      <span class="text-sm font-medium text-green-600">
+                        ${job.data.salary.min.toLocaleString()} - ${job.data.salary.max.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
+                  Job Type & Level
+                  <div class="flex items-center space-x-2">
+                    <span class={`badge badge-sm ${
+                      job.data.jobType === 'full-time' ? 'bg-green-100 text-green-800' :
+                      job.data.jobType === 'part-time' ? 'bg-blue-100 text-blue-800' :
+                      job.data.jobType === 'contract' ? 'bg-purple-100 text-purple-800' :
+                      'bg-orange-100 text-orange-800'
+                    }`}>
+                      {job.data.jobType}
+                    </span>
+                    <span class={`badge badge-sm ${
+                      job.data.experienceLevel === 'entry' ? 'bg-emerald-100 text-emerald-800' :
+                      job.data.experienceLevel === 'mid' ? 'bg-yellow-100 text-yellow-800' :
+                      job.data.experienceLevel === 'senior' ? 'bg-red-100 text-red-800' :
+                      'bg-indigo-100 text-indigo-800'
+                    }`}>
+                      {job.data.experienceLevel}
+                    </span>
+                  </div>
+                </div>
+
+                 Skills
+                {job.data.skills && job.data.skills.length > 0 && (
+                  <div class="mb-4">
+                    <p class="text-xs font-semibold text-accent-500 uppercase tracking-wider mb-2">
+                      Required Skills
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      {job.data.skills.slice(0, 3).map((skill) => (
+                        <span class="text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded-full">
+                          {skill}
+                        </span>
+                      ))}
+                      {job.data.skills.length > 3 && (
+                        <span class="text-xs bg-accent-100 text-accent-600 px-2 py-1 rounded-full">
+                          +{job.data.skills.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                Apply Button
+                <a
+                  href={job.data.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center w-full btn btn-primary btn-sm"
+                >
+                  <Icon name="mdi:open-in-new" class="w-4 h-4 mr-2" />
+                  View Job
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-12">
+          <Icon name="mdi:briefcase" class="w-16 h-16 mx-auto text-accent-300 mb-4" />
+          <p class="text-accent-600">No featured jobs available at the moment.</p>
+        </div>
+      )}
+      -->
+
+      <!-- View All Jobs Button -->
+      <div class="text-center">
+        <a
+          href="/jobs"
+          class="inline-flex items-center btn btn-primary btn-lg gap-2"
+        >
+          <Icon name="mdi:briefcase" class="w-5 h-5" />
+          View Job Opportunities
+        </a>
+        <p class="text-accent-600 text-sm mt-4">
+          Browse actuarial positions across the industry
+        </p><br/>
+      </div>
+    </div>
+  </section>
+      
   <!-- Featured Alumni Section -->
   <section class="section bg-gradient-to-br from-accent-50 to-primary-50">
     <div class="container-custom">
