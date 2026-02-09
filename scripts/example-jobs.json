@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [
   {
     "id": "QWN0dWFyaWFsIEFuYWx5c3R8QVR",
@@ -444,4 +445,28 @@
     "source": "FlexJobs",
     "featured": false
   }
+=======
+[  
+  {  
+    "jobTitle": "Software Engineer",  
+    "company": "Tech Innovations",  
+    "location": "Remote",  
+    "description": "Develop and maintain software applications.",  
+    "datePosted": "2026-02-01"  
+  },  
+  {  
+    "jobTitle": "Data Analyst",  
+    "company": "Data Insights Inc.",  
+    "location": "New York, NY",  
+    "description": "Analyze and interpret complex data sets.",  
+    "datePosted": "2026-02-03"  
+  },  
+  {  
+    "jobTitle": "Project Manager",  
+    "company": "Business Solutions LLC",  
+    "location": "Chicago, IL",  
+    "description": "Manage project timelines and resources.",  
+    "datePosted": "2026-02-05"  
+  }  
+>>>>>>> 9c0ae5fe3c07fd93ac682398f559bdb7095602ca
 ]
