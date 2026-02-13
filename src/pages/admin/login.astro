@@ -1,0 +1,227 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { isAuthenticated, getCurrentUser, requireAuth } from '../../lib/auth';
+
+// Check authentication
+const authRedirect = requireAuth(Astro.cookies, '/admin/login');
+if (authRedirect) {
+  return authRedirect;
+}
+
+// Get current user
+const currentUser = getCurrentUser(Astro.cookies);
+---
+
+<Layout title="Job Scraper Dashboard | Admin">
+  <main class="dashboard-page">
+    <div class="container">
+      <!-- Top Bar with User Info and Logout -->
+      <div class="top-bar">
+        <div class="user-info">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span>Logged in as <strong>{currentUser}</strong></span>
+        </div>
+        <form action="/api/auth/logout" method="POST" style="display: inline;">
+          <button type="submit" class="logout-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Logout
+          </button>
+        </form>
+      </div>
+
+      <header class="dashboard-header">
+        <h1>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          Job Scraper Dashboard
+        </h1>
+        <p>Monitor and control job scraping operations</p>
+      </header>
+
+        <!-- Demo Credentials Notice (Remove in production) -->
+        <div class="demo-notice">
+          <strong>Demo Credentials:</strong><br/>
+          Username: <code>admin</code><br/>
+          Password: <code>admin123</code>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<style>
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: white;
+    border-radius: 0.75rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  .login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem;
+  }
+
+  .login-container {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .login-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 3rem 2.5rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  .login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .login-header svg {
+    color: #667eea;
+    margin-bottom: 1rem;
+  }
+
+  .login-header h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.75rem;
+    color: #1f2937;
+  }
+
+  .login-header p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #fee2e2;
+    color: #991b1b;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+  }
+
+  .error-message svg {
+    flex-shrink: 0;
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .form-input {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 0.5rem;
+  }
+
+  .login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  }
+
+  .login-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .login-footer a {
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.2s ease;
+  }
+
+  .login-footer a:hover {
+    color: #667eea;
+  }
+
+  .demo-notice {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: #fef3c7;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    color: #92400e;
+    border: 1px solid #fde68a;
+  }
+
+  .demo-notice code {
+    background: white;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-family: monospace;
+    color: #dc2626;
+  }
+
+  @media (max-width: 640px) {
+    .login-card {
+      padding: 2rem 1.5rem;
+    }
+  }
+</style>

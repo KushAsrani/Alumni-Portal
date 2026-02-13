@@ -11,7 +11,7 @@ const config = getSiteConfig();
       <!-- Logo -->
       <div class="flex items-center">
         <a href="/" class="flex items-center space-x-3 group">
-          <div class="w-300 h-300 lg:w-300 lg:h-300 rounded-xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105">
+          <div class="w-300 h-300 lg:w-300 lg:h-300 rounded-xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-100">
         {config.site.logo ? (
           <img src={config.site.logo} alt={`${config.site.name} logo`} class="w-300 h-10 lg:w-300 lg:h-12 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-100" />
         ) : (
@@ -51,11 +51,11 @@ const config = getSiteConfig();
                             {Array.from({ length: config.years.end - config.years.start + 1 }, (_, i) => {
                               const year = config.years.end - i;
                               return (
-                                <a href={`/alumni/years/${year}`} class="mega-menu-link flex items-center space-x-2 hover:bg-accent-50 px-3 py-2 rounded-lg -mx-3 -my-2">
+                                <a href={`/alumni/years/${year}`} class="mega-menu-link flex items-center space-x-2 hover:bg-accent-50 px-3 py-2 rounded-lg -mx-3 -my-1">
                                   <Icon name="mdi:calendar" class="w-4 h-4 text-accent-400 flex-shrink-0" />
                                   <span class="truncate">{year}</span>
                                   <span class="text-xs text-accent-400 ml-auto hidden xl:inline">
-                                    {config.content.alumni_per_page} alumni
+                                    {`Alumni from the year ${year}`}
                                   </span>
                                 </a>
                               );

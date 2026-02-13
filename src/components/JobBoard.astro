@@ -3,157 +3,325 @@ interface Props {
   jobs?: any[];
   limit?: number;
   featured?: boolean;
+  showPagination?: boolean;
+  currentPage?: number;
+  itemsPerPage?: number;
 }
 
-const { jobs = [], limit = 12, featured = false } = Astro.props;
+const { 
+  jobs = [], 
+  limit = 999, 
+  featured = false,
+  showPagination = false,
+  currentPage = 1,
+  itemsPerPage = 12
+} = Astro.props;
 
 let displayJobs = jobs;
 
+// Filter by featured if specified
 if (featured) {
   displayJobs = displayJobs.filter(job => job.featured);
 }
 
+// Apply limit
 displayJobs = displayJobs.slice(0, limit);
+
+// Pagination calculations
+const totalPages = showPagination ? Math.ceil(displayJobs.length / itemsPerPage) : 1;
+const startIndex = (currentPage - 1) * itemsPerPage;
+const endIndex = startIndex + itemsPerPage;
+const paginatedJobs = showPagination ? displayJobs.slice(startIndex, endIndex) : displayJobs;
+
+// Helper function to format Indian salary
+function formatIndianSalary(salary: any) {
+  if (!salary) return null;
+  
+  const minLakhs = (salary.min / 100000).toFixed(1);
+  const maxLakhs = (salary.max / 100000).toFixed(1);
+  
+  return {
+    formatted: `₹${minLakhs}L - ₹${maxLakhs}L`,
+    min: salary.min,
+    max: salary.max,
+    currency: salary.currency
+  };
+}
 ---
 
 <div class="job-board">
+  {/* Results Summary */}
+  <div class="results-summary">
+    <p class="text-accent-700">
+      Showing <strong>{paginatedJobs.length}</strong> of <strong>{displayJobs.length}</strong> jobs
+      {featured && <span class="featured-badge">Featured Only</span>}
+    </p>
+  </div>
+
+  {/* Jobs Grid */}
   <div class="jobs-grid">
-    {displayJobs.length > 0 ? (
-      displayJobs.map((job) => (
-        <article class="job-card">
-          <div class="job-header">
-            <div class="job-title-section">
-              <h3 class="job-title">
-                <a href={job.url} target="_blank" rel="noopener noreferrer">
-                  {job.title}
-                </a>
-              </h3>
-              <p class="company-name">{job.company}</p>
-            </div>
-            <div class="job-badges">
-              <span class={`badge badge-type badge-${job.jobType}`}>
-                {job.jobType}
-              </span>
-              <span class={`badge badge-level badge-${job.experienceLevel}`}>
-                {job.experienceLevel}
-              </span>
-            </div>
-          </div>
-
-          <div class="job-meta">
-            <div class="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-              <span>{job.location}</span>
-            </div>
-
-            {job.salary && (
-              <div class="meta-item">
+    {paginatedJobs.length > 0 ? (
+      paginatedJobs.map((job) => {
+        const salaryDisplay = job.salary ? formatIndianSalary(job.salary) : null;
+        
+        return (
+          <article class="job-card" data-job-id={job.id}>
+            {/* Featured Badge */}
+            {job.featured && (
+              <div class="featured-ribbon">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="12" y1="1" x2="12" y2="23"></line>
-                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
-                <span class="salary">
-                  ${job.salary.min.toLocaleString()} - ${job.salary.max.toLocaleString()}
-                </span>
+                <span>Featured</span>
               </div>
             )}
 
-            <div class="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="1"></circle>
-                <path d="M12 1v6m0 6v6"></path>
-              </svg>
-              <span class="source">{job.source}</span>
-            </div>
-          </div>
-
-          {job.description && (
-            <p class="job-description">
-              {job.description.substring(0, 150)}...
-            </p>
-          )}
-
-          {job.skills && job.skills.length > 0 && (
-            <div class="skills-section">
-              <h4>Required Skills</h4>
-              <div class="skills-list">
-                {job.skills.slice(0, 3).map((skill: string) => (
-                  <span class="skill-tag">{skill}</span>
-                ))}
-                {job.skills.length > 3 && (
-                  <span class="skill-tag more">+{job.skills.length - 3}</span>
-                )}
+            {/* Job Header */}
+            <div class="job-header">
+              <div class="job-title-section">
+                <h3 class="job-title">
+                  <a href={job.url} target="_blank" rel="noopener noreferrer">
+                    {job.title}
+                  </a>
+                </h3>
+                <p class="company-name">{job.company}</p>
+              </div>
+              <div class="job-badges">
+                <span class={`badge badge-type badge-${job.jobType}`}>
+                  {job.jobType}
+                </span>
+                <span class={`badge badge-level badge-${job.experienceLevel}`}>
+                  {job.experienceLevel}
+                </span>
               </div>
             </div>
-          )}
 
-          {job.certifications && job.certifications.length > 0 && (
-            <div class="certifications-section">
-              <h4>Required Certifications</h4>
-              <div class="cert-list">
-                {job.certifications.map((cert: string) => (
-                  <span class="cert-badge">{cert}</span>
-                ))}
+            {/* Job Meta Information */}
+            <div class="job-meta">
+              {/* Location */}
+              <div class="meta-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span>{job.location}</span>
+              </div>
+
+              {/* Salary - FIXED */}
+              {salaryDisplay && (
+                <div class="meta-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 3h12M6 8h12m-12 5h12m-12 5h12M9 3v18m6-18v18"></path>
+                  </svg>
+                  <span class="salary">
+                    {salaryDisplay.formatted}
+                  </span>
+                </div>
+              )}
+
+              {/* Source */}
+              <div class="meta-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+                <span class="source">{job.source}</span>
               </div>
             </div>
-          )}
 
-          <div class="job-footer">
-            <div class="posted-date">
-              Posted {new Date(job.posted_date).toLocaleDateString()}
+            {/* Job Description */}
+            {job.description && (
+              <p class="job-description">
+                {job.description.length > 150 
+                  ? job.description.substring(0, 150) + '...' 
+                  : job.description}
+              </p>
+            )}
+
+            {/* Skills Section */}
+            {job.skills && job.skills.length > 0 && (
+              <div class="skills-section">
+                <h4>Required Skills</h4>
+                <div class="skills-list">
+                  {job.skills.slice(0, 4).map((skill: string) => (
+                    <span class="skill-tag">{skill}</span>
+                  ))}
+                  {job.skills.length > 4 && (
+                    <span class="skill-tag more">+{job.skills.length - 4} more</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Certifications Section */}
+            {job.certifications && job.certifications.length > 0 && (
+              <div class="certifications-section">
+                <h4>Certifications</h4>
+                <div class="cert-list">
+                  {job.certifications.map((cert: string) => (
+                    <span class="cert-badge">{cert}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Job Footer */}
+            <div class="job-footer">
+              <div class="posted-date">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>Posted {new Date(job.posted_date).toLocaleDateString()}</span>
+              </div>
+              <a 
+                href={job.url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="apply-btn"
+                aria-label={`Apply for ${job.title} at ${job.company}`}
+              >
+                <span>View & Apply</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+              </a>
             </div>
-            <a href={job.url} target="_blank" rel="noopener noreferrer" class="apply-btn">
-              View & Apply
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-              </svg>
-            </a>
-          </div>
-        </article>
-      ))
+          </article>
+        );
+      })
     ) : (
       <div class="no-jobs">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
-        <p>No jobs found</p>
+        <h3>No Jobs Found</h3>
+        <p>Try adjusting your filters or search criteria</p>
       </div>
     )}
   </div>
+
+  {/* Pagination */}
+  {showPagination && totalPages > 1 && (
+    <div class="pagination">
+      <button 
+        class="pagination-btn"
+        disabled={currentPage === 1}
+        data-page={currentPage - 1}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        Previous
+      </button>
+
+      <div class="pagination-numbers">
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+          <button
+            class={`pagination-number ${page === currentPage ? 'active' : ''}`}
+            data-page={page}
+          >
+            {page}
+          </button>
+        ))}
+      </div>
+
+      <button 
+        class="pagination-btn"
+        disabled={currentPage === totalPages}
+        data-page={currentPage + 1}
+      >
+        Next
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  )}
 </div>
 
 <style>
   .job-board {
-    padding: 2rem 0;
+    width: 100%;
+  }
+
+  .results-summary {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .results-summary p {
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  .featured-badge {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
   }
 
   .jobs-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 1.5rem;
+    margin-bottom: 2rem;
   }
 
   .job-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     background: white;
     border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     padding: 1.5rem;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
   }
 
   .job-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    border-color: var(--color-primary, #2e4096);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    border-color: var(--color-primary, #22c55e);
+  }
+
+  .featured-ribbon {
+    position: absolute;
+    top: 1rem;
+    right: -2rem;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: white;
+    padding: 0.25rem 2.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transform: rotate(45deg);
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .featured-ribbon svg {
+    width: 12px;
+    height: 12px;
+    fill: white;
   }
 
   .job-header {
@@ -168,24 +336,25 @@ displayJobs = displayJobs.slice(0, limit);
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
-    line-height: 1.5;
+    line-height: 1.4;
   }
 
   .job-title a {
-    color: var(--color-primary, #2e4096);
+    color: var(--color-primary, #22c55e);
     text-decoration: none;
     transition: color 0.2s ease;
+    display: inline-block;
   }
 
   .job-title a:hover {
-    color: var(--color-primary-dark, #2e4096);
+    color: var(--color-primary-dark, #16a34a);
     text-decoration: underline;
   }
 
   .company-name {
     margin: 0.5rem 0 0 0;
     font-size: 0.95rem;
-    color: black;
+    color: #6b7280;
     font-weight: 500;
   }
 
@@ -263,7 +432,7 @@ displayJobs = displayJobs.slice(0, limit);
     border-top: 1px solid #f3f4f6;
     border-bottom: 1px solid #f3f4f6;
     font-size: 0.875rem;
-    color: black;
+    color: #6b7280;
   }
 
   .meta-item {
@@ -274,12 +443,12 @@ displayJobs = displayJobs.slice(0, limit);
 
   .meta-item svg {
     flex-shrink: 0;
-    color: var(--color-primary, #2e4096);
+    color: var(--color-primary, #22c55e);
   }
 
   .salary {
     font-weight: 600;
-    color: black;
+    color: #059669;
   }
 
   .source {
@@ -291,11 +460,7 @@ displayJobs = displayJobs.slice(0, limit);
     margin: 1rem 0;
     font-size: 0.875rem;
     color: #6b7280;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    line-height: 1.6;
   }
 
   .skills-section,
@@ -306,7 +471,7 @@ displayJobs = displayJobs.slice(0, limit);
   .skills-section h4,
   .certifications-section h4 {
     margin: 0 0 0.5rem 0;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     color: #9ca3af;
@@ -323,8 +488,8 @@ displayJobs = displayJobs.slice(0, limit);
   .skill-tag,
   .cert-badge {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
-    border-radius: 0.25rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 0.375rem;
     font-size: 0.75rem;
     font-weight: 500;
   }
@@ -360,17 +525,25 @@ displayJobs = displayJobs.slice(0, limit);
   .posted-date {
     font-size: 0.75rem;
     color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .posted-date svg {
+    width: 14px;
+    height: 14px;
   }
 
   .apply-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: var(--color-primary, #2e4096);
+    padding: 0.6rem 1.2rem;
+    background: var(--color-primary, #22c55e);
     color: white;
     border: none;
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
     font-size: 0.875rem;
     font-weight: 600;
     text-decoration: none;
@@ -379,8 +552,9 @@ displayJobs = displayJobs.slice(0, limit);
   }
 
   .apply-btn:hover {
-    background: var(--color-primary-dark, #2e4096);
+    background: var(--color-primary-dark, #16a34a);
     transform: translateX(2px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
   }
 
   .apply-btn svg {
@@ -394,19 +568,89 @@ displayJobs = displayJobs.slice(0, limit);
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 3rem 2rem;
+    padding: 4rem 2rem;
     color: #9ca3af;
+    text-align: center;
   }
 
   .no-jobs svg {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     color: #d1d5db;
+  }
+
+  .no-jobs h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #6b7280;
   }
 
   .no-jobs p {
     margin: 0;
-    font-size: 1.125rem;
+    font-size: 1rem;
+    color: #9ca3af;
+  }
+
+  /* Pagination Styles */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 3rem;
+  }
+
+  .pagination-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
     font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .pagination-btn:hover:not(:disabled) {
+    background: #f9fafb;
+    border-color: var(--color-primary, #22c55e);
+  }
+
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .pagination-numbers {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .pagination-number {
+    padding: 0.5rem 0.75rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .pagination-number:hover {
+    background: #f9fafb;
+    border-color: var(--color-primary, #22c55e);
+  }
+
+  .pagination-number.active {
+    background: var(--color-primary, #22c55e);
+    color: white;
+    border-color: var(--color-primary, #22c55e);
   }
 
   @media (max-width: 768px) {
@@ -421,12 +665,22 @@ displayJobs = displayJobs.slice(0, limit);
 
     .job-footer {
       flex-direction: column;
-      align-items: flex-start;
+      align-items: stretch;
       gap: 1rem;
     }
 
     .apply-btn {
       width: 100%;
+      justify-content: center;
+    }
+
+    .pagination {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .pagination-numbers {
+      flex-wrap: wrap;
       justify-content: center;
     }
   }
