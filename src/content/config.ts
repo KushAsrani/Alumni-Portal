@@ -91,7 +91,8 @@ const jobsCollection = defineCollection({
         max: z.number(),
         currency: z.string().default('USD'),
       })
-      .optional(),
+      .nullable()  // ✅ Allow null values
+      .optional(), // ✅ Allow field to be missing
     jobType: z.enum(['full-time', 'part-time', 'contract', 'internship']),
     experienceLevel: z.enum(['entry', 'mid', 'senior', 'executive']),
     skills: z.array(z.string()).default([]),

@@ -1,0 +1,777 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// Check authentication (implement your auth logic)
+// const isAuthenticated = checkAuth(Astro.request);
+// if (!isAuthenticated) {
+//   return Astro.redirect('/login');
+// }
+---
+
+<Layout title="Job Scraper Dashboard | Admin">
+  <main class="dashboard-page">
+    <div class="container">
+      <header class="dashboard-header">
+        <h1>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          Job Scraper Dashboard
+        </h1>
+        <p>Monitor and control job scraping operations</p>
+      </header>
+
+      <!-- Status Card -->
+      <section class="status-section">
+        <div class="status-card">
+          <div class="status-header">
+            <h2>Current Status</h2>
+            <span class="status-badge" id="status-badge">
+              <span class="status-dot"></span>
+              <span id="status-text">Loading...</span>
+            </span>
+          </div>
+
+          <div class="status-details" id="status-details">
+            <div class="status-item">
+              <span class="label">Progress:</span>
+              <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+                <span class="progress-text" id="progress-text">0%</span>
+              </div>
+            </div>
+
+            <div class="status-item">
+              <span class="label">Status Message:</span>
+              <span class="value" id="status-message">Idle</span>
+            </div>
+
+            <div class="status-item">
+              <span class="label">Total Jobs:</span>
+              <span class="value" id="total-jobs">0</span>
+            </div>
+
+            <div class="status-item">
+              <span class="label">Started At:</span>
+              <span class="value" id="started-at">-</span>
+            </div>
+
+            <div class="status-item">
+              <span class="label">Last Scrape:</span>
+              <span class="value" id="last-scrape">-</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Control Panel -->
+      <section class="control-section">
+        <div class="control-card">
+          <h2>Scraping Controls</h2>
+
+          <form id="scrape-form" class="scrape-form">
+            <div class="form-group">
+              <label for="location">Location</label>
+              <select id="location" name="location" class="form-input">
+                <option value="India">India</option>
+                <option value="Mumbai">Mumbai</option>
+                <option value="Delhi">Delhi/NCR</option>
+                <option value="Bangalore">Bangalore</option>
+                <option value="Pune">Pune</option>
+                <option value="Hyderabad">Hyderabad</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="keywords">Keywords (comma-separated)</label>
+              <input
+                type="text"
+                id="keywords"
+                name="keywords"
+                class="form-input"
+                value="actuarial analyst, actuary, actuarial scientist"
+                placeholder="actuarial, actuary, risk analyst"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="max-pages">Max Pages per Source</label>
+              <input
+                type="number"
+                id="max-pages"
+                name="max-pages"
+                class="form-input"
+                value="3"
+                min="1"
+                max="10"
+              />
+              <small>Recommended: 3-5 pages. More pages = longer scrape time.</small>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="start-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Start Scraping
+              </button>
+
+              <button type="button" class="btn btn-secondary" id="refresh-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                Refresh Status
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Statistics -->
+      <section class="stats-section" id="stats-section" style="display: none;">
+        <div class="stats-card">
+          <h2>Latest Statistics</h2>
+          <div class="stats-grid" id="stats-grid">
+            <!-- Stats will be populated here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Jobs -->
+      <section class="jobs-section" id="jobs-section" style="display: none;">
+        <div class="jobs-card">
+          <div class="jobs-header">
+            <h2>Recently Scraped Jobs</h2>
+            <button class="btn btn-sm" id="view-all-btn">View All Jobs</button>
+          </div>
+          <div class="jobs-list" id="jobs-list">
+            <!-- Jobs will be populated here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Logs -->
+      <section class="logs-section">
+        <div class="logs-card">
+          <h2>Activity Log</h2>
+          <div class="logs-container" id="logs-container">
+            <div class="log-entry">
+              <span class="log-time">{new Date().toLocaleTimeString()}</span>
+              <span class="log-message">Dashboard loaded</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .dashboard-page {
+    min-height: 100vh;
+    background: #f9fafb;
+    padding: 2rem 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .dashboard-header {
+    margin-bottom: 2rem;
+  }
+
+  .dashboard-header h1 {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    color: #1f2937;
+  }
+
+  .dashboard-header p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 1.125rem;
+  }
+
+  /* Status Card */
+  .status-section {
+    margin-bottom: 2rem;
+  }
+
+  .status-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .status-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #1f2937;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #f3f4f6;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .status-badge.idle {
+    background: #e5e7eb;
+    color: #6b7280;
+  }
+
+  .status-badge.running {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .status-badge.success {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-badge.error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .status-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+  }
+
+  .status-item .label {
+    font-weight: 500;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .status-item .value {
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .progress-bar {
+    flex: 1;
+    max-width: 300px;
+    height: 24px;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    position: relative;
+    overflow: hidden;
+    margin-left: 1rem;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  /* Control Panel */
+  .control-section {
+    margin-bottom: 2rem;
+  }
+
+  .control-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .control-card h2 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.5rem;
+    color: #1f2937;
+  }
+
+  .scrape-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-group label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .form-group small {
+    color: #6b7280;
+    font-size: 0.75rem;
+  }
+
+  .form-input {
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary {
+    background: #22c55e;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #16a34a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  }
+
+  .btn-primary:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  .btn-secondary:hover {
+    background: #e5e7eb;
+  }
+
+  /* Statistics */
+  .stats-card,
+  .jobs-card,
+  .logs-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+
+  .stats-card h2,
+  .jobs-card h2,
+  .logs-card h2 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.5rem;
+    color: #1f2937;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .stat-box {
+    padding: 1.5rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    text-align: center;
+  }
+
+  .stat-box .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #22c55e;
+  }
+
+  .stat-box .stat-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+  }
+
+  /* Jobs List */
+  .jobs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .jobs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .job-item {
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    border-left: 4px solid #22c55e;
+  }
+
+  .job-item h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    color: #1f2937;
+  }
+
+  .job-item p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  /* Logs */
+  .logs-container {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+  }
+
+  .log-entry {
+    display: flex;
+    gap: 1rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.875rem;
+  }
+
+  .log-entry:last-child {
+    border-bottom: none;
+  }
+
+  .log-time {
+    color: #6b7280;
+    min-width: 100px;
+  }
+
+  .log-message {
+    color: #1f2937;
+  }
+
+  @media (max-width: 768px) {
+    .form-actions {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  // API Configuration
+  const API_BASE = '/api/jobs';
+  
+  let statusInterval: number;
+  
+  // DOM Elements
+  const statusBadge = document.getElementById('status-badge');
+  const statusText = document.getElementById('status-text');
+  const progressFill = document.getElementById('progress-fill');
+  const progressText = document.getElementById('progress-text');
+  const statusMessage = document.getElementById('status-message');
+  const totalJobs = document.getElementById('total-jobs');
+  const startedAt = document.getElementById('started-at');
+  const lastScrape = document.getElementById('last-scrape');
+  
+  const scrapeForm = document.getElementById('scrape-form') as HTMLFormElement;
+  const startBtn = document.getElementById('start-btn') as HTMLButtonElement;
+  const refreshBtn = document.getElementById('refresh-btn');
+  
+  const statsSection = document.getElementById('stats-section');
+  const statsGrid = document.getElementById('stats-grid');
+  const jobsSection = document.getElementById('jobs-section');
+  const jobsList = document.getElementById('jobs-list');
+  const logsContainer = document.getElementById('logs-container');
+  
+  // Add log entry
+  function addLog(message: string, type: 'info' | 'success' | 'error' = 'info') {
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry log-${type}`;
+    logEntry.innerHTML = `
+      <span class="log-time">${new Date().toLocaleTimeString()}</span>
+      <span class="log-message">${message}</span>
+    `;
+    logsContainer?.prepend(logEntry);
+    
+    // Keep only last 50 logs
+    while (logsContainer && logsContainer.children.length > 50) {
+      logsContainer.removeChild(logsContainer.lastChild!);
+    }
+  }
+  
+  // Fetch status
+  async function fetchStatus() {
+    try {
+      const response = await fetch(`${API_BASE}/status`);
+      const data = await response.json();
+      
+      if (data.success) {
+        updateStatusUI(data.status);
+      }
+    } catch (error) {
+      console.error('Error fetching status:', error);
+      addLog('Failed to fetch status', 'error');
+    }
+  }
+  
+  // Update status UI
+  function updateStatusUI(status: any) {
+    // Update badge
+    if (statusBadge) {
+      statusBadge.className = 'status-badge';
+      if (status.is_running) {
+        statusBadge.classList.add('running');
+        if (statusText) statusText.textContent = 'Running';
+      } else if (status.progress === 100) {
+        statusBadge.classList.add('success');
+        if (statusText) statusText.textContent = 'Completed';
+      } else if (status.errors?.length > 0) {
+        statusBadge.classList.add('error');
+        if (statusText) statusText.textContent = 'Error';
+      } else {
+        statusBadge.classList.add('idle');
+        if (statusText) statusText.textContent = 'Idle';
+      }
+    }
+    
+    // Update progress
+    if (progressFill) {
+      progressFill.style.width = `${status.progress}%`;
+    }
+    if (progressText) {
+      progressText.textContent = `${status.progress}%`;
+    }
+    
+    // Update details
+    if (statusMessage) statusMessage.textContent = status.status_message || 'Idle';
+    if (totalJobs) totalJobs.textContent = status.total_jobs?.toString() || '0';
+    if (startedAt) startedAt.textContent = status.started_at ? new Date(status.started_at).toLocaleString() : '-';
+    if (lastScrape && status.last_scrape) {
+      lastScrape.textContent = new Date(status.last_scrape.timestamp).toLocaleString();
+    }
+    
+    // Enable/disable start button
+    if (startBtn) {
+      startBtn.disabled = status.is_running;
+      startBtn.textContent = status.is_running ? 'Scraping...' : 'Start Scraping';
+    }
+  }
+  
+  // Start scraping
+  scrapeForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const location = (document.getElementById('location') as HTMLSelectElement).value;
+    const keywordsInput = (document.getElementById('keywords') as HTMLInputElement).value;
+    const maxPages = parseInt((document.getElementById('max-pages') as HTMLInputElement).value);
+    
+    const keywords = keywordsInput.split(',').map(k => k.trim());
+    
+    addLog(`Starting scrape: ${location}, ${keywords.length} keywords, ${maxPages} pages`, 'info');
+    
+    try {
+      const response = await fetch(`${API_BASE}/scrape`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          location,
+          keywords,
+          max_pages: maxPages
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        addLog('Scraping started successfully!', 'success');
+        // Start polling status
+        startStatusPolling();
+      } else {
+        addLog(`Failed to start scraping: ${data.message}`, 'error');
+      }
+    } catch (error) {
+      console.error('Error starting scrape:', error);
+      addLog('Error starting scrape', 'error');
+    }
+  });
+  
+  // Refresh status
+  refreshBtn?.addEventListener('click', () => {
+    addLog('Refreshing status...', 'info');
+    fetchStatus();
+    fetchStats();
+    fetchLatestJobs();
+  });
+  
+  // Fetch stats
+  async function fetchStats() {
+    try {
+      const response = await fetch(`${API_BASE}/stats`);
+      const data = await response.json();
+      
+      if (data.success && data.stats.total_jobs > 0) {
+        if (statsSection) statsSection.style.display = 'block';
+        
+        if (statsGrid) {
+          statsGrid.innerHTML = `
+            <div class="stat-box">
+              <div class="stat-value">${data.stats.total_jobs}</div>
+              <div class="stat-label">Total Jobs</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value">₹${data.stats.salary.avg_min_lakhs}L - ₹${data.stats.salary.avg_max_lakhs}L</div>
+              <div class="stat-label">Avg Salary</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value">${Object.keys(data.stats.by_source).length}</div>
+              <div class="stat-label">Sources</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value">${data.stats.top_skills[0]?.skill || 'N/A'}</div>
+              <div class="stat-label">Top Skill</div>
+            </div>
+          `;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  }
+  
+  // Fetch latest jobs
+  async function fetchLatestJobs() {
+    try {
+      const response = await fetch(`${API_BASE}/latest?limit=5`);
+      const data = await response.json();
+      
+      if (data.success && data.jobs.length > 0) {
+        if (jobsSection) jobsSection.style.display = 'block';
+        
+        if (jobsList) {
+          jobsList.innerHTML = data.jobs.map((job: any) => `
+            <div class="job-item">
+              <h3>${job.title}</h3>
+              <p>${job.company} • ${job.location} • ${job.source}</p>
+            </div>
+          `).join('');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    }
+  }
+  
+  // Start polling status
+  function startStatusPolling() {
+    if (statusInterval) {
+      clearInterval(statusInterval);
+    }
+    statusInterval = window.setInterval(fetchStatus, 2000); // Poll every 2 seconds
+  }
+  
+  // Stop polling
+  function stopStatusPolling() {
+    if (statusInterval) {
+      clearInterval(statusInterval);
+    }
+  }
+  
+  // Initial load
+  fetchStatus();
+  fetchStats();
+  fetchLatestJobs();
+  startStatusPolling();
+  
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    stopStatusPolling();
+  });
+</script>
