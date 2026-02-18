@@ -128,3 +128,10 @@ temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Virtual environment
+.venv/
+venv/
+
+#template
+--template/

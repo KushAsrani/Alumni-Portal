@@ -12,6 +12,7 @@ import random
 class ActuarialJobScraper:
     """
     Comprehensive web scraper for actuarial job listings from multiple sources
+    Configured for India with INR currency
     """
     
     def __init__(self, location: str = "India", keywords: List[str] = None):

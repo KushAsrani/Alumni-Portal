@@ -2,14 +2,19 @@
   "id": "4bf83d2e297d8e40",
   "title": "Senior Data Analyst",
   "company": "Hitachi Vantara",
-  "location": "India",
+  "location": "India, Remote",
   "description": "Senior Data Analyst position at Hitachi Vantara",
   "url": "https://in.linkedin.com/jobs/view/senior-data-analyst-at-hitachi-vantara-4371170410?position=17&pageNum=0&refId=CNJ2FtybIXiqfNlmu1ARVA%3D%3D&trackingId=fvTJLlg%2BwteAIWsCAmphUw%3D%3D",
   "source": "LinkedIn",
   "jobType": "full-time",
   "experienceLevel": "senior",
   "skills": [
-    "R"
+    "SQL",
+    "Python",
+    "Power BI",
+    "Excel",
+    "Tableau",
+    "Data Visualization"
   ],
   "qualifications": [],
   "posted_date": "2026-02-12",

@@ -1,55 +1,148 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { isAuthenticated, getCurrentUser, requireAuth } from '../../lib/auth';
+export const prerender = false; // Disable prerendering for SSR
 
-// Check authentication
-const authRedirect = requireAuth(Astro.cookies, '/admin/login');
-if (authRedirect) {
-  return authRedirect;
+import Layout from '../../layouts/Layout.astro';
+import { authenticateUser, setAuthCookie, isAuthenticated } from '../../lib/auth';
+
+let errorMessage = '';
+
+// Check if already authenticated
+try {
+  const alreadyAuthenticated = isAuthenticated(Astro.cookies);
+  
+  if (alreadyAuthenticated) {
+    return Astro.redirect('/admin/scraper-dashboard');
+  }
+} catch (error) {
+  console.error('Auth check error:', error);
 }
 
-// Get current user
-const currentUser = getCurrentUser(Astro.cookies);
+// Handle login form submission
+if (Astro.request.method === 'POST') {
+  try {
+    // Get form data with proper content type handling
+    const contentType = Astro.request.headers.get('content-type') || '';
+    
+    let username = '';
+    let password = '';
+    
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const formData = await Astro.request.formData();
+      username = formData.get('username')?.toString()?.trim() || '';
+      password = formData.get('password')?.toString()?.trim() || '';
+    } else {
+      // Fallback for incorrect content type
+      const body = await Astro.request.text();
+      const params = new URLSearchParams(body);
+      username = params.get('username')?.trim() || '';
+      password = params.get('password')?.trim() || '';
+    }
+    
+    console.log('Login attempt for username:', username);
+    
+    if (!username || !password) {
+      errorMessage = 'Please enter both username and password';
+    } else if (authenticateUser(username, password)) {
+      console.log('Authentication successful for:', username);
+      
+      // Set authentication cookie
+      setAuthCookie(Astro.cookies, username);
+      
+      // Redirect to dashboard
+      return Astro.redirect('/admin/scraper-dashboard');
+    } else {
+      console.log('Authentication failed for:', username);
+      errorMessage = 'Invalid username or password';
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    errorMessage = 'An error occurred during login. Please try again.';
+  }
+}
 ---
 
-<Layout title="Job Scraper Dashboard | Admin">
-  <main class="dashboard-page">
-    <div class="container">
-      <!-- Top Bar with User Info and Logout -->
-      <div class="top-bar">
-        <div class="user-info">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
+<Layout title="Admin Login | Alumni Portal">
+  <main class="login-page">
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
-          <span>Logged in as <strong>{currentUser}</strong></span>
+          <h1>Admin Login</h1>
+          <p>Admin Dashboard</p>
         </div>
-        <form action="/api/auth/logout" method="POST" style="display: inline;">
-          <button type="submit" class="logout-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
+
+        {errorMessage && (
+          <div class="error-message">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            Logout
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        <!-- FIXED: Explicit form encoding -->
+        <form method="POST" action="/admin/login" enctype="application/x-www-form-urlencoded" class="login-form">
+          <div class="form-group">
+            <label for="username">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              class="form-input"
+              placeholder="Enter username"
+              required
+              autocomplete="username"
+              autofocus
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-input"
+              placeholder="Enter password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+
+          <button type="submit" class="login-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+            Login
           </button>
         </form>
-      </div>
 
-      <header class="dashboard-header">
-        <h1>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
-          Job Scraper Dashboard
-        </h1>
-        <p>Monitor and control job scraping operations</p>
-      </header>
+        <div class="login-footer">
+          <a href="/">← Back to Home</a>
+        </div>
 
-        <!-- Demo Credentials Notice (Remove in production) -->
+        <!-- Demo Credentials Notice -->
         <div class="demo-notice">
-          <strong>Demo Credentials:</strong><br/>
+          <strong>🔑 Demo Credentials:</strong><br/>
           Username: <code>admin</code><br/>
           Password: <code>admin123</code>
         </div>
@@ -59,16 +152,6 @@ const currentUser = getCurrentUser(Astro.cookies);
 </Layout>
 
 <style>
-.top-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    background: white;
-    border-radius: 0.75rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
   .login-page {
     min-height: 100vh;
     display: flex;
@@ -122,6 +205,7 @@ const currentUser = getCurrentUser(Astro.cookies);
     border-radius: 0.5rem;
     margin-bottom: 1.5rem;
     font-size: 0.875rem;
+    border: 1px solid #fecaca;
   }
 
   .error-message svg {
@@ -185,6 +269,10 @@ const currentUser = getCurrentUser(Astro.cookies);
     box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
   }
 
+  .login-btn:active {
+    transform: translateY(0);
+  }
+
   .login-footer {
     margin-top: 1.5rem;
     text-align: center;
@@ -215,13 +303,18 @@ const currentUser = getCurrentUser(Astro.cookies);
     background: white;
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
-    font-family: monospace;
+    font-family: 'Courier New', monospace;
     color: #dc2626;
+    font-weight: 600;
   }
 
   @media (max-width: 640px) {
     .login-card {
       padding: 2rem 1.5rem;
+    }
+
+    .login-header h1 {
+      font-size: 1.5rem;
     }
   }
 </style>

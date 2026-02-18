@@ -1,15 +1,13 @@
 import type { AstroCookies } from 'astro';
 import { createHash } from 'crypto';
 
-// In production, use environment variables
-const ADMIN_CREDENTIALS = {
-  username: process.env.ADMIN_USERNAME || 'admin',
-  // Hash of password (use bcrypt in production)
-  passwordHash: process.env.ADMIN_PASSWORD_HASH || hashPassword('admin123'),
-};
-
+// Configuration constants
 const SESSION_COOKIE_NAME = 'admin_session';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'change-this-secret-key-in-production';
+
+// Default credentials
+const DEFAULT_USERNAME = 'admin';
+const DEFAULT_PASSWORD = 'admin123';
 
 /**
  * Hash password (use bcrypt or argon2 in production)
@@ -21,10 +19,32 @@ export function hashPassword(password: string): string {
 }
 
 /**
+ * Get admin credentials
+ * Calculate password hash dynamically based on current SESSION_SECRET
+ */
+function getAdminCredentials() {
+  const username = process.env.ADMIN_USERNAME || DEFAULT_USERNAME;
+  
+  // If custom password hash is provided, use it
+  // Otherwise, hash the default password with current SESSION_SECRET
+  const passwordHash = process.env.ADMIN_PASSWORD_HASH || hashPassword(DEFAULT_PASSWORD);
+  
+  return {
+    username,
+    passwordHash
+  };
+}
+
+/**
  * Verify password
  */
 export function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+  const inputHash = hashPassword(password);
+  console.log('Verifying password:');
+  console.log('  Input hash:', inputHash);
+  console.log('  Expected hash:', hash);
+  console.log('  Match:', inputHash === hash);
+  return inputHash === hash;
 }
 
 /**
@@ -43,9 +63,14 @@ export function createSessionToken(username: string): string {
 /**
  * Verify session token
  */
-export function verifySessionToken(token: string): { valid: boolean; username?: string } {
+export function verifySessionToken(token: string): { valid: boolean; username?: string; error?: string } {
   try {
     const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
+    
+    if (!decoded.payload || !decoded.signature) {
+      return { valid: false, error: 'Invalid token structure' };
+    }
+    
     const { payload, signature } = decoded;
     
     // Verify signature
@@ -54,24 +79,28 @@ export function verifySessionToken(token: string): { valid: boolean; username?: 
       .digest('hex');
     
     if (signature !== expectedSignature) {
-      return { valid: false };
+      return { valid: false, error: 'Invalid signature' };
     }
     
-    // Parse payload
     const data = JSON.parse(payload);
     const { username, timestamp } = data;
     
+    if (!username || !timestamp) {
+      return { valid: false, error: 'Invalid payload data' };
+    }
+    
     // Check if session is expired (24 hours)
     const sessionAge = Date.now() - timestamp;
-    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+    const maxAge = 24 * 60 * 60 * 1000;
     
-    if (sessionAge > maxAge) {
-      return { valid: false };
+    if (sessionAge > maxAge || sessionAge < 0) {
+      return { valid: false, error: 'Session expired' };
     }
     
     return { valid: true, username };
   } catch (error) {
-    return { valid: false };
+    console.error('Session verification error:', error);
+    return { valid: false, error: 'Token verification failed' };
   }
 }
 
@@ -79,44 +108,83 @@ export function verifySessionToken(token: string): { valid: boolean; username?: 
  * Authenticate user
  */
 export function authenticateUser(username: string, password: string): boolean {
-  if (username !== ADMIN_CREDENTIALS.username) {
+  const credentials = getAdminCredentials();
+  
+  // Trim whitespace
+  username = username.trim();
+  password = password.trim();
+  
+  console.log('Authentication attempt:');
+  console.log('  Username:', username);
+  console.log('  Expected username:', credentials.username);
+  console.log('  Username match:', username === credentials.username);
+  
+  if (!username || !password) {
+    console.log('  Result: Empty credentials');
     return false;
   }
   
-  return verifyPassword(password, ADMIN_CREDENTIALS.passwordHash);
+  if (username !== credentials.username) {
+    console.log('  Result: Username mismatch');
+    return false;
+  }
+  
+  const result = verifyPassword(password, credentials.passwordHash);
+  console.log('  Result:', result ? 'SUCCESS' : 'FAILED');
+  
+  return result;
 }
 
 /**
  * Check if user is authenticated from cookies
  */
 export function isAuthenticated(cookies: AstroCookies): boolean {
-  const sessionToken = cookies.get(SESSION_COOKIE_NAME)?.value;
-  
-  if (!sessionToken) {
+  try {
+    const sessionToken = cookies.get(SESSION_COOKIE_NAME);
+    
+    if (!sessionToken || !sessionToken.value) {
+      return false;
+    }
+    
+    const { valid, error } = verifySessionToken(sessionToken.value);
+    
+    if (!valid) {
+      console.log('Invalid session:', error);
+      cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Authentication check error:', error);
+    cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
     return false;
   }
-  
-  const { valid } = verifySessionToken(sessionToken);
-  return valid;
 }
 
 /**
  * Get current user from cookies
  */
 export function getCurrentUser(cookies: AstroCookies): string | null {
-  const sessionToken = cookies.get(SESSION_COOKIE_NAME)?.value;
-  
-  if (!sessionToken) {
+  try {
+    const sessionToken = cookies.get(SESSION_COOKIE_NAME);
+    
+    if (!sessionToken || !sessionToken.value) {
+      return null;
+    }
+    
+    const { valid, username } = verifySessionToken(sessionToken.value);
+    
+    if (!valid) {
+      cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
+      return null;
+    }
+    
+    return username || null;
+  } catch (error) {
+    console.error('Get current user error:', error);
     return null;
   }
-  
-  const { valid, username } = verifySessionToken(sessionToken);
-  
-  if (!valid) {
-    return null;
-  }
-  
-  return username || null;
 }
 
 /**
@@ -128,8 +196,8 @@ export function setAuthCookie(cookies: AstroCookies, username: string): void {
   cookies.set(SESSION_COOKIE_NAME, token, {
     path: '/',
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: import.meta.env.PROD,
+    sameSite: 'lax',
     maxAge: 60 * 60 * 24, // 24 hours
   });
 }
@@ -141,14 +209,4 @@ export function clearAuthCookie(cookies: AstroCookies): void {
   cookies.delete(SESSION_COOKIE_NAME, {
     path: '/',
   });
-}
-
-/**
- * Require authentication middleware
- */
-export function requireAuth(cookies: AstroCookies, redirectTo: string = '/admin/login') {
-  if (!isAuthenticated(cookies)) {
-    return Response.redirect(redirectTo);
-  }
-  return null;
 }

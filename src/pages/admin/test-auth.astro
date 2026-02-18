@@ -1,0 +1,105 @@
+---
+export const prerender = false;
+
+import { hashPassword } from '../../lib/auth';
+
+const testPassword = 'admin123';
+const hash = hashPassword(testPassword);
+
+const sessionSecret = process.env.SESSION_SECRET || 'change-this-secret-key-in-production';
+---
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Authentication Test</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      padding: 2rem;
+      background: #1f2937;
+      color: #f9fafb;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    pre {
+      background: #374151;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      border: 2px solid #4b5563;
+    }
+    h1, h2 {
+      color: #22c55e;
+    }
+    .section {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background: #374151;
+      border-radius: 0.5rem;
+      border-left: 4px solid #22c55e;
+    }
+    .success {
+      color: #22c55e;
+    }
+    .warning {
+      color: #fbbf24;
+    }
+    code {
+      background: #4b5563;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      color: #fbbf24;
+    }
+    a {
+      color: #22c55e;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Authentication Configuration Test</h1>
+
+  <div class="section">
+    <h2>Current Configuration:</h2>
+    <pre>Session Secret: {sessionSecret.substring(0, 20)}...
+Secret Length: {sessionSecret.length} characters</pre>
+  </div>
+
+  <div class="section">
+    <h2>Default Credentials:</h2>
+    <pre>Username: <code>admin</code>
+Password: <code>admin123</code></pre>
+  </div>
+
+  <div class="section">
+    <h2>Password Hash:</h2>
+    <pre>Hash for "admin123": {hash}</pre>
+    <p class="success">✓ This is the expected hash for authentication</p>
+  </div>
+
+  <div class="section">
+    <h2>Environment Variables:</h2>
+    <pre>ADMIN_USERNAME: {process.env.ADMIN_USERNAME || '(not set - using default)'}
+ADMIN_PASSWORD_HASH: {process.env.ADMIN_PASSWORD_HASH ? '(set)' : '(not set - using default)'}
+SESSION_SECRET: {process.env.SESSION_SECRET ? '(set)' : '(using default)'}</pre>
+  </div>
+
+  <div class="section">
+    <h2>Instructions:</h2>
+    <ol>
+      <li>Use the credentials shown above to login</li>
+      <li>If you want to set a custom password, generate a hash using the utility</li>
+      <li>Add the hash to your <code>.env</code> file as <code>ADMIN_PASSWORD_HASH</code></li>
+    </ol>
+  </div>
+
+  <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #4b5563;">
+    <a href="/admin/login">→ Go to Login Page</a> |
+    <a href="/clear-cookies">Clear Cookies</a>
+  </div>
+</body>
+</html>

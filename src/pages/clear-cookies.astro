@@ -1,0 +1,20 @@
+---
+export const prerender = false; // Enable SSR
+
+// Clear all cookies
+Astro.cookies.delete('admin_session', { path: '/' });
+---
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Clearing Cookies...</title>
+  <meta http-equiv="refresh" content="1;url=/admin/login">
+</head>
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui; background: #f9fafb;">
+  <div style="text-align: center;">
+    <h1 style="color: #22c55e; margin-bottom: 1rem;">✓ Cookies Cleared</h1>
+    <p style="color: #6b7280;">Redirecting to login page...</p>
+  </div>
+</body>
+</html>

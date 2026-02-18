@@ -1,0 +1,41 @@
+---
+import { get } from 'http';
+import { isAuthenticated, getCurrentUser } from '../../lib/auth';
+
+const authenticated = isAuthenticated(Astro.cookies);
+const currentUser = getCurrentUser(Astro.cookies);
+const cookieHeader = Astro.request.headers.get('cookie') || 'No cookies';
+---
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Auth Debug</title>
+  <style>
+    body { font-family: monospace; padding: 2rem; background: #1f2937; color: #f9fafb; }
+    pre { background: #374151; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+    h2 { color: #22c55e; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Authentication Debug Info</h1>
+  
+  <h2>Status:</h2>
+  <pre>Authenticated: {authenticated.toString()}
+Current User: {currentUser || 'None'}</pre>
+
+  <h2>Cookie Header:</h2>
+  <pre>{cookieHeader}</pre>
+
+  <h2>All Cookies:</h2>
+
+  <h2>Environment:</h2>
+  <pre>PROD Mode: {import.meta.env.PROD.toString()}
+Session Secret: {import.meta.env.SESSION_SECRET ? 'Set' : 'Using default'}</pre>
+
+  <div style="margin-top: 2rem;">
+    <a href="/clear-cookies" style="color: #22c55e;">Clear All Cookies</a> |
+    <a href="/admin/login" style="color: #22c55e;">Go to Login</a>
+  </div>
+</body>
+</html>

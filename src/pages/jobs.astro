@@ -35,7 +35,7 @@ let filteredJobs = allJobs;
 // Search filter
 if (searchQuery) {
   filteredJobs = filteredJobs.filter(job => {
-    const searchableText = `${job.title} ${job.company} ${job.location} ${job.description}`.toLowerCase();
+    const searchableText = `${job.title} ${job.company} ${job.location} ${job.description} ${job.skills} ${job.jobType} ${job.experienceLevel} ${job.source} ${job.jobType === "full-time" ? "fulltime" : job.jobType} ${job.jobType === "full-time" ? "full time" : job.jobType} ${job.jobType === "part-time" ? "part time" : job.jobType} ${job.jobType === "part-time" ? "parttime" : job.jobType} ${job.experienceLevel === "entry" ? "entry level" : job.experienceLevel === "mid" ? "mid level" : job.experienceLevel === "senior" ? "senior level" : job.experienceLevel === "executive" ? "executive level" : job.experienceLevel}`.toLowerCase();
     return searchableText.includes(searchQuery);
   });
 }
@@ -129,7 +129,7 @@ const topCertifications = Array.from(certCounts.entries())
     <section class="jobs-hero">
       <div class="hero-content">
         <h1>Actuarial Career Opportunities</h1>
-        <p>Discover {totalJobs}+ real job opportunities from top employers across India</p>
+        <p>Discover job opportunities from top employers</p>
         
         <!-- Hero Search -->
         <form method="GET" class="hero-search">
@@ -227,19 +227,22 @@ const topCertifications = Array.from(certCounts.entries())
             </label>
             <select name="location" id="location" class="filter-select">
               <option value="">All Locations</option>
+              <option value="Remote" selected={locationFilter === 'Remote'}>Remote</option>
               <option value="Mumbai" selected={locationFilter === 'Mumbai'}>Mumbai</option>
               <option value="Delhi" selected={locationFilter === 'Delhi'}>Delhi/NCR</option>
               <option value="Bangalore" selected={locationFilter === 'Bangalore'}>Bangalore</option>
               <option value="Pune" selected={locationFilter === 'Pune'}>Pune</option>
+              <option value="Ahmedabad" selected={locationFilter === 'Ahmedabad'}>Ahmedabad</option>
               <option value="Hyderabad" selected={locationFilter === 'Hyderabad'}>Hyderabad</option>
               <option value="Chennai" selected={locationFilter === 'Chennai'}>Chennai</option>
               <option value="Kolkata" selected={locationFilter === 'Kolkata'}>Kolkata</option>
-              <option value="Remote" selected={locationFilter === 'Remote'}>Remote</option>
+              <!-- 
               {uniqueLocations.map(location => (
                 <option value={location} selected={locationFilter === location}>
                   {location}
                 </option>
               ))}
+              -->
             </select>
           </div>
 
@@ -261,10 +264,10 @@ const topCertifications = Array.from(certCounts.entries())
             </select>
           </div>
 
-          <!-- Salary Filter - FIXED with INR icon -->
+          <!-- Salary Filter - FIXED with INR icon
           <div class="filter-group">
             <label for="minSalary">
-              <!-- INR Rupee Symbol Icon -->
+              INR Rupee Symbol Icon
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M6 3h12M6 8h12m-12 5h12m-12 5h12M9 3v18m6-18v18"></path>
               </svg>
@@ -280,6 +283,7 @@ const topCertifications = Array.from(certCounts.entries())
               <option value="2000000" selected={salaryFilter === '2000000'}>₹20 LPA+</option>
             </select>
           </div>
+          -->
 
           <!-- Source Filter -->
           <div class="filter-group">
@@ -301,7 +305,7 @@ const topCertifications = Array.from(certCounts.entries())
             </select>
           </div>
 
-          <!-- Featured Only -->
+          <!-- Featured Only
           <div class="filter-group">
             <label for="featured" class="checkbox-label">
               <input
@@ -318,6 +322,7 @@ const topCertifications = Array.from(certCounts.entries())
               Featured Jobs Only
             </label>
           </div>
+          -->
 
           <!-- Submit Button -->
           <div class="filter-group filter-actions">
@@ -332,7 +337,7 @@ const topCertifications = Array.from(certCounts.entries())
       </div>
     </section>
 
-    <!-- Active Filters Display -->
+    <!-- Active Filters Display 
     {(experienceFilter || locationFilter || jobTypeFilter || salaryFilter || sourceFilter || featuredOnly) && (
       <section class="active-filters">
         <div class="container">
@@ -356,6 +361,7 @@ const topCertifications = Array.from(certCounts.entries())
         </div>
       </section>
     )}
+    -->
 
     <!-- Job Board Section -->
     <section class="jobs-list-section">
@@ -387,10 +393,10 @@ const topCertifications = Array.from(certCounts.entries())
             <p>Current actuarial job openings</p>
           </div>
 
-          <!-- Salary Range - FIXED with INR icon -->
+          <!-- Salary Range - FIXED with INR icon
           <div class="stat-card">
             <div class="stat-icon">
-              <!-- INR Rupee Symbol Icon -->
+              INR Rupee Symbol Icon
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M6 3h12M6 8h12m-12 5h12m-12 5h12M9 3v18m6-18v18"></path>
               </svg>
@@ -401,16 +407,18 @@ const topCertifications = Array.from(certCounts.entries())
             <div class="stat-label">Average Salary Range</div>
             <p>Typical compensation packages (per annum)</p>
           </div>
+          -->
 
           <!-- Top Skills -->
           <div class="stat-card">
             <div class="stat-icon">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
               </svg>
             </div>
             <div class="stat-number">Top Skills</div>
-            <div class="stat-label">{topSkills.length > 0 ? topSkills.join(' • ') : 'R • Powerbi'}</div>
+            <div class="stat-label">{topSkills.length > 0 ? topSkills.join(' • ') : 'R • Powerbi'}  • PowerBI • Tableau </div>
             <p>Most in-demand technical competencies</p>
           </div>
 
@@ -468,7 +476,7 @@ const topCertifications = Array.from(certCounts.entries())
 
   /* Hero Section */
   .jobs-hero {
-    background: linear-gradient(135deg, var(--color-primary, #22c55e) 0%, #16a34a 100%);
+    background: linear-gradient(135deg, var(--color-primary, #2e4096) 0%, #2e4096 100%);
     color: white;
     padding: 4rem 2rem;
     text-align: center;
@@ -515,6 +523,7 @@ const topCertifications = Array.from(certCounts.entries())
 
   .search-input {
     width: 100%;
+    color: #374151;
     padding: 0.875rem 1.25rem 0.875rem 2.75rem;
     border: none;
     border-radius: 0.5rem;
@@ -529,7 +538,7 @@ const topCertifications = Array.from(certCounts.entries())
 
   .search-btn {
     padding: 0.875rem 1.75rem;
-    background: rgba(255, 255, 255, 0.2);
+    background: #2e4096;
     color: white;
     border: 2px solid white;
     border-radius: 0.5rem;
@@ -543,7 +552,7 @@ const topCertifications = Array.from(certCounts.entries())
 
   .search-btn:hover {
     background: white;
-    color: var(--color-primary, #22c55e);
+    color: var(--color-primary, #2e4096);
   }
 
   /* Container */
@@ -633,7 +642,7 @@ const topCertifications = Array.from(certCounts.entries())
 
   .filter-select:focus {
     outline: none;
-    border-color: var(--color-primary, #22c55e);
+    border-color: var(--color-primary, #2e4096);
     box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
   }
 
@@ -641,7 +650,7 @@ const topCertifications = Array.from(certCounts.entries())
     width: 1.25rem;
     height: 1.25rem;
     cursor: pointer;
-    accent-color: var(--color-primary, #22c55e);
+    accent-color: var(--color-primary, #2e4096);
   }
 
   .filter-actions {
@@ -664,24 +673,25 @@ const topCertifications = Array.from(certCounts.entries())
   }
 
   .btn-primary {
-    background: var(--color-primary, #22c55e);
+    background: var(--color-primary, #2e4096);
     color: white;
+    border: 2px solid white;
   }
 
   .btn-primary:hover {
-    background: var(--color-primary-dark, #16a34a);
+    background: var(--color-primary-dark, #2e4096);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
   }
 
   .btn-secondary {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--color-primary, #2e4096);
     color: white;
     border: 2px solid white;
   }
 
   .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--color-primary-dark, #2e4096);
     transform: translateY(-2px);
   }
 
@@ -774,14 +784,14 @@ const topCertifications = Array.from(certCounts.entries())
   .stat-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    border-color: var(--color-primary, #22c55e);
+    border-color: var(--color-primary, #2e4096);
   }
 
   .stat-icon {
     margin: 0 auto 1rem;
     width: 64px;
     height: 64px;
-    background: linear-gradient(135deg, var(--color-primary, #22c55e) 0%, #16a34a 100%);
+    background: linear-gradient(135deg, var(--color-primary, #2e4096) 0%, #2e4096 100%);
     border-radius: 1rem;
     display: flex;
     align-items: center;
@@ -795,7 +805,7 @@ const topCertifications = Array.from(certCounts.entries())
   .stat-number {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--color-primary, #22c55e);
+    color: var(--color-primary, #2e4096);
     margin-bottom: 0.5rem;
   }
 
@@ -814,7 +824,7 @@ const topCertifications = Array.from(certCounts.entries())
 
   /* CTA Section */
   .cta-section {
-    background: linear-gradient(135deg, var(--color-primary, #22c55e) 0%, #16a34a 100%);
+    background: linear-gradient(135deg, var(--color-primary, #2e4096) 0%, #2e4096 100%);
     color: white;
     padding: 5rem 2rem;
   }
