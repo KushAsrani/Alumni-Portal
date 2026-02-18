@@ -1,3 +1,5 @@
+export const prerender = false;
+
 import type { APIRoute } from 'astro';
 
 const SCRAPER_API_URL = import.meta.env.SCRAPER_API_URL || 'http://localhost:5000';

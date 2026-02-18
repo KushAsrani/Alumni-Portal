@@ -27,7 +27,8 @@
     "scrape:jobs": "node --loader ts-node/esm scripts/scrapeJobs.ts",
     "scrape:jobs:dev": "node --loader ts-node/esm scripts/scrapeJobs.ts --verbose",
     "scrape:jobs:schedule": "node-cron '0 2 * * *' 'npm run scrape:jobs'",
-    "scrape:jobs:watch": "nodemon --exec 'npm run scrape:jobs' --watch src/utils/scrapers"
+    "scrape:jobs:watch": "nodemon --exec 'npm run scrape:jobs' --watch src/utils/scrapers",
+    "generate-hash": "tsx scripts/generate-hash.ts"
   },
   "dependencies": {
     "@astrojs/tailwind": "^5.0.0",

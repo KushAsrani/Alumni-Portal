@@ -66,6 +66,7 @@ function formatIndianSalary(salary: any) {
         
         return (
           <article class="job-card" data-job-id={job.id}>
+            <!--
             {/* Featured Badge */}
             {job.featured && (
               <div class="featured-ribbon">
@@ -75,6 +76,7 @@ function formatIndianSalary(salary: any) {
                 <span>Featured</span>
               </div>
             )}
+            -->
 
             {/* Job Header */}
             <div class="job-header">
@@ -144,11 +146,11 @@ function formatIndianSalary(salary: any) {
               <div class="skills-section">
                 <h4>Required Skills</h4>
                 <div class="skills-list">
-                  {job.skills.slice(0, 4).map((skill: string) => (
+                  {job.skills.slice(0, 5).map((skill: string) => (
                     <span class="skill-tag">{skill}</span>
                   ))}
-                  {job.skills.length > 4 && (
-                    <span class="skill-tag more">+{job.skills.length - 4} more</span>
+                  {job.skills.length > 5 && (
+                    <span class="skill-tag more">+{job.skills.length - 5} more</span>
                   )}
                 </div>
               </div>
@@ -169,11 +171,13 @@ function formatIndianSalary(salary: any) {
             {/* Job Footer */}
             <div class="job-footer">
               <div class="posted-date">
+                 <!--
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
                 <span>Posted {new Date(job.posted_date).toLocaleDateString()}</span>
+                -->
               </div>
               <a 
                 href={job.url} 
@@ -182,7 +186,7 @@ function formatIndianSalary(salary: any) {
                 class="apply-btn"
                 aria-label={`Apply for ${job.title} at ${job.company}`}
               >
-                <span>View & Apply</span>
+                <span>View</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                   <polyline points="15 3 21 3 21 9"></polyline>
@@ -297,7 +301,7 @@ function formatIndianSalary(salary: any) {
   .job-card:hover {
     transform: translateY(-6px);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
-    border-color: var(--color-primary, #22c55e);
+    border-color: var(--color-primary, #2e4096);
   }
 
   .featured-ribbon {
@@ -340,14 +344,14 @@ function formatIndianSalary(salary: any) {
   }
 
   .job-title a {
-    color: var(--color-primary, #22c55e);
+    color: var(--color-primary, #2e4096);
     text-decoration: none;
     transition: color 0.2s ease;
     display: inline-block;
   }
 
   .job-title a:hover {
-    color: var(--color-primary-dark, #16a34a);
+    color: var(--color-primary-dark, #2e4096);
     text-decoration: underline;
   }
 
@@ -432,7 +436,7 @@ function formatIndianSalary(salary: any) {
     border-top: 1px solid #f3f4f6;
     border-bottom: 1px solid #f3f4f6;
     font-size: 0.875rem;
-    color: #6b7280;
+    color: black;
   }
 
   .meta-item {
@@ -443,7 +447,7 @@ function formatIndianSalary(salary: any) {
 
   .meta-item svg {
     flex-shrink: 0;
-    color: var(--color-primary, #22c55e);
+    color: var(--color-primary, #2e4096);
   }
 
   .salary {
@@ -540,7 +544,7 @@ function formatIndianSalary(salary: any) {
     align-items: center;
     gap: 0.5rem;
     padding: 0.6rem 1.2rem;
-    background: var(--color-primary, #22c55e);
+    background: var(--color-primary, #2e4096);
     color: white;
     border: none;
     border-radius: 0.5rem;
@@ -552,7 +556,7 @@ function formatIndianSalary(salary: any) {
   }
 
   .apply-btn:hover {
-    background: var(--color-primary-dark, #16a34a);
+    background: var(--color-primary-dark, #2e4096);
     transform: translateX(2px);
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
   }
@@ -617,7 +621,7 @@ function formatIndianSalary(salary: any) {
 
   .pagination-btn:hover:not(:disabled) {
     background: #f9fafb;
-    border-color: var(--color-primary, #22c55e);
+    border-color: var(--color-primary, #2e4096);
   }
 
   .pagination-btn:disabled {
@@ -644,13 +648,13 @@ function formatIndianSalary(salary: any) {
 
   .pagination-number:hover {
     background: #f9fafb;
-    border-color: var(--color-primary, #22c55e);
+    border-color: var(--color-primary, #2e4096);
   }
 
   .pagination-number.active {
-    background: var(--color-primary, #22c55e);
+    background: var(--color-primary, #2e4096);
     color: white;
-    border-color: var(--color-primary, #22c55e);
+    border-color: var(--color-primary, #2e4096);
   }
 
   @media (max-width: 768px) {

@@ -2,14 +2,19 @@
   "id": "e6518da90dcd0e08",
   "title": "Lead Data Analyst (part-time)",
   "company": "Cognisol",
-  "location": "India",
+  "location": "India, Remote",
   "description": "Lead Data Analyst (part-time) position at Cognisol",
   "url": "https://in.linkedin.com/jobs/view/lead-data-analyst-part-time-at-cognisol-4367240987?position=15&pageNum=0&refId=CNJ2FtybIXiqfNlmu1ARVA%3D%3D&trackingId=XAXpkWjn0821oyhdpMmxWg%3D%3D",
   "source": "LinkedIn",
   "jobType": "part-time",
   "experienceLevel": "senior",
   "skills": [
-    "R"
+    "Python",
+    "Data Analytics",
+    "Research",
+    "Data Scrapping",
+    "GraphQL",
+    "JSON"
   ],
   "qualifications": [],
   "posted_date": "2026-02-12",
