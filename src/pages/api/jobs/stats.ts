@@ -1,31 +1,32 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
-
-const SCRAPER_API_URL = import.meta.env.SCRAPER_API_URL || 'http://localhost:5000';
+import { JobService } from '../../../lib/db/services/jobService';
 
 export const GET: APIRoute = async () => {
   try {
-    const response = await fetch(`${SCRAPER_API_URL}/api/stats`);
-    const data = await response.json();
-    
-    return new Response(JSON.stringify(data), {
+    const stats = await JobService.getJobStats();
+
+    return new Response(JSON.stringify({
+      success: true,
+      stats
+    }), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json'
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
       }
     });
-    
+
   } catch (error) {
+    console.error('Error fetching stats:', error);
     return new Response(JSON.stringify({
       success: false,
-      message: 'Failed to get statistics',
+      message: 'Failed to fetch statistics',
       error: error instanceof Error ? error.message : 'Unknown error'
     }), {
       status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 };

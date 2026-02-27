@@ -33,6 +33,8 @@ dist/
 .env
 .env.production
 .env.local
+.env.backup.*
+.env.bak
 
 # IDE files
 .vscode/
@@ -52,6 +54,7 @@ Thumbs.db
 # Logs
 logs
 *.log
+.logs/
 
 # Runtime data
 pids

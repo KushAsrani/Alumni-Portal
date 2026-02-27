@@ -1,8 +1,8 @@
 ---
 export const prerender = false; // Enable SSR
 
-import Layout from '../../layouts/Layout.astro';
-import { isAuthenticated, getCurrentUser } from '../../lib/auth';
+import Layout from '../src/layouts/Layout.astro';
+import { isAuthenticated, getCurrentUser } from '../src/lib/auth';
 
 // Check authentication
 const authenticated = isAuthenticated(Astro.cookies);

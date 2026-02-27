@@ -1,0 +1,248 @@
+{
+  "name": "Actuarial Job Scraper Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "notes": "Runs daily at 2 AM IST"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Store start time and configuration\nconst config = {\n  startedAt: new Date().toISOString(),\n  location: 'India',\n  keywords: ['actuarial analyst', 'actuary', 'actuarial scientist', 'risk analyst', 'insurance analyst'],\n  maxPages: 5,\n  // CHANGE THIS to your actual host IP address\n  // Run: ipconfig | findstr IPv4 (on Windows)\n  // Use your local network IP (e.g., 192.168.1.5)\n  portalHost: '192.168.1.5',\n  portalPort: 4321,\n  scraperHost: 'scraper-api',\n  scraperPort: 5000\n};\n\nconfig.portalUrl = `http://${config.portalHost}:${config.portalPort}`;\nconfig.scraperUrl = `http://${config.scraperHost}:${config.scraperPort}`;\n\nconsole.log('🚀 Starting job scraper automation');\nconsole.log(`Portal URL: ${config.portalUrl}`);\nconsole.log(`Scraper URL: ${config.scraperUrl}`);\n\nreturn [{ json: config }];"
+      },
+      "id": "setup-config",
+      "name": "Setup Configuration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.scraperUrl }}/api/scrape",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"location\": \"{{ $json.location }}\",\n  \"keywords\": {{ JSON.stringify($json.keywords) }},\n  \"max_pages\": {{ $json.maxPages }}\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "trigger-scrape",
+      "name": "Trigger Job Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "amount": 300,
+        "unit": "seconds"
+      },
+      "id": "wait-for-scrape",
+      "name": "Wait for Scraping (5 min)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [850, 300],
+      "webhookId": "scrape-wait"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Setup Configuration').item.json.scraperUrl }}/api/jobs?limit=500",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "get-jobs",
+      "name": "Get Scraped Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and validate jobs\nconst response = $input.first().json;\nconst jobs = response.jobs || [];\nconst config = $('Setup Configuration').first().json;\n\nconsole.log(`📥 Received ${jobs.length} jobs from scraper`);\n\n// Filter valid jobs\nconst validJobs = jobs.filter(job => {\n  return job.title && \n         job.company && \n         job.location && \n         job.url &&\n         job.source;\n});\n\nconsole.log(`✅ ${validJobs.length} valid jobs`);\n\n// Remove duplicates based on URL\nconst uniqueJobs = [];\nconst seenUrls = new Set();\n\nfor (const job of validJobs) {\n  if (!seenUrls.has(job.url)) {\n    seenUrls.add(job.url);\n    uniqueJobs.push({\n      id: job.id || Buffer.from(`${job.title}|${job.company}|${job.location}`).toString('base64').slice(0, 32),\n      title: job.title,\n      company: job.company,\n      location: job.location,\n      description: job.description || '',\n      salary: job.salary || undefined,\n      url: job.url,\n      source: job.source,\n      jobType: job.jobType || 'full-time',\n      experienceLevel: job.experienceLevel || 'mid',\n      skills: job.skills || [],\n      qualifications: job.qualifications || [],\n      certifications: job.certifications || [],\n      posted_date: job.posted_date || new Date().toISOString().split('T')[0],\n      featured: job.featured || false\n    });\n  }\n}\n\nconsole.log(`✨ ${uniqueJobs.length} unique jobs after deduplication`);\n\n// Return as single item with all jobs (for batch API call)\nreturn [{ \n  json: { \n    jobs: uniqueJobs,\n    count: uniqueJobs.length,\n    portalUrl: config.portalUrl,\n    startedAt: config.startedAt\n  } \n}];"
+      },
+      "id": "filter-transform-jobs",
+      "name": "Filter & Transform Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-jobs-exist",
+      "name": "Jobs Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.portalUrl }}/api/jobs/create",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.jobs) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "save-to-portal",
+      "name": "Save Jobs to Portal & MongoDB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1700, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "1",
+          "name": "Portal API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Setup Configuration').item.json.portalUrl }}/api/jobs/stats",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "get-stats",
+      "name": "Get Job Statistics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1950, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Setup Configuration').item.json.portalUrl }}/api/webhooks/job-scrape",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"scrape_complete\",\n  \"data\": {\n    \"total_active_jobs\": {{ $json.stats?.activeJobs || 0 }},\n    \"jobs_scraped\": {{ $('Filter & Transform Jobs').item.json.count }},\n    \"jobs_saved\": {{ $('Save Jobs to Portal & MongoDB').item.json.data?.inserted || 0 }},\n    \"jobs_updated\": {{ $('Save Jobs to Portal & MongoDB').item.json.data?.updated || 0 }},\n    \"timestamp\": \"{{ $now.toISO() }}\",\n    \"started_at\": \"{{ $('Setup Configuration').item.json.startedAt }}\"\n  }\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "webhook-notify",
+      "name": "Send Webhook Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2200, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// No jobs found - log and continue\nconst config = $('Setup Configuration').first().json;\n\nconsole.log('⚠️ No valid jobs found in this scrape run');\nconsole.log(`Config: ${JSON.stringify(config)}`);\n\nreturn [{ \n  json: { \n    message: 'No valid jobs found',\n    startedAt: config.startedAt,\n    completedAt: new Date().toISOString(),\n    portalUrl: config.portalUrl\n  } \n}];"
+      },
+      "id": "no-jobs-found",
+      "name": "No Jobs Found",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1700, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Setup Configuration').item.json.portalUrl }}/api/jobs/bulk-update",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"action\": \"delete\",\n  \"filters\": {\n    \"minAge\": 90\n  }\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "cleanup-old-jobs",
+      "name": "Cleanup Old Jobs (90+ days)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2200, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "1",
+          "name": "Portal API Key"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{ "node": "Setup Configuration", "type": "main", "index": 0 }]]
+    },
+    "Setup Configuration": {
+      "main": [[{ "node": "Trigger Job Scraper", "type": "main", "index": 0 }]]
+    },
+    "Trigger Job Scraper": {
+      "main": [[{ "node": "Wait for Scraping (5 min)", "type": "main", "index": 0 }]]
+    },
+    "Wait for Scraping (5 min)": {
+      "main": [[{ "node": "Get Scraped Jobs", "type": "main", "index": 0 }]]
+    },
+    "Get Scraped Jobs": {
+      "main": [[{ "node": "Filter & Transform Jobs", "type": "main", "index": 0 }]]
+    },
+    "Filter & Transform Jobs": {
+      "main": [[{ "node": "Jobs Found?", "type": "main", "index": 0 }]]
+    },
+    "Jobs Found?": {
+      "main": [
+        [{ "node": "Save Jobs to Portal & MongoDB", "type": "main", "index": 0 }],
+        [{ "node": "No Jobs Found", "type": "main", "index": 0 }]
+      ]
+    },
+    "Save Jobs to Portal & MongoDB": {
+      "main": [[{ "node": "Get Job Statistics", "type": "main", "index": 0 }]]
+    },
+    "Get Job Statistics": {
+      "main": [[{ "node": "Send Webhook Notification", "type": "main", "index": 0 }]]
+    },
+    "Send Webhook Notification": {
+      "main": [[{ "node": "Cleanup Old Jobs (90+ days)", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-02-25T00:00:00.000Z",
+  "versionId": "2"
+}

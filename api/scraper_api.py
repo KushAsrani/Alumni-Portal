@@ -1,3 +1,4 @@
+import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sys
@@ -29,6 +30,43 @@ scraping_status = {
 
 # Store latest scraped jobs
 latest_jobs_cache = []
+
+# Function to save jobs to portal via API
+def save_jobs_to_portal(jobs, portal_url='http://localhost:4321', api_key=None):
+    """Save scraped jobs to portal via API"""
+    try:
+        headers = {
+            'Content-Type': 'application/json',
+        }
+        
+        # Add authentication if provided
+        if api_key:
+            headers['Authorization'] = f'Bearer {api_key}'
+        
+        # Send jobs in batches of 50
+        batch_size = 50
+        for i in range(0, len(jobs), batch_size):
+            batch = jobs[i:i + batch_size]
+            
+            response = requests.post(
+                f'{portal_url}/api/jobs/create',
+                json=batch,
+                headers=headers,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"✅ Batch {i//batch_size + 1}: Inserted {result['data']['inserted']}, Updated {result['data']['updated']}")
+            else:
+                print(f"❌ Batch {i//batch_size + 1} failed: {response.text}")
+        
+        print(f"\n✅ Successfully posted {len(jobs)} jobs to portal")
+        return True
+        
+    except Exception as e:
+        print(f"\n❌ Error posting jobs to portal: {str(e)}")
+        return False
 
 def run_scraper_async(location: str, keywords: List[str], max_pages: int):
     """Run scraper in background thread"""
@@ -68,6 +106,15 @@ def run_scraper_async(location: str, keywords: List[str], max_pages: int):
         scraping_status['status_message'] = 'Saving results...'
         scraper.save_to_json('../scripts/python/actuarial_jobs_india.json')
         scraper.save_individual_files('../src/content/jobs')
+
+        # After scraping is complete, post to portal
+        portal_url = os.getenv('PORTAL_URL', 'http://localhost:4321')
+        admin_api_key = os.getenv('ADMIN_API_KEY')
+        
+        if save_jobs_to_portal(all_jobs, portal_url, admin_api_key):
+            scraping_status['status_message'] = 'Jobs posted to portal successfully!'
+        else:
+            scraping_status['status_message'] = 'Scraping complete but failed to post to portal'
         
         # Update cache
         latest_jobs_cache = all_jobs

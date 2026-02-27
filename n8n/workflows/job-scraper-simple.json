@@ -1,0 +1,98 @@
+{
+  "name": "Actuarial Job Scraper - Simple",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://scraper-api:5000/api/scrape",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "location",
+              "value": "India"
+            },
+            {
+              "name": "keywords",
+              "value": "=[\"actuarial analyst\", \"actuary\", \"actuarial scientist\"]"
+            },
+            {
+              "name": "max_pages",
+              "value": 3
+            }
+          ]
+        }
+      },
+      "id": "trigger-scrape",
+      "name": "Trigger Job Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "amount": 180,
+        "unit": "seconds"
+      },
+      "id": "wait-scrape",
+      "name": "Wait for Scraping",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://scraper-api:5000/api/jobs?limit=500"
+      },
+      "id": "get-jobs",
+      "name": "Get Scraped Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst jobs = response.jobs || [];\n\nconsole.log(`Got ${jobs.length} jobs from scraper`);\n\nconst validJobs = jobs.filter(job => {\n  return job.title && job.company && job.location && job.url;\n});\n\nconst uniqueJobs = [];\nconst seenUrls = new Set();\n\nfor (const job of validJobs) {\n  if (!seenUrls.has(job.url)) {\n    seenUrls.add(job.url);\n    uniqueJobs.push(job);\n  }\n}\n\nconsole.log(`Filtered to ${uniqueJobs.length} unique jobs`);\n\nreturn uniqueJobs.map(job => ({ json: job }));"
+      },
+      "id": "filter-jobs",
+      "name": "Filter Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{ "node": "Trigger Job Scraper", "type": "main", "index": 0 }]]
+    },
+    "Trigger Job Scraper": {
+      "main": [[{ "node": "Wait for Scraping", "type": "main", "index": 0 }]]
+    },
+    "Wait for Scraping": {
+      "main": [[{ "node": "Get Scraped Jobs", "type": "main", "index": 0 }]]
+    },
+    "Get Scraped Jobs": {
+      "main": [[{ "node": "Filter Jobs", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
