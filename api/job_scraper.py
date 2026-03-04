@@ -185,7 +185,11 @@ class ActuarialJobScraper:
         found_skills = []
         
         for skill in skills_keywords:
-            if skill in description_lower:
+            if len(skill) <= 2:
+                match = re.search(rf'\b{re.escape(skill)}\b', description_lower)
+            else:
+                match = skill in description_lower
+            if match:
                 # Capitalize properly
                 if skill in ['sql', 'vba', 'sas', 'aws', 'gcp', 'ai']:
                     found_skills.append(skill.upper())

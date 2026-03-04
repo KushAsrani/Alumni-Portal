@@ -237,7 +237,14 @@ class AdvancedActuarialScraper {
         const skillKeywords = ['Excel', 'SQL', 'Python', 'R', 'SAS', 'Tableau', 'PowerBI', 'VBA', 'Prophet', 'ResQ', 'AXIS'];
         const text = description.toLowerCase();
         
-        skills = skillKeywords.filter(skill => text.includes(skill.toLowerCase()));
+        skills = skillKeywords.filter(skill => {
+          const keyword = skill.toLowerCase();
+          if (keyword.length <= 2) {
+            const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return new RegExp(`\\b${escaped}\\b`).test(text);
+          }
+          return text.includes(keyword);
+        });
 
         return { description, requirements, skills };
       }, source);
