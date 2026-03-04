@@ -113,8 +113,13 @@ def extract_skills(text: str) -> List[str]:
     found = set()
     t = text.lower()
     for s in COMMON_SKILLS:
-        if s.lower() in t:
-            found.add(s)
+        keyword = s.lower()
+        if len(keyword) <= 2:
+            if re.search(rf'\b{re.escape(keyword)}\b', t):
+                found.add(s)
+        else:
+            if keyword in t:
+                found.add(s)
     return sorted(found)
 
 

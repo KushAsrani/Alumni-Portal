@@ -110,8 +110,17 @@ function extractSkills(text: string): string[] {
   const textLower = text.toLowerCase();
 
   COMMON_SKILLS.forEach(skill => {
-    if (textLower.includes(skill.toLowerCase())) {
-      skills.add(skill);
+    const keyword = skill.toLowerCase();
+    if (keyword.length <= 2) {
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escaped}\\b`);
+      if (regex.test(textLower)) {
+        skills.add(skill);
+      }
+    } else {
+      if (textLower.includes(keyword)) {
+        skills.add(skill);
+      }
     }
   });
 
