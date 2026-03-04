@@ -173,7 +173,7 @@ class ActuarialJobScraper:
     def extract_skills(self, description: str) -> List[str]:
         """Extract technical skills from job description"""
         skills_keywords = [
-            'excel', 'vba', 'sql', 'python', 'r', 'sas', 'stata',
+            'excel', 'vba', 'sql', 'python', 'sas', 'stata',
             'tableau', 'power bi', 'powerbi', 'access', 'matlab',
             'c++', 'java', 'javascript', 'hadoop', 'spark',
             'azure', 'aws', 'gcp', 'machine learning', 'ai',
@@ -192,8 +192,6 @@ class ActuarialJobScraper:
                 # Capitalize properly
                 if skill in ['sql', 'vba', 'sas', 'aws', 'gcp', 'ai']:
                     found_skills.append(skill.upper())
-                elif skill == 'r':
-                    found_skills.append('R')
                 else:
                     found_skills.append(skill.title())
         

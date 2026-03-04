@@ -69,7 +69,7 @@ DEFAULT_HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-COMMON_SKILLS = ["Excel", "SQL", "Python", "R", "SAS", "Tableau", "Power BI", "VBA"]
+COMMON_SKILLS = ["Excel", "SQL", "Python", "SAS", "Tableau", "Power BI", "VBA"]
 CERTS = ["FSA", "ASA", "EA", "MAAA", "CERA", "CAS"]
 
 
