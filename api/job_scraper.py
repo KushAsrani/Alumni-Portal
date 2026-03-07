@@ -174,12 +174,22 @@ class ActuarialJobScraper:
         """Extract skills from job description"""
         skills_keywords = [
             'excel', 'sql', 'python', 'tableau', 'power bi', 'powerpoint', 'vba', 'sas', 'stata', 'looker', 'access', 'matlab', 'java', 'javascript', 'json', 'hadoop', 'hive', 'impala', 'snowflake', 'spark', 'kafka', 'azure', 'aws', 'devops', 'microsoft 365', 'google analytics', 'gcp', 'artificial intelligence', 'machine learning', 'ai', 'ml', 'aiml', 'prophet', 'moses', 'emblem', 'axis', 'igloo', 'graphql', 'deep learning', 'data visualization', 'data analysis', 'data science', 'data loss prevention', 'dataloss prevention', 'data mining', 'data scrapping', 'cloud computing', 'cloud security', 'statistical analysis', 'predictive modeling', 'data modeling', 'data warehousing', 'etl', 'big data', 'oracle', 'redshift', 'databricks', 'airflow', 'market research', 'research', 'financial reporting', 'communication', 'presentation', 'problem-solving', 'critical thinking', 'teamwork', 'leadership', 'collaboration', 'multitasking', 'interpersonal skills'
+            'excel', 'vba', 'sql', 'python', 'sas', 'stata',
+            'tableau', 'power bi', 'powerbi', 'access', 'matlab',
+            'c++', 'java', 'javascript', 'hadoop', 'spark',
+            'azure', 'aws', 'gcp', 'machine learning', 'ai',
+            'prophet', 'moses', 'emblem', 'axis', 'igloo'
         ]
         
         description_lower = description.lower()
         found_skills = []
         
         for skill in skills_keywords:
+            if len(skill) <= 2:
+                match = re.search(rf'\b{re.escape(skill)}\b', description_lower)
+            else:
+                match = skill in description_lower
+            if match:
             if len(skill) <= 2:
                 match = re.search(rf'\b{re.escape(skill)}\b', description_lower)
             else:

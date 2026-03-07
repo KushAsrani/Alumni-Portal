@@ -49,7 +49,6 @@ const COMMON_SKILLS = [
   'VBA',
   'SQL',
   'Python',
-  'R',
   'SAS',
   'Tableau',
   'Power BI',
@@ -110,8 +109,17 @@ function extractSkills(text: string): string[] {
   const textLower = text.toLowerCase();
 
   COMMON_SKILLS.forEach(skill => {
-    if (textLower.includes(skill.toLowerCase())) {
-      skills.add(skill);
+    const keyword = skill.toLowerCase();
+    if (keyword.length <= 2) {
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escaped}\\b`);
+      if (regex.test(textLower)) {
+        skills.add(skill);
+      }
+    } else {
+      if (textLower.includes(keyword)) {
+        skills.add(skill);
+      }
     }
   });
 
@@ -226,7 +234,7 @@ export async function scrapeActuarialJobs(
       salary: { min: 110000, max: 160000, currency: 'USD' },
       jobType: 'full-time',
       experienceLevel: 'mid',
-      skills: ['Excel', 'SQL', 'R', 'Python', 'Tableau', 'SAS'],
+      skills: ['Excel', 'SQL', 'Python', 'Tableau', 'SAS'],
       qualifications: ['Bachelor\'s in Actuarial Science', '2+ years health insurance experience'],
       certifications: ['FSA', 'ASA'],
       posted_date: new Date('2026-02-06'),
