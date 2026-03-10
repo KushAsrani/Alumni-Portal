@@ -136,5 +136,10 @@ next-env.d.ts
 .venv/
 venv/
 
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
 #template
---template/
+--template/scripts/python/__pycache__
