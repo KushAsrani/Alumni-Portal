@@ -337,45 +337,178 @@ class ActuarialJobScraper:
         return found_quals
 
     def scrape_naukri(self, max_pages: int = 5) -> List[Dict]:
-        """Scrape jobs from Naukri.com using Playwright (headless browser)"""
+        """Scrape jobs from Naukri.com"""
         print(f"\n🔍 Scraping Naukri.com for actuarial jobs in {self.location}...")
         jobs = []
 
-        if not HAS_PLAYWRIGHT:
-            print("  ⚠ Playwright not installed - skipping Naukri")
-            print("  Install: pip install playwright && playwright install chromium")
-            print(f"✅ Naukri: Found 0 jobs")
-            return jobs
+        # Try Naukri's job search API directly (no browser needed)
+        for keyword in self.keywords[:3]:
+            for page_num in range(1, min(max_pages + 1, 4)):
+                try:
+                    keyword_slug = keyword.replace(' ', '-')
+                    url = "https://www.naukri.com/jobapi/v3/search"
+                    params = {
+                        'noOfResults': 20,
+                        'urlType': 'search_by_keyword',
+                        'searchType': 'adv',
+                        'keyword': keyword,
+                        'pageNo': page_num,
+                        'k': keyword,
+                        'l': self.location,
+                        'sameAsKeyword': keyword,
+                        'src': 'jobsearchDesk',
+                        'latLong': '',
+                    }
 
-        try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                context = browser.new_context(
-                    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                    viewport={'width': 1920, 'height': 1080},
-                    locale='en-IN',
-                )
-                page = context.new_page()
+                    headers = {
+                        'Accept': 'application/json',
+                        'appid': '109',
+                        'systemid': 'Starter',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                        'Referer': f'https://www.naukri.com/{keyword_slug}-jobs',
+                        'Origin': 'https://www.naukri.com',
+                    }
 
-                for keyword in self.keywords[:3]:  # Limit keywords
-                    for page_num in range(1, min(max_pages + 1, 4)):
+                    print(f"  📄 Loading: {keyword} (page {page_num})...")
+                    response = self.session.get(url, params=params, headers=headers, timeout=15)
+
+                    if response.status_code == 200:
+                        try:
+                            data = response.json()
+                            job_details = data.get('jobDetails', [])
+                            print(f"    📊 API returned {len(job_details)} job records")
+
+                            for job_data in job_details:
+                                try:
+                                    title = job_data.get('title', '').strip()
+                                    if not title:
+                                        continue
+
+                                    company = job_data.get('companyName', 'Unknown Company').strip()
+
+                                    # Extract from placeholders
+                                    loc = self.location
+                                    exp_text = ""
+                                    salary_text = ""
+                                    for ph in job_data.get('placeholders', []):
+                                        ph_type = ph.get('type', '').lower()
+                                        ph_label = ph.get('label', '')
+                                        if 'location' in ph_type:
+                                            loc = ph_label
+                                        elif 'experience' in ph_type:
+                                            exp_text = ph_label
+                                        elif 'salary' in ph_type or 'ctc' in ph_type:
+                                            salary_text = ph_label
+
+                                    # Description
+                                    desc_html = job_data.get('jobDescription', '')
+                                    if desc_html:
+                                        from bs4 import BeautifulSoup as BS
+                                        desc_soup = BS(desc_html, 'html.parser')
+                                        desc_text = desc_soup.get_text(' ', strip=True)
+                                    else:
+                                        desc_text = (job_data.get('snippets') or [''])[0]
+                                        if not desc_text:
+                                            desc_text = f"{title} position at {company}"
+
+                                    tags_skills = job_data.get('tagsAndSkills', '')
+                                    full_text = f"{title} {desc_text} {tags_skills} {exp_text} {salary_text}"
+
+                                    # URL
+                                    jd_url = job_data.get('jdURL', '')
+                                    if jd_url and not jd_url.startswith('http'):
+                                        job_link = f"https://www.naukri.com{jd_url}"
+                                    elif jd_url:
+                                        job_link = jd_url
+                                    else:
+                                        job_link = f"https://www.naukri.com/{keyword_slug}-jobs"
+
+                                    job_id = self.generate_job_id(title, company, loc)
+                                    if job_id in self.seen_ids:
+                                        continue
+                                    self.seen_ids.add(job_id)
+
+                                    location = self._enhance_location(loc, title, full_text)
+
+                                    job = {
+                                        'id': job_id,
+                                        'title': title,
+                                        'company': company,
+                                        'location': location,
+                                        'description': desc_text[:500] if desc_text else f"{title} at {company}",
+                                        'url': job_link,
+                                        'source': 'Naukri',
+                                        'jobType': self.determine_job_type(title, full_text),
+                                        'experienceLevel': self.determine_experience_level(title, full_text),
+                                        'skills': self.extract_skills(full_text),
+                                        'qualifications': self.extract_qualifications(full_text),
+                                        'certifications': self.extract_certifications(full_text),
+                                        'posted_date': datetime.now().strftime('%Y-%m-%d'),
+                                        'featured': False
+                                    }
+
+                                    salary = self.extract_salary(salary_text + " " + desc_text)
+                                    if salary:
+                                        job['salary'] = salary
+
+                                    jobs.append(job)
+                                    skills_str = ', '.join(job['skills']) if job['skills'] else 'none'
+                                    print(f"  ✓ Found: {title} at {company} - {location} [skills: {skills_str}]")
+
+                                except Exception:
+                                    continue
+
+                        except Exception as e:
+                            print(f"    ⚠ Could not parse Naukri API response: {str(e)}")
+                    else:
+                        print(f"    ⚠ Naukri API returned status {response.status_code}")
+
+                    time.sleep(random.uniform(1, 3))
+
+                except Exception as e:
+                    print(f"  ✗ Error on Naukri page {page_num}: {str(e)}")
+                    continue
+
+        # If API approach didn't work, try with Playwright stealth
+        if not jobs and HAS_PLAYWRIGHT:
+            print("  🔄 API approach failed, trying browser approach...")
+            try:
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(
+                        headless=True,
+                        args=['--disable-blink-features=AutomationControlled']
+                    )
+                    context = browser.new_context(
+                        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                        viewport={'width': 1920, 'height': 1080},
+                        locale='en-IN',
+                    )
+
+                    # Remove webdriver detection
+                    page = context.new_page()
+                    page.add_init_script("""
+                        Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                        Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3]});
+                    """)
+
+                    for keyword in self.keywords[:2]:
                         try:
                             keyword_slug = keyword.replace(' ', '-')
                             url = f"https://www.naukri.com/{keyword_slug}-jobs-in-{self.location.lower()}"
-                            if page_num > 1:
-                                url += f"-{page_num}"
 
-                            print(f"  📄 Loading: {keyword} (page {page_num})...")
+                            print(f"  📄 Browser loading: {keyword}...")
 
-                            # Intercept Naukri API responses before navigating
                             api_jobs_raw = []
 
                             def handle_response(response, _bucket=api_jobs_raw):
                                 try:
-                                    if 'jobapi' in response.url and response.status == 200:
-                                        data = response.json()
-                                        if isinstance(data, dict) and 'jobDetails' in data:
-                                            _bucket.extend(data['jobDetails'])
+                                    resp_url = response.url.lower()
+                                    if response.status == 200 and ('jobapi' in resp_url or 'search' in resp_url):
+                                        ct = response.headers.get('content-type', '')
+                                        if 'json' in ct:
+                                            data = response.json()
+                                            if isinstance(data, dict) and 'jobDetails' in data:
+                                                _bucket.extend(data['jobDetails'])
                                 except Exception:
                                     pass
 
@@ -386,209 +519,89 @@ class ActuarialJobScraper:
                                 page.goto(url, wait_until='domcontentloaded', timeout=30000)
                             page.remove_listener('response', handle_response)
 
-                            # Scroll to trigger lazy-loaded content
-                            for _ in range(3):
-                                page.evaluate('window.scrollBy(0, 800)')
-                                time.sleep(0.5)
+                            print(f"    📊 Browser intercepted {len(api_jobs_raw)} job records")
 
-                            if api_jobs_raw:
-                                # Process jobs captured from the Naukri JSON API
-                                for job_data in api_jobs_raw:
-                                    try:
-                                        title = job_data.get('title', '').strip()
-                                        if not title:
-                                            continue
-
-                                        company = job_data.get('companyName', 'Unknown Company').strip()
-
-                                        # Extract location / experience / salary from placeholders
-                                        loc = self.location
-                                        exp_text = ""
-                                        salary_text = ""
-                                        for ph in job_data.get('placeholders', []):
-                                            ph_type = ph.get('type', '').lower()
-                                            ph_label = ph.get('label', '')
-                                            if 'location' in ph_type:
-                                                loc = ph_label
-                                            elif 'experience' in ph_type:
-                                                exp_text = ph_label
-                                            elif 'salary' in ph_type or 'ctc' in ph_type:
-                                                salary_text = ph_label
-
-                                        # Extract description text
-                                        desc_html = job_data.get('jobDescription', '')
-                                        if desc_html:
-                                            desc_soup = BeautifulSoup(desc_html, 'html.parser')
-                                            desc_text = desc_soup.get_text(' ', strip=True)
-                                        else:
-                                            desc_text = job_data.get('jobExcerpt', '') or f"{title} at {company}"
-
-                                        tags_skills = job_data.get('tagsAndSkills', '')
-                                        full_text = f"{title} {desc_text} {tags_skills} {exp_text} {salary_text}"
-
-                                        # Build job URL
-                                        jd_url = job_data.get('jdURL', '')
-                                        if jd_url and not jd_url.startswith('http'):
-                                            job_link = f"https://www.naukri.com{jd_url}"
-                                        elif jd_url:
-                                            job_link = jd_url
-                                        else:
-                                            job_link = url
-
-                                        job_id = self.generate_job_id(title, company, loc)
-                                        if job_id in self.seen_ids:
-                                            continue
-                                        self.seen_ids.add(job_id)
-
-                                        location = self._enhance_location(loc, title, full_text)
-
-                                        job = {
-                                            'id': job_id,
-                                            'title': title,
-                                            'company': company,
-                                            'location': location,
-                                            'description': desc_text[:500],
-                                            'url': job_link,
-                                            'source': 'Naukri',
-                                            'jobType': self.determine_job_type(title, full_text),
-                                            'experienceLevel': self.determine_experience_level(title, full_text),
-                                            'skills': self.extract_skills(full_text),
-                                            'qualifications': self.extract_qualifications(full_text),
-                                            'certifications': self.extract_certifications(full_text),
-                                            'posted_date': datetime.now().strftime('%Y-%m-%d'),
-                                            'featured': False
-                                        }
-
-                                        salary = self.extract_salary(salary_text + " " + desc_text)
-                                        if salary:
-                                            job['salary'] = salary
-
-                                        jobs.append(job)
-                                        print(f"  ✓ Found: {title} at {company} - {location}")
-
-                                    except Exception:
-                                        continue
-                            else:
-                                # Fallback: broad DOM selectors for the current Naukri layout
+                            # Process intercepted API data
+                            for job_data in api_jobs_raw:
                                 try:
-                                    page.wait_for_selector(
-                                        'article, [class*="srp-jobtuple"], [class*="cust-job-tuple"], '
-                                        '[class*="job-tuple"], [class*="jobTuple"]',
-                                        timeout=8000
-                                    )
-                                except Exception:
-                                    print(f"    ⚠ No jobs found for '{keyword}' page {page_num}")
-                                    break
-
-                                cards = page.query_selector_all(
-                                    'article, [class*="srp-jobtuple"], [class*="cust-job-tuple"], '
-                                    '[class*="job-tuple"], [class*="jobTuple"]'
-                                )
-
-                                if not cards:
-                                    break
-
-                                for card in cards:
-                                    try:
-                                        title_el = card.query_selector(
-                                            'a.title, a[class*="title"], .title, h2 a, h3 a, [class*="jobTitle"] a'
-                                        )
-                                        title = title_el.inner_text().strip() if title_el else None
-
-                                        if not title:
-                                            continue
-
-                                        comp_el = card.query_selector(
-                                            'a.subTitle, a[class*="comp-name"], .comp-name, '
-                                            '.companyInfo a, [class*="company"] a'
-                                        )
-                                        company = comp_el.inner_text().strip() if comp_el else "Unknown Company"
-
-                                        loc_el = card.query_selector(
-                                            '.locWdth, .loc-wrap, .location, [class*="location"]'
-                                        )
-                                        loc = loc_el.inner_text().strip() if loc_el else self.location
-
-                                        exp_el = card.query_selector(
-                                            '.expwdth, .exp-wrap, .experience, [class*="experience"]'
-                                        )
-                                        experience = exp_el.inner_text().strip() if exp_el else ""
-
-                                        sal_el = card.query_selector('.sal-wrap, .salary, [class*="salary"]')
-                                        salary_text = sal_el.inner_text().strip() if sal_el else ""
-
-                                        desc_el = card.query_selector(
-                                            '.job-desc, .job-description, [class*="job-desc"]'
-                                        )
-                                        desc_text = desc_el.inner_text().strip() if desc_el else f"{title} at {company}"
-
-                                        link_el = card.query_selector(
-                                            'a.title, a[class*="title"], h2 a, h3 a'
-                                        )
-                                        job_link = link_el.get_attribute('href') if link_el else url
-                                        if job_link and not job_link.startswith('http'):
-                                            job_link = f"https://www.naukri.com{job_link}"
-
-                                        job_id = self.generate_job_id(title, company, loc)
-                                        if job_id in self.seen_ids:
-                                            continue
-                                        self.seen_ids.add(job_id)
-
-                                        full_text = f"{title} {desc_text} {experience} {salary_text}"
-                                        location = self._enhance_location(loc, title, full_text)
-
-                                        job = {
-                                            'id': job_id,
-                                            'title': title,
-                                            'company': company,
-                                            'location': location,
-                                            'description': desc_text[:500],
-                                            'url': job_link,
-                                            'source': 'Naukri',
-                                            'jobType': self.determine_job_type(title, full_text),
-                                            'experienceLevel': self.determine_experience_level(title, full_text),
-                                            'skills': self.extract_skills(full_text),
-                                            'qualifications': self.extract_qualifications(full_text),
-                                            'certifications': self.extract_certifications(full_text),
-                                            'posted_date': datetime.now().strftime('%Y-%m-%d'),
-                                            'featured': False
-                                        }
-
-                                        salary = self.extract_salary(salary_text + " " + desc_text)
-                                        if salary:
-                                            job['salary'] = salary
-
-                                        jobs.append(job)
-                                        print(f"  ✓ Found: {title} at {company} - {location}")
-
-                                    except Exception:
+                                    title = job_data.get('title', '').strip()
+                                    if not title:
                                         continue
+                                    company = job_data.get('companyName', 'Unknown Company').strip()
+                                    loc = self.location
+                                    exp_text = ""
+                                    salary_text = ""
+                                    for ph in job_data.get('placeholders', []):
+                                        ph_type = ph.get('type', '').lower()
+                                        ph_label = ph.get('label', '')
+                                        if 'location' in ph_type:
+                                            loc = ph_label
+                                        elif 'experience' in ph_type:
+                                            exp_text = ph_label
+                                        elif 'salary' in ph_type or 'ctc' in ph_type:
+                                            salary_text = ph_label
+
+                                    desc_html = job_data.get('jobDescription', '')
+                                    if desc_html:
+                                        desc_soup = BeautifulSoup(desc_html, 'html.parser')
+                                        desc_text = desc_soup.get_text(' ', strip=True)
+                                    else:
+                                        desc_text = (job_data.get('snippets') or [f"{title} at {company}"])[0]
+
+                                    tags_skills = job_data.get('tagsAndSkills', '')
+                                    full_text = f"{title} {desc_text} {tags_skills} {exp_text}"
+
+                                    jd_url = job_data.get('jdURL', '')
+                                    job_link = f"https://www.naukri.com{jd_url}" if jd_url and not jd_url.startswith('http') else (jd_url or url)
+
+                                    job_id = self.generate_job_id(title, company, loc)
+                                    if job_id in self.seen_ids:
+                                        continue
+                                    self.seen_ids.add(job_id)
+
+                                    location = self._enhance_location(loc, title, full_text)
+                                    job = {
+                                        'id': job_id, 'title': title, 'company': company,
+                                        'location': location,
+                                        'description': desc_text[:500] if desc_text else f"{title} at {company}",
+                                        'url': job_link, 'source': 'Naukri',
+                                        'jobType': self.determine_job_type(title, full_text),
+                                        'experienceLevel': self.determine_experience_level(title, full_text),
+                                        'skills': self.extract_skills(full_text),
+                                        'qualifications': self.extract_qualifications(full_text),
+                                        'certifications': self.extract_certifications(full_text),
+                                        'posted_date': datetime.now().strftime('%Y-%m-%d'),
+                                        'featured': False
+                                    }
+                                    salary = self.extract_salary(salary_text + " " + desc_text)
+                                    if salary:
+                                        job['salary'] = salary
+                                    jobs.append(job)
+                                    print(f"  ✓ Found: {title} at {company} - {location}")
+                                except Exception:
+                                    continue
 
                             time.sleep(random.uniform(2, 4))
-
                         except Exception as e:
-                            print(f"  ✗ Error on Naukri page {page_num}: {str(e)}")
+                            print(f"  ✗ Browser error: {str(e)}")
                             continue
 
-                browser.close()
-
-        except Exception as e:
-            print(f"  ✗ Naukri scraper error: {str(e)}")
+                    browser.close()
+            except Exception as e:
+                print(f"  ✗ Browser approach error: {str(e)}")
 
         print(f"✅ Naukri: Found {len(jobs)} jobs")
         return jobs
     
     def scrape_indeed_india(self, max_pages: int = 3) -> List[Dict]:
-        """Scrape jobs from Indeed India using Playwright (headless browser)"""
+        """Scrape jobs from Indeed India using Playwright"""
         print(f"\n🔍 Scraping Indeed India for actuarial jobs in {self.location}...")
         jobs = []
-        
+
         if not HAS_PLAYWRIGHT:
             print("  ⚠ Playwright not installed - skipping Indeed")
-            print("  Install: pip install playwright && playwright install chromium")
-            print(f"✅ Indeed India: Found 0 jobs")
             return jobs
-        
+
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
@@ -598,79 +611,100 @@ class ActuarialJobScraper:
                     locale='en-IN',
                 )
                 page = context.new_page()
-                
+
                 for keyword in self.keywords[:3]:
                     for page_num in range(max_pages):
                         try:
                             url = f"https://in.indeed.com/jobs?q={keyword.replace(' ', '+')}&l={self.location}&start={page_num * 10}"
-                            
+
                             print(f"  📄 Loading: {keyword} (page {page_num + 1})...")
                             page.goto(url, wait_until='domcontentloaded', timeout=30000)
-                            
-                            # Wait for content
+
+                            # Wait for job cards
                             try:
-                                page.wait_for_selector('.job_seen_beacon, .resultContent, [class*="result"]', timeout=10000)
+                                page.wait_for_selector('.job_seen_beacon, .resultContent, .jobsearch-ResultsList', timeout=10000)
                             except Exception:
                                 print(f"    ⚠ No job cards found for '{keyword}' page {page_num + 1}")
                                 break
-                            
-                            # Scroll to load
+
+                            # Scroll to load lazy content
                             for _ in range(3):
                                 page.evaluate('window.scrollBy(0, 600)')
                                 time.sleep(0.3)
-                            
-                            cards = page.query_selector_all('.job_seen_beacon, .resultContent')
-                            
+
+                            cards = page.query_selector_all('.job_seen_beacon')
                             if not cards:
+                                cards = page.query_selector_all('.resultContent')
+                            if not cards:
+                                cards = page.query_selector_all('[class*="result"]')
+
+                            if not cards:
+                                print(f"    ⚠ No job cards found for '{keyword}' page {page_num + 1}")
                                 break
-                            
+
                             for card in cards:
                                 try:
-                                    title_el = card.query_selector('h2.jobTitle a, h2.jobTitle span, .jobTitle')
+                                    title_el = card.query_selector('h2.jobTitle a, h2.jobTitle span, .jobTitle a, .jobTitle span')
                                     title = title_el.inner_text().strip() if title_el else None
-                                    
                                     if not title:
                                         continue
-                                    
-                                    comp_el = card.query_selector('[data-testid="company-name"], .companyName')
+
+                                    comp_el = card.query_selector('[data-testid="company-name"], .companyName, .company_location .companyName')
                                     company = comp_el.inner_text().strip() if comp_el else "Unknown Company"
-                                    
-                                    loc_el = card.query_selector('[data-testid="text-location"], .companyLocation')
+
+                                    loc_el = card.query_selector('[data-testid="text-location"], .companyLocation, .company_location .companyLocation')
                                     loc = loc_el.inner_text().strip() if loc_el else self.location
-                                    
-                                    link_el = card.query_selector('h2.jobTitle a, a[href*="/viewjob"], a[href*="clk"]')
+
+                                    link_el = card.query_selector('h2.jobTitle a, a[href*="clk"], a[href*="viewjob"]')
                                     job_link = link_el.get_attribute('href') if link_el else url
                                     if job_link and job_link.startswith('/'):
                                         job_link = f"https://in.indeed.com{job_link}"
-                                    
-                                    snippet_el = card.query_selector('.job-snippet, [class*="snippet"]')
-                                    snippet = snippet_el.inner_text().strip() if snippet_el else ""
-                                    
+
                                     job_id = self.generate_job_id(title, company, loc)
                                     if job_id in self.seen_ids:
                                         continue
                                     self.seen_ids.add(job_id)
-                                    
-                                    description = snippet or f"{title} at {company}"
 
-                                    # Fetch full job description from detail page
-                                    if job_link and job_link.startswith('http'):
-                                        try:
-                                            detail_page = context.new_page()
-                                            detail_page.goto(job_link, wait_until='domcontentloaded', timeout=15000)
-                                            desc_el = detail_page.query_selector(
-                                                '#jobDescriptionText, .jobsearch-jobDescriptionText, '
-                                                '[class*="jobDescription"], [id*="jobDescription"]'
+                                    # Try to get description by clicking the job card
+                                    description = f"{title} position at {company}"
+                                    try:
+                                        # Click on the job card to load description in the right pane
+                                        clickable = card.query_selector('h2.jobTitle a, h2.jobTitle, .jobTitle')
+                                        if clickable:
+                                            clickable.click()
+                                            time.sleep(1.5)
+
+                                            # Wait for description pane
+                                            try:
+                                                page.wait_for_selector(
+                                                    '#jobDescriptionText, .jobsearch-JobComponent-description, '
+                                                    '.jobsearch-jobDescriptionText',
+                                                    timeout=5000
+                                                )
+                                            except Exception:
+                                                pass
+
+                                            desc_el = (
+                                                page.query_selector('#jobDescriptionText') or
+                                                page.query_selector('.jobsearch-jobDescriptionText') or
+                                                page.query_selector('.jobsearch-JobComponent-description')
                                             )
                                             if desc_el:
-                                                description = desc_el.inner_text().strip() or description
-                                            detail_page.close()
-                                        except Exception:
-                                            pass
+                                                desc_text = desc_el.inner_text().strip()
+                                                if desc_text and len(desc_text) > 30:
+                                                    description = desc_text
+                                    except Exception:
+                                        pass
 
                                     full_text = f"{title} {description}"
                                     location = self._enhance_location(loc, title, full_text)
-                                    
+
+                                    # Extract salary from card
+                                    salary_text = ""
+                                    sal_el = card.query_selector('.salary-snippet-container, [class*="salary"], .metadata .attribute_snippet')
+                                    if sal_el:
+                                        salary_text = sal_el.inner_text().strip()
+
                                     job = {
                                         'id': job_id,
                                         'title': title,
@@ -687,24 +721,29 @@ class ActuarialJobScraper:
                                         'posted_date': datetime.now().strftime('%Y-%m-%d'),
                                         'featured': False
                                     }
-                                    
+
+                                    salary = self.extract_salary(salary_text + " " + description)
+                                    if salary:
+                                        job['salary'] = salary
+
                                     jobs.append(job)
-                                    print(f"  ✓ Found: {title} at {company} - {location}")
-                                    
+                                    skills_str = ', '.join(job['skills']) if job['skills'] else 'none detected'
+                                    print(f"  ✓ Found: {title} at {company} - {location} [skills: {skills_str}]")
+
                                 except Exception as e:
                                     continue
-                            
+
                             time.sleep(random.uniform(2, 4))
-                            
+
                         except Exception as e:
                             print(f"  ✗ Error on Indeed page {page_num + 1}: {str(e)}")
                             continue
-                
+
                 browser.close()
-                
+
         except Exception as e:
             print(f"  ✗ Indeed scraper error: {str(e)}")
-        
+
         print(f"✅ Indeed India: Found {len(jobs)} jobs")
         return jobs
     
