@@ -125,7 +125,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json.jobs) }}",
+        "jsonBody": "={{ $json.jobs }}",
         "options": {
           "timeout": 120000
         }

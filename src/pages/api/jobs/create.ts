@@ -7,6 +7,26 @@ import type { JobDocument } from '../../../lib/db/models/Job';
 import fs from 'fs/promises';
 import path from 'path';
 
+/**
+ * Ensures a value is an array. If it's a JSON-encoded string of an array,
+ * parse it back. This guards against double-serialization issues from
+ * workflow tools like n8n.
+ */
+function ensureArray(value: any): string[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      // Not valid JSON — fall through to treat the string as a single-element array
+    }
+    // Non-empty string becomes a single-element array; empty string becomes []
+    return value ? [value] : [];
+  }
+  return [];
+}
+
 function checkAuth(request: Request, cookies: any): boolean {
   // Check cookie authentication
   if (isAuthenticated(cookies)) return true;
@@ -54,9 +74,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       salary: job.salary,
       jobType: job.jobType || 'full-time',
       experienceLevel: job.experienceLevel || 'mid',
-      skills: job.skills || [],
-      qualifications: job.qualifications || [],
-      certifications: job.certifications,
+      skills: ensureArray(job.skills),
+      qualifications: ensureArray(job.qualifications),
+      certifications: ensureArray(job.certifications),
       url: job.url,
       source: job.source,
       featured: job.featured || false,
@@ -95,14 +115,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           source: job.source,
           jobType: job.jobType || 'full-time',
           experienceLevel: job.experienceLevel || 'mid',
-          skills: job.skills || [],
-          qualifications: job.qualifications || [],
+          skills: ensureArray(job.skills),
+          qualifications: ensureArray(job.qualifications),
           posted_date: job.posted_date || new Date().toISOString().split('T')[0],
           featured: job.featured || false,
         };
 
         if (job.salary) jobData.salary = job.salary;
-        if (job.certifications?.length) jobData.certifications = job.certifications;
+        const certs = ensureArray(job.certifications);
+        if (certs.length > 0) jobData.certifications = certs;
 
         await fs.writeFile(filepath, JSON.stringify(jobData, null, 2), 'utf-8');
         filesSaved++;
