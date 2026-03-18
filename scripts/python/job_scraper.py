@@ -23,6 +23,16 @@ try:
 except ImportError:
     HAS_LXML = False
 
+# Rotate through these User-Agent strings when retrying LinkedIn requests so
+# that repeated attempts from Docker IPs are less likely to be blocked.
+_LINKEDIN_USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
+]
+
 class ActuarialJobScraper:
     """
     Comprehensive web scraper for actuarial job listings from multiple sources
@@ -800,53 +810,83 @@ class ActuarialJobScraper:
                             continue
                         
                         self.seen_ids.add(job_id)
-                        
-                        # --- Fetch the full job description ---
+
+                        # Extract any snippet text available on the search results page.
+                        # This gives us a meaningful fallback when the detail page is
+                        # blocked in Docker/container environments.
+                        snippet_elem = (
+                            card.find('p', class_='job-search-card__snippet') or
+                            card.find('div', class_='base-search-card__metadata') or
+                            card.find('p', {'class': lambda c: c and 'snippet' in str(c).lower()})
+                        )
+                        snippet = self.clean_text(snippet_elem.get_text()) if snippet_elem else ""
+
+                        # --- Fetch the full job description with retry + UA rotation ---
                         description = f"{title} position at {company}"
-                        job_skills = []
                         job_certs = []
                         detail_location = location  # Start with search page location
-                        
-                        try:
-                            time.sleep(random.uniform(1, 2))
-                            detail_response = self.session.get(job_link, timeout=15)
-                            if detail_response.status_code == 200:
-                                detail_soup = BeautifulSoup(detail_response.content, 'html.parser')
-                                
-                                # Extract job location from detail page
-                                detail_loc_elem = (
-                                    detail_soup.find('span', class_='topcard__flavor--bullet') or
-                                    detail_soup.find('span', class_='top-card-layout__bullet') or
-                                    detail_soup.find('span', {'class': lambda c: c and 'location' in str(c).lower()})
-                                )
-                                if detail_loc_elem:
-                                    parsed_loc = self.clean_text(detail_loc_elem.get_text())
-                                    if parsed_loc and len(parsed_loc) > 2:
-                                        detail_location = parsed_loc
-                                
-                                # Extract description
-                                desc_elem = (
-                                    detail_soup.find('div', class_='description__text') or
-                                    detail_soup.find('div', class_='show-more-less-html__markup') or
-                                    detail_soup.find('section', class_='description') or
-                                    detail_soup.find('div', {'class': lambda c: c and 'description' in c})
-                                )
-                                
-                                if desc_elem:
-                                    description = self.clean_text(desc_elem.get_text())
-                                    job_skills = self.extract_skills(description)
-                                    job_certs = self.extract_certifications(description)
+                        detail_fetched = False
+
+                        for attempt in range(3):
+                            try:
+                                if attempt == 0:
+                                    time.sleep(random.uniform(1, 2))
                                 else:
-                                    job_skills = self.extract_skills(f"{title} {company}")
-                            else:
-                                job_skills = self.extract_skills(f"{title} {company}")
-                        except Exception as detail_err:
-                            print(f"    ⚠ Could not fetch details for {title}: {str(detail_err)}")
-                            job_skills = self.extract_skills(f"{title} {company}")
-                        
+                                    # Exponential backoff and rotate User-Agent on retries
+                                    time.sleep(2 ** attempt + random.uniform(0, 1))
+                                    self.session.headers.update({
+                                        'User-Agent': random.choice(_LINKEDIN_USER_AGENTS)
+                                    })
+
+                                detail_response = self.session.get(job_link, timeout=15)
+                                if detail_response.status_code == 200:
+                                    detail_soup = BeautifulSoup(detail_response.content, 'html.parser')
+
+                                    # Extract job location from detail page
+                                    detail_loc_elem = (
+                                        detail_soup.find('span', class_='topcard__flavor--bullet') or
+                                        detail_soup.find('span', class_='top-card-layout__bullet') or
+                                        detail_soup.find('span', {'class': lambda c: c and 'location' in str(c).lower()})
+                                    )
+                                    if detail_loc_elem:
+                                        parsed_loc = self.clean_text(detail_loc_elem.get_text())
+                                        if parsed_loc and len(parsed_loc) > 2:
+                                            detail_location = parsed_loc
+
+                                    # Extract description
+                                    desc_elem = (
+                                        detail_soup.find('div', class_='description__text') or
+                                        detail_soup.find('div', class_='show-more-less-html__markup') or
+                                        detail_soup.find('section', class_='description') or
+                                        detail_soup.find('div', {'class': lambda c: c and 'description' in c})
+                                    )
+
+                                    if desc_elem:
+                                        description = self.clean_text(desc_elem.get_text())
+                                        detail_fetched = True
+                                    # A 200 response is terminal — the page either has
+                                    # the description element or it doesn't; retrying
+                                    # would return the same HTML structure.
+                                    break
+                                elif detail_response.status_code in (429, 403):
+                                    print(f"    ⚠ LinkedIn rate-limited ({detail_response.status_code}) for {title}, attempt {attempt + 1}/3")
+                                else:
+                                    break  # Non-retriable error
+                            except Exception as detail_err:
+                                print(f"    ⚠ Could not fetch details for {title} (attempt {attempt + 1}/3): {str(detail_err)}")
+
+                        if not detail_fetched:
+                            print(f"    ℹ Using search page text for skill extraction: {title}")
+
+                        # Always extract from the richest available text so that skills
+                        # and qualifications are populated even when the detail page is
+                        # blocked (e.g. inside Docker/container environments).
+                        combined_text = " ".join(filter(None, [title, company, description, snippet]))
+                        job_certs = self.extract_certifications(combined_text)
+
                         # --- Enhance location with Remote detection ---
                         location = self._enhance_location(detail_location, title, description)
-                        
+
                         job = {
                             'id': job_id,
                             'title': title,
@@ -857,15 +897,15 @@ class ActuarialJobScraper:
                             'source': 'LinkedIn',
                             'jobType': self.determine_job_type(title, description),
                             'experienceLevel': self.determine_experience_level(title, description),
-                            'skills': job_skills,
-                            'qualifications': self.extract_qualifications(description),
+                            'skills': self.extract_skills(combined_text),
+                            'qualifications': self.extract_qualifications(combined_text),
                             'certifications': job_certs,
                             'posted_date': datetime.now().strftime('%Y-%m-%d'),
                             'featured': True
                         }
-                        
+
                         jobs.append(job)
-                        skills_str = ', '.join(job_skills) if job_skills else 'none detected'
+                        skills_str = ', '.join(job['skills']) if job['skills'] else 'none detected'
                         print(f"  ✓ Found: {title} at {company} [skills: {skills_str}]")
                         
                     except Exception as e:
