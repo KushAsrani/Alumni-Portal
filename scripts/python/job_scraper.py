@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import json
 import time
 import re
+from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 import hashlib
@@ -1031,6 +1032,10 @@ class ActuarialJobScraper:
 
 def main():
     """Main execution function"""
+    repo_root = Path(__file__).resolve().parents[2]
+    jobs_output_dir = repo_root / "src" / "content" / "jobs"
+    json_output_file = repo_root / "actuarial_jobs_india.json"
+
     # Configuration for India
     LOCATION = "India"
     KEYWORDS = [
@@ -1049,8 +1054,8 @@ def main():
     jobs = scraper.scrape_all()
     
     # Save to files
-    scraper.save_to_json('actuarial_jobs_india.json')
-    scraper.save_individual_files('../src/content/jobs')
+    scraper.save_to_json(str(json_output_file))
+    scraper.save_individual_files(str(jobs_output_dir))
     
     # Example: Filter by major Indian cities
     # major_cities = ['Mumbai', 'Delhi', 'Bangalore', 'Pune', 'Hyderabad', 'Chennai']
