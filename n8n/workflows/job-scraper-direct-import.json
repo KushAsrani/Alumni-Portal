@@ -130,7 +130,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.PORTAL_URL || 'http://host.docker.internal:4321' }}/api/jobs/create",
+        "url": "={{ (($env.PORTAL_URL || 'http://host.docker.internal:4321').replace('http://localhost:4321', 'http://host.docker.internal:4321').replace('http://127.0.0.1:4321', 'http://host.docker.internal:4321').replace('https://localhost:4321', 'http://host.docker.internal:4321').replace('https://127.0.0.1:4321', 'http://host.docker.internal:4321')) }}/api/jobs/create",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -148,7 +148,7 @@
         256,
         80
       ],
-      "notes": "Requires an HTTP Header Auth credential with x-api-key.",
+      "notes": "Requires HTTP Header Auth with x-api-key. If PORTAL_URL uses localhost/127.0.0.1, it is auto-rewritten to host.docker.internal for Docker-to-host connectivity.",
       "credentials": {
         "httpHeaderAuth": {
           "id": "replace-me",
