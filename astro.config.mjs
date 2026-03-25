@@ -9,6 +9,11 @@ export default defineConfig({
     host: '0.0.0.0',  // Allow connections from Docker
     port: 4321,
   },
+  vite: {
+    server: {
+      allowedHosts: ['host.docker.internal'],
+    },
+  },
   adapter: vercel({
     webAnalytics: {
       enabled: true
