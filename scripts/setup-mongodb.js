@@ -1,61 +1,65 @@
-import { connectToDatabase } from '../src/lib/db/mongodb.ts';
+// scripts/setup-mongodb.js
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
 import { MongoClient } from 'mongodb';
 
-async function setupDatabase() {
-  console.log('🗄️  Setting up MongoDB Atlas database...\n');
-  const uri = process.env.MONGODB_URI;
+async function setupMongoDB() {
+  console.log('🚀 Setting up MongoDB...\n');
 
-    if (!uri) {
+  const uri = process.env.MONGODB_URI;
+  
+  if (!uri) {
     console.error('❌ MONGODB_URI not found in .env.local');
     console.log('\nPlease add MONGODB_URI to your .env.local file\n');
     process.exit(1);
   }
+  
+  console.log('✓ Using MongoDB connection string\n');
 
   const client = new MongoClient(uri);
 
   try {
-    const { db } = await connectToDatabase();
+    console.log('📝 Connecting to MongoDB...');
+    await client.connect();
+    console.log('✅ Connected successfully\n');
 
-    // Create indexes for jobs collection
-    console.log('Creating indexes for jobs collection...');
-    const jobsCollection = db.collection('jobs');
+    const db = client.db('alumni_portal');
+    const collection = db.collection('alumni_registrations');
 
-    await jobsCollection.createIndex({ jobId: 1 }, { unique: true });
-    await jobsCollection.createIndex({ status: 1 });
-    await jobsCollection.createIndex({ source: 1 });
-    await jobsCollection.createIndex({ location: 1 });
-    await jobsCollection.createIndex({ experienceLevel: 1 });
-    await jobsCollection.createIndex({ postedDate: -1 });
-    await jobsCollection.createIndex({ featured: 1 });
-    await jobsCollection.createIndex({ 'salary.min': 1 });
+    console.log('📝 Creating indexes...');
     
-    // Text index for search
-    await jobsCollection.createIndex({
-      title: 'text',
-      company: 'text',
-      description: 'text',
-      skills: 'text',
-    });
+    // Create unique index on email
+    await collection.createIndex({ email: 1 }, { unique: true });
+    console.log('✅ Email index created\n');
 
-    console.log('✅ Jobs collection indexes created');
+    // Create index on status
+    await collection.createIndex({ status: 1 });
+    console.log('✅ Status index created\n');
 
-    // Create indexes for scrape_logs collection
-    console.log('Creating indexes for scrape_logs collection...');
-    const logsCollection = db.collection('scrape_logs');
+    // Create index on created_at for sorting
+    await collection.createIndex({ created_at: -1 });
+    console.log('✅ Created_at index created\n');
 
-    await logsCollection.createIndex({ startedAt: -1 });
-    await logsCollection.createIndex({ status: 1 });
-    await logsCollection.createIndex({ source: 1 });
+    // Create indexes for filtering
+    await collection.createIndex({ year: 1 });
+    await collection.createIndex({ faculty: 1 });
+    console.log('✅ Year and Faculty indexes created\n');
 
-    console.log('✅ Scrape logs collection indexes created');
-
-    console.log('\n✅ Database setup completed successfully!');
+    console.log('🎉 MongoDB setup completed successfully!\n');
+    
+    await client.close();
     process.exit(0);
-
   } catch (error) {
-    console.error('❌ Error setting up database:', error);
+    console.error('❌ Error setting up MongoDB:', error);
+    console.error('\nError details:', error.message);
+    try {
+      await client.close();
+    } catch (e) {
+      // ignore
+    }
     process.exit(1);
   }
 }
 
-setupDatabase();
+setupMongoDB();
