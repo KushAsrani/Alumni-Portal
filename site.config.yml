@@ -7,7 +7,7 @@ site:
   name: "Alumni Portal"
   description: "An open-source alumni portal designed for colleges and communities for community building and engagement"
   url: ""
-  logo: "/logo.png"
+  logo: "/favicon.ico"
   favicon: "/favicon.ico"
   hero_image: "/hero-bg.jpg"
 
