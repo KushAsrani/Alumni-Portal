@@ -1,0 +1,900 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { isAlumniAuthenticated, getAlumniSession } from '../../lib/alumni-auth';
+import { connectToDatabase } from '../../lib/mongodb';
+import type { AlumniRegistration } from '../../lib/mongodb';
+import { ObjectId } from 'mongodb';
+
+// Redirect unauthenticated users
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login');
+}
+
+const session = getAlumniSession(Astro.cookies)!;
+
+let alumni: AlumniRegistration & { _id: any; username?: string } | null = null;
+let fetchError = '';
+
+try {
+  const { db } = await connectToDatabase();
+  const collection = db.collection('alumni_registrations');
+
+  let record = null;
+  try {
+    record = await collection.findOne({ _id: new ObjectId(session.id) });
+  } catch {
+    // id may not be a valid ObjectId in dev/test environments
+    record = await collection.findOne({ email: session.email });
+  }
+
+  if (record) {
+    alumni = record as AlumniRegistration & { _id: any; username?: string };
+  } else {
+    fetchError = 'Profile not found. Please contact the alumni office.';
+  }
+} catch (err) {
+  console.error('Profile fetch error:', err);
+  fetchError = 'Unable to load profile at this time. Please try again later.';
+}
+
+// Helper: get initials from a name
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+// Helper: format a date string to a readable format
+function formatDate(date: Date | string | undefined): string {
+  if (!date) return '—';
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+// Status badge color helper
+function statusColor(status: string) {
+  if (status === 'approved') return 'status-approved';
+  if (status === 'rejected') return 'status-rejected';
+  return 'status-pending';
+}
+
+const skills = alumni?.skills
+  ? alumni.skills.split(',').map((s) => s.trim()).filter(Boolean)
+  : [];
+const interests = alumni?.interests
+  ? alumni.interests.split(',').map((s) => s.trim()).filter(Boolean)
+  : [];
+---
+
+<Layout title={`${alumni?.name ?? 'My Profile'} | Alumni Portal`}>
+  <main class="profile-page">
+    <div class="container-custom py-8 md:py-12">
+
+      {fetchError && (
+        <div class="error-banner">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>{fetchError}</span>
+        </div>
+      )}
+
+      {alumni && (
+        <div class="profile-layout">
+
+          <!-- ── Profile Header Card ── -->
+          <div class="profile-header-card">
+            <div class="profile-header-bg"></div>
+            <div class="profile-header-content">
+              <!-- Avatar -->
+              <div class="avatar-wrapper">
+                {alumni.photo_blob_url ? (
+                  <img
+                    src={alumni.photo_blob_url}
+                    alt={alumni.name}
+                    class="avatar-img"
+                  />
+                ) : (
+                  <div class="avatar-placeholder">
+                    {getInitials(alumni.name)}
+                  </div>
+                )}
+              </div>
+
+              <div class="profile-identity">
+                <div class="profile-name-row">
+                  <h1 class="profile-name">{alumni.name}</h1>
+                  <span class={`status-badge ${statusColor(alumni.status)}`}>
+                    {alumni.status.charAt(0).toUpperCase() + alumni.status.slice(1)}
+                  </span>
+                </div>
+
+                {(alumni.job_designation || alumni.company) && (
+                  <p class="profile-role">
+                    {alumni.job_designation && <span>{alumni.job_designation}</span>}
+                    {alumni.job_designation && alumni.company && <span class="separator">at</span>}
+                    {alumni.company && <span>{alumni.company}</span>}
+                  </p>
+                )}
+
+                {alumni.location && (
+                  <p class="profile-location">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    {alumni.location}
+                  </p>
+                )}
+
+                <!-- Social links -->
+                <div class="social-links">
+                  {alumni.linkedin && (
+                    <a href={alumni.linkedin} target="_blank" rel="noopener noreferrer" class="social-link" title="LinkedIn">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                        <rect x="2" y="9" width="4" height="12"></rect>
+                        <circle cx="4" cy="4" r="2"></circle>
+                      </svg>
+                    </a>
+                  )}
+                  {alumni.github && (
+                    <a href={alumni.github} target="_blank" rel="noopener noreferrer" class="social-link" title="GitHub">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                      </svg>
+                    </a>
+                  )}
+                  {alumni.twitter && (
+                    <a href={alumni.twitter} target="_blank" rel="noopener noreferrer" class="social-link" title="Twitter">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
+                      </svg>
+                    </a>
+                  )}
+                  {alumni.portfolio && (
+                    <a href={alumni.portfolio} target="_blank" rel="noopener noreferrer" class="social-link" title="Portfolio">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                      </svg>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <!-- Action buttons -->
+              <div class="header-actions">
+                <a href="#edit" class="btn-teal-outline">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  Edit Profile
+                </a>
+                <form method="POST" action="/api/auth/alumni-logout" style="display:inline;">
+                  <button type="submit" class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                      <polyline points="16 17 21 12 16 7"></polyline>
+                      <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Main grid ── -->
+          <div class="info-grid">
+
+            <!-- Left column -->
+            <div class="info-left">
+
+              <!-- Personal Information -->
+              <div class="info-card">
+                <h2 class="info-card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  Personal Information
+                </h2>
+                <dl class="info-list">
+                  <div class="info-row">
+                    <dt>Email</dt>
+                    <dd>{alumni.email}</dd>
+                  </div>
+                  {alumni.mobile && (
+                    <div class="info-row">
+                      <dt>Mobile</dt>
+                      <dd>{alumni.mobile}</dd>
+                    </div>
+                  )}
+                  {alumni.dob && (
+                    <div class="info-row">
+                      <dt>Date of Birth</dt>
+                      <dd>{alumni.dob}</dd>
+                    </div>
+                  )}
+                  {alumni.gender && (
+                    <div class="info-row">
+                      <dt>Gender</dt>
+                      <dd>{alumni.gender}</dd>
+                    </div>
+                  )}
+                  {alumni.address && (
+                    <div class="info-row">
+                      <dt>Address</dt>
+                      <dd>{alumni.address}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
+              <!-- Education -->
+              <div class="info-card">
+                <h2 class="info-card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                  </svg>
+                  Education
+                </h2>
+                <dl class="info-list">
+                  {alumni.university && (
+                    <div class="info-row">
+                      <dt>University</dt>
+                      <dd>{alumni.university}</dd>
+                    </div>
+                  )}
+                  {alumni.college_name && (
+                    <div class="info-row">
+                      <dt>College</dt>
+                      <dd>{alumni.college_name}</dd>
+                    </div>
+                  )}
+                  {alumni.faculty && (
+                    <div class="info-row">
+                      <dt>Faculty</dt>
+                      <dd>{alumni.faculty}</dd>
+                    </div>
+                  )}
+                  {alumni.degree && (
+                    <div class="info-row">
+                      <dt>Degree</dt>
+                      <dd>{alumni.degree}</dd>
+                    </div>
+                  )}
+                  {alumni.year && (
+                    <div class="info-row">
+                      <dt>Graduation Year</dt>
+                      <dd>{alumni.year}</dd>
+                    </div>
+                  )}
+                  {alumni.gpa && (
+                    <div class="info-row">
+                      <dt>GPA</dt>
+                      <dd>{alumni.gpa}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
+              <!-- Account Information -->
+              <div class="info-card">
+                <h2 class="info-card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  Account Information
+                </h2>
+                <dl class="info-list">
+                  <div class="info-row">
+                    <dt>Status</dt>
+                    <dd>
+                      <span class={`status-badge ${statusColor(alumni.status)}`}>
+                        {alumni.status.charAt(0).toUpperCase() + alumni.status.slice(1)}
+                      </span>
+                    </dd>
+                  </div>
+                  {alumni.username && (
+                    <div class="info-row">
+                      <dt>Username</dt>
+                      <dd>{alumni.username}</dd>
+                    </div>
+                  )}
+                  <div class="info-row">
+                    <dt>Registered</dt>
+                    <dd>{formatDate(alumni.created_at)}</dd>
+                  </div>
+                  {alumni.degree_certificate_url && (
+                    <div class="info-row">
+                      <dt>Degree Certificate</dt>
+                      <dd>
+                        <a href={alumni.degree_certificate_url} target="_blank" rel="noopener noreferrer" class="doc-link">
+                          View Certificate ↗
+                        </a>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
+            </div><!-- /info-left -->
+
+            <!-- Right column -->
+            <div class="info-right">
+
+              <!-- Professional Information -->
+              <div class="info-card">
+                <h2 class="info-card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                  </svg>
+                  Professional Information
+                </h2>
+                <dl class="info-list">
+                  {alumni.job_designation && (
+                    <div class="info-row">
+                      <dt>Designation</dt>
+                      <dd>{alumni.job_designation}</dd>
+                    </div>
+                  )}
+                  {alumni.company && (
+                    <div class="info-row">
+                      <dt>Company</dt>
+                      <dd>{alumni.company}</dd>
+                    </div>
+                  )}
+                  {alumni.location && (
+                    <div class="info-row">
+                      <dt>Location</dt>
+                      <dd>{alumni.location}</dd>
+                    </div>
+                  )}
+                  {alumni.linkedin && (
+                    <div class="info-row">
+                      <dt>LinkedIn</dt>
+                      <dd><a href={alumni.linkedin} target="_blank" rel="noopener noreferrer" class="doc-link">{alumni.linkedin}</a></dd>
+                    </div>
+                  )}
+                  {alumni.github && (
+                    <div class="info-row">
+                      <dt>GitHub</dt>
+                      <dd><a href={alumni.github} target="_blank" rel="noopener noreferrer" class="doc-link">{alumni.github}</a></dd>
+                    </div>
+                  )}
+                  {alumni.twitter && (
+                    <div class="info-row">
+                      <dt>Twitter</dt>
+                      <dd><a href={alumni.twitter} target="_blank" rel="noopener noreferrer" class="doc-link">{alumni.twitter}</a></dd>
+                    </div>
+                  )}
+                  {alumni.portfolio && (
+                    <div class="info-row">
+                      <dt>Portfolio</dt>
+                      <dd><a href={alumni.portfolio} target="_blank" rel="noopener noreferrer" class="doc-link">{alumni.portfolio}</a></dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
+              <!-- Short Bio -->
+              {alumni.short_bio && (
+                <div class="info-card">
+                  <h2 class="info-card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                      <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Short Bio / Achievements
+                  </h2>
+                  <p class="bio-text">{alumni.short_bio}</p>
+                </div>
+              )}
+
+              <!-- Skills & Interests -->
+              {(skills.length > 0 || interests.length > 0) && (
+                <div class="info-card">
+                  <h2 class="info-card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    Skills &amp; Interests
+                  </h2>
+                  {skills.length > 0 && (
+                    <div class="tags-section">
+                      <h3 class="tags-label">Skills</h3>
+                      <div class="tags-list">
+                        {skills.map((skill) => (
+                          <span class="tag tag-skill">{skill}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {interests.length > 0 && (
+                    <div class="tags-section">
+                      <h3 class="tags-label">Interests</h3>
+                      <div class="tags-list">
+                        {interests.map((interest) => (
+                          <span class="tag tag-interest">{interest}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <!-- Work Experience -->
+              {alumni.work_experience && (
+                <div class="info-card">
+                  <h2 class="info-card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Work Experience
+                  </h2>
+                  <p class="bio-text whitespace-pre-line">{alumni.work_experience}</p>
+                </div>
+              )}
+
+              <!-- Projects -->
+              {alumni.projects && (
+                <div class="info-card">
+                  <h2 class="info-card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="16 18 22 12 16 6"></polyline>
+                      <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    Projects
+                  </h2>
+                  <p class="bio-text whitespace-pre-line">{alumni.projects}</p>
+                </div>
+              )}
+
+            </div><!-- /info-right -->
+
+          </div><!-- /info-grid -->
+
+          <!-- Edit Profile placeholder section -->
+          <div id="edit" class="edit-placeholder">
+            <h2>Edit Profile</h2>
+            <p>Profile editing will be available soon. Please contact the alumni office to update your information.</p>
+          </div>
+
+        </div><!-- /profile-layout -->
+      )}
+
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .profile-page {
+    background: #f8fafc;
+    min-height: 100vh;
+  }
+
+  .error-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: #fee2e2;
+    color: #991b1b;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #fecaca;
+    font-size: 0.9rem;
+  }
+
+  /* ── Profile Header Card ── */
+  .profile-header-card {
+    position: relative;
+    background: white;
+    border-radius: 1.25rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .profile-header-bg {
+    height: 120px;
+    background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+  }
+
+  .profile-header-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 0 2rem 1.75rem;
+    flex-wrap: wrap;
+  }
+
+  /* ── Avatar ── */
+  .avatar-wrapper {
+    margin-top: -48px;
+    flex-shrink: 0;
+  }
+
+  .avatar-img,
+  .avatar-placeholder {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 4px solid white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    object-fit: cover;
+  }
+
+  .avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0d9488, #0891b2);
+    color: white;
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  /* ── Profile identity ── */
+  .profile-identity {
+    flex: 1;
+    padding-top: 0.75rem;
+    min-width: 200px;
+  }
+
+  .profile-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .profile-name {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .profile-role {
+    margin: 0.25rem 0 0;
+    color: #475569;
+    font-size: 0.975rem;
+  }
+
+  .profile-role .separator {
+    margin: 0 0.35rem;
+    color: #94a3b8;
+  }
+
+  .profile-location {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #64748b;
+    font-size: 0.875rem;
+    margin: 0.35rem 0 0;
+  }
+
+  .social-links {
+    display: flex;
+    gap: 0.65rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: #f1f5f9;
+    border-radius: 50%;
+    color: #475569;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .social-link:hover {
+    background: #0d9488;
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  /* ── Header action buttons ── */
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    padding-top: 0.75rem;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  .btn-teal-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    border: 2px solid #0d9488;
+    color: #0d9488;
+    border-radius: 0.6rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    background: white;
+  }
+
+  .btn-teal-outline:hover {
+    background: #0d9488;
+    color: white;
+  }
+
+  .btn-logout {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    border: 2px solid #ef4444;
+    color: #ef4444;
+    border-radius: 0.6rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+  }
+
+  .btn-logout:hover {
+    background: #ef4444;
+    color: white;
+  }
+
+  /* ── Status badges ── */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .status-approved {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-pending {
+    background: #fef9c3;
+    color: #854d0e;
+  }
+
+  .status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  /* ── Two-column info grid ── */
+  .info-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 768px) {
+    .info-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .info-left,
+  .info-right {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* ── Info card ── */
+  .info-card {
+    background: white;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .info-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f1f5f9;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .info-card-title svg {
+    color: #0d9488;
+    flex-shrink: 0;
+  }
+
+  .info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f8fafc;
+  }
+
+  .info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .info-row dt {
+    color: #64748b;
+    font-weight: 500;
+    flex-shrink: 0;
+    min-width: 110px;
+  }
+
+  .info-row dd {
+    color: #1e293b;
+    text-align: right;
+    word-break: break-word;
+    margin: 0;
+  }
+
+  .doc-link {
+    color: #0d9488;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .doc-link:hover {
+    color: #0891b2;
+    text-decoration: underline;
+  }
+
+  /* ── Bio / text blocks ── */
+  .bio-text {
+    color: #334155;
+    font-size: 0.925rem;
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  /* ── Skills / Interests tags ── */
+  .tags-section {
+    margin-bottom: 1rem;
+  }
+
+  .tags-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .tags-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 0.6rem;
+  }
+
+  .tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.8rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .tag-skill {
+    background: #f0fdfa;
+    color: #134e4a;
+    border: 1px solid #99f6e4;
+  }
+
+  .tag-interest {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+  }
+
+  /* ── Edit placeholder ── */
+  .edit-placeholder {
+    margin-top: 1.5rem;
+    background: white;
+    border-radius: 1rem;
+    border: 1px dashed #cbd5e1;
+    padding: 2rem;
+    text-align: center;
+    color: #64748b;
+  }
+
+  .edit-placeholder h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #334155;
+    margin: 0 0 0.5rem;
+  }
+
+  .edit-placeholder p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  /* ── Responsive adjustments ── */
+  @media (max-width: 640px) {
+    .profile-header-content {
+      padding: 0 1.25rem 1.25rem;
+      gap: 1rem;
+    }
+
+    .profile-name {
+      font-size: 1.35rem;
+    }
+
+    .header-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .info-row {
+      flex-direction: column;
+    }
+
+    .info-row dd {
+      text-align: left;
+    }
+  }
+</style>

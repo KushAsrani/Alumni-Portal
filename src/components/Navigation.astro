@@ -116,6 +116,54 @@ const config = getSiteConfig();
         ))}
       </div>
 
+      <!-- Alumni Auth (Desktop) -->
+      <div class="hidden lg:flex items-center ml-4" id="alumni-auth-desktop">
+        <!-- Shown when NOT logged in -->
+        <a
+          href="/alumni/login"
+          id="alumni-login-btn-desktop"
+          class="alumni-login-btn"
+          style="display:none;"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+            <polyline points="10 17 15 12 10 7"></polyline>
+            <line x1="15" y1="12" x2="3" y2="12"></line>
+          </svg>
+          Alumni Login
+        </a>
+
+        <!-- Shown when logged in -->
+        <div id="alumni-user-menu-desktop" class="relative group" style="display:none;">
+          <button class="alumni-user-btn flex items-center gap-2">
+            <div id="alumni-avatar-desktop" class="alumni-nav-avatar"></div>
+            <span id="alumni-name-desktop" class="text-sm font-medium text-accent-700 max-w-[120px] truncate"></span>
+            <Icon name="mdi:chevron-down" class="w-4 h-4 text-accent-500 transition-transform duration-200 group-hover:rotate-180" />
+          </button>
+          <!-- Dropdown -->
+          <div class="alumni-dropdown">
+            <a href="/alumni/profile" class="alumni-dropdown-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              My Profile
+            </a>
+            <div class="alumni-dropdown-divider"></div>
+            <form method="POST" action="/api/auth/alumni-logout">
+              <button type="submit" class="alumni-dropdown-item alumni-logout-item w-full text-left">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Logout
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- Mobile Menu Button -->
       <button 
         id="mobile-menu-btn"
@@ -185,6 +233,45 @@ const config = getSiteConfig();
             )}
           </div>
         ))}
+        <!-- Alumni Auth (Mobile) -->
+        <div class="pt-2 border-t border-accent-100 mt-2">
+          <!-- Shown when NOT logged in -->
+          <a
+            href="/alumni/login"
+            id="alumni-login-btn-mobile"
+            class="block px-4 py-3 text-teal-700 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors duration-200 font-medium"
+            style="display:none;"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2 align-middle">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+            Alumni Login
+          </a>
+
+          <!-- Shown when logged in -->
+          <div id="alumni-user-mobile" style="display:none;">
+            <a href="/alumni/profile" class="block px-4 py-3 text-accent-700 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors duration-200">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2 align-middle">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              My Profile (<span id="alumni-name-mobile"></span>)
+            </a>
+            <form method="POST" action="/api/auth/alumni-logout">
+              <button type="submit" class="w-full text-left block px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2 align-middle">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Logout
+              </button>
+            </form>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -229,4 +316,160 @@ const config = getSiteConfig();
       mobileMenu?.classList.add('hidden');
     }
   });
+
+  // ── Alumni auth state ──
+  async function updateAlumniAuthUI() {
+    try {
+      const res = await fetch('/api/auth/alumni-session');
+      if (!res.ok) return;
+      const data = await res.json();
+
+      const loginBtnDesktop = document.getElementById('alumni-login-btn-desktop') as HTMLElement | null;
+      const userMenuDesktop = document.getElementById('alumni-user-menu-desktop') as HTMLElement | null;
+      const loginBtnMobile = document.getElementById('alumni-login-btn-mobile') as HTMLElement | null;
+      const userMobile = document.getElementById('alumni-user-mobile') as HTMLElement | null;
+      const alumniNameDesktop = document.getElementById('alumni-name-desktop');
+      const alumniNameMobile = document.getElementById('alumni-name-mobile');
+      const alumniAvatarDesktop = document.getElementById('alumni-avatar-desktop');
+
+      if (data.loggedIn) {
+        // Show user menus, hide login buttons
+        if (loginBtnDesktop) loginBtnDesktop.style.display = 'none';
+        if (userMenuDesktop) userMenuDesktop.style.display = '';
+        if (loginBtnMobile) loginBtnMobile.style.display = 'none';
+        if (userMobile) userMobile.style.display = '';
+
+        const displayName: string = data.name || data.username || '';
+        if (alumniNameDesktop) alumniNameDesktop.textContent = displayName;
+        if (alumniNameMobile) alumniNameMobile.textContent = displayName;
+
+        // Avatar: photo or initials
+        if (alumniAvatarDesktop) {
+          if (data.photoUrl) {
+            alumniAvatarDesktop.innerHTML = `<img src="${data.photoUrl}" alt="${displayName}" class="w-8 h-8 rounded-full object-cover border-2 border-teal-200" />`;
+          } else {
+            const initials = displayName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
+            alumniAvatarDesktop.innerHTML = `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white text-xs font-bold">${initials}</div>`;
+          }
+        }
+      } else {
+        // Show login buttons, hide user menus
+        if (loginBtnDesktop) loginBtnDesktop.style.display = '';
+        if (userMenuDesktop) userMenuDesktop.style.display = 'none';
+        if (loginBtnMobile) loginBtnMobile.style.display = '';
+        if (userMobile) userMobile.style.display = 'none';
+      }
+    } catch {
+      // If the endpoint is unreachable just show the login button
+      const loginBtnDesktop = document.getElementById('alumni-login-btn-desktop') as HTMLElement | null;
+      const loginBtnMobile = document.getElementById('alumni-login-btn-mobile') as HTMLElement | null;
+      if (loginBtnDesktop) loginBtnDesktop.style.display = '';
+      if (loginBtnMobile) loginBtnMobile.style.display = '';
+    }
+  }
+
+  updateAlumniAuthUI();
 </script>
+
+<style>
+  /* Alumni auth nav elements */
+  .alumni-login-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    background: linear-gradient(135deg, #0d9488, #0891b2);
+    color: white;
+    border-radius: 0.6rem;
+    font-size: 0.825rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .alumni-login-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
+  }
+
+  .alumni-user-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.6rem;
+    transition: background 0.2s;
+  }
+
+  .alumni-user-btn:hover {
+    background: #f0fdfa;
+  }
+
+  .alumni-nav-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .alumni-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    min-width: 180px;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px);
+    transition: all 0.2s ease;
+    pointer-events: none;
+  }
+
+  .group:hover .alumni-dropdown,
+  .alumni-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .alumni-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.875rem;
+    color: #374151;
+    text-decoration: none;
+    transition: background 0.15s;
+    border-radius: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .alumni-dropdown-item:first-child {
+    border-radius: 0.75rem 0.75rem 0 0;
+  }
+
+  .alumni-dropdown-item:hover {
+    background: #f8fafc;
+    color: #0d9488;
+  }
+
+  .alumni-logout-item:hover {
+    background: #fff5f5;
+    color: #dc2626;
+  }
+
+  .alumni-dropdown-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 0.25rem 0;
+  }
+</style>
