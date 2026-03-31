@@ -2,7 +2,7 @@
 export const prerender = false;
 
 import Layout from '../../layouts/Layout.astro';
-import { isAlumniAuthenticated, getAlumniSession } from '../../lib/alumni-auth';
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
 import { connectToDatabase } from '../../lib/mongodb';
 import type { AlumniRegistration } from '../../lib/mongodb';
 import { ObjectId } from 'mongodb';
@@ -12,7 +12,7 @@ if (!isAlumniAuthenticated(Astro.cookies)) {
   return Astro.redirect('/alumni/login');
 }
 
-const session = getAlumniSession(Astro.cookies)!;
+const session = getCurrentAlumni(Astro.cookies)!;
 
 let alumni: AlumniRegistration & { _id: any; username?: string } | null = null;
 let fetchError = '';
@@ -23,10 +23,15 @@ try {
 
   let record = null;
   try {
-    record = await collection.findOne({ _id: new ObjectId(session.id) });
+    record = await collection.findOne({ _id: new ObjectId(session.alumniId) });
   } catch {
-    // id may not be a valid ObjectId in dev/test environments
-    record = await collection.findOne({ email: session.email });
+    // alumniId may not be a valid ObjectId in dev/test environments
+    record = await collection.findOne({
+      $or: [
+        { username: session.username },
+        { email: session.username }
+      ]
+    });
   }
 
   if (record) {
