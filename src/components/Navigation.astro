@@ -13,7 +13,7 @@ const config = getSiteConfig();
         <a href="/" class="flex items-center space-x-3 group">
           <div class="w-300 h-300 lg:w-300 lg:h-300 rounded-xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-100">
         {config.site.logo ? (
-          <img src={config.site.logo} alt={`${config.site.name} logo`} class="w-300 h-10 lg:w-300 lg:h-12 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-100" />
+          <img src="/logo.png" alt={`${config.site.name} logo`} class="w-300 h-10 lg:w-300 lg:h-12 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-100" />
         ) : (
           <Icon name="mdi:account-group" class="w-7 h-7 text-white" />
         )}
@@ -22,7 +22,7 @@ const config = getSiteConfig();
         <h1 class="text-xl lg:text-2xl font-bold text-accent-900 group-hover:text-primary-600 transition-colors duration-200">
         Alumni Portal
         </h1>
-        <p class="text-xs text-accent-500 hidden sm:block">Alumni Network</p>
+        <p class="text-xs text-accent-500 hidden sm:block"></p>
           </div>
         </a>
       </div>
@@ -52,7 +52,7 @@ const config = getSiteConfig();
                               const year = config.years.end - i;
                               return (
                                 <a href={`/alumni/years/${year}`} class="mega-menu-link flex items-center space-x-2 hover:bg-accent-50 px-3 py-2 rounded-lg -mx-3 -my-1">
-                                  <Icon name="mdi:calendar" class="w-4 h-4 text-accent-400 flex-shrink-0" />
+                                  <!-- <Icon name="mdi:calendar" class="w-4 h-4 text-accent-400 flex-shrink-0" /> -->
                                   <span class="truncate">{year}</span>
                                   <span class="text-xs text-accent-400 ml-auto hidden xl:inline">
                                     {`Alumni from the year ${year}`}
@@ -71,7 +71,7 @@ const config = getSiteConfig();
                           <div class="grid grid-cols-1 gap-2">
                             {config.faculties.map((faculty) => (
                               <a href={`/alumni/faculties/${faculty.slug}`} class="mega-menu-link flex items-center space-x-2 hover:bg-accent-50 px-3 py-2 rounded-lg -mx-3 -my-2">
-                                <Icon name="mdi:school" class="w-4 h-4 text-accent-400 flex-shrink-0" />
+                                <!-- <Icon name="mdi:school" class="w-4 h-4 text-accent-400 flex-shrink-0" /> -->
                                 <span class="truncate">{faculty.name}</span>
                                 <span class="text-xs text-accent-400 ml-auto hidden xl:inline">
                                   {faculty.description}
@@ -114,52 +114,48 @@ const config = getSiteConfig();
             )}
           </div>
         ))}
-      </div>
 
-      <!-- Alumni Auth (Desktop) -->
-      <div class="hidden lg:flex items-center ml-4" id="alumni-auth-desktop">
-        <!-- Shown when NOT logged in -->
-        <a
-          href="/alumni/login"
-          id="alumni-login-btn-desktop"
-          class="alumni-login-btn"
-          style="display:none;"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-            <polyline points="10 17 15 12 10 7"></polyline>
-            <line x1="15" y1="12" x2="3" y2="12"></line>
-          </svg>
-          Alumni Login
-        </a>
-
-        <!-- Shown when logged in -->
-        <div id="alumni-user-menu-desktop" class="relative group" style="display:none;">
-          <button class="alumni-user-btn flex items-center gap-2">
-            <div id="alumni-avatar-desktop" class="alumni-nav-avatar"></div>
-            <span id="alumni-name-desktop" class="text-sm font-medium text-accent-700 max-w-[120px] truncate"></span>
-            <Icon name="mdi:chevron-down" class="w-4 h-4 text-accent-500 transition-transform duration-200 group-hover:rotate-180" />
-          </button>
-          <!-- Dropdown -->
-          <div class="alumni-dropdown">
-            <a href="/alumni/profile" class="alumni-dropdown-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              My Profile
+        <!-- ========== ALUMNI AUTH SECTION (Desktop) ========== -->
+        <div class="flex items-center space-x-3">
+          <!-- Logged OUT state -->
+          <div id="alumni-auth-loggedout" class="flex items-center space-x-3">
+            <a href="/alumni/login" class="btn btn-outline btn-sm">
+              <Icon name="mdi:login" class="w-4 h-4 mr-1" />
+              Login
             </a>
-            <div class="alumni-dropdown-divider"></div>
-            <form method="POST" action="/api/auth/alumni-logout">
-              <button type="submit" class="alumni-dropdown-item alumni-logout-item w-full text-left">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                Logout
-              </button>
-            </form>
+            <a href="/alumni/register" class="btn btn-primary btn-sm">
+              <Icon name="mdi:account-plus" class="w-4 h-4 mr-1" />
+              Sign Up
+            </a>
+          </div>
+
+          <!-- Logged IN state (hidden by default, shown by JS) -->
+          <div id="alumni-auth-loggedin" class="hidden relative">
+            <button id="alumniProfileBtn" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent-50 transition-colors">
+              <div id="alumniAvatarDesktop" class="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+                <Icon name="mdi:account" class="w-5 h-5" />
+              </div>
+              <span id="alumniNameDesktop" class="text-sm font-medium text-accent-700 max-w-[120px] truncate"></span>
+              <Icon name="mdi:chevron-down" class="w-4 h-4 text-accent-400" />
+            </button>
+
+            <!-- Dropdown -->
+            <div id="alumniDropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-accent-100 py-2 z-50">
+              <div class="px-4 py-3 border-b border-accent-100">
+                <p id="alumniDropdownName" class="text-sm font-semibold text-accent-900"></p>
+                <p id="alumniDropdownUsername" class="text-xs text-accent-500"></p>
+              </div>
+              <a href="/alumni/profile" class="flex items-center px-4 py-2 text-sm text-accent-700 hover:bg-accent-50 transition-colors">
+                <Icon name="mdi:account-circle" class="w-4 h-4 mr-3 text-accent-400" />
+                My Profile
+              </a>
+              <div class="border-t border-accent-100 mt-1 pt-1">
+                <button id="logoutBtn" class="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                  <Icon name="mdi:logout" class="w-4 h-4 mr-3" />
+                  Logout
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -233,52 +229,45 @@ const config = getSiteConfig();
             )}
           </div>
         ))}
-        <!-- Alumni Auth (Mobile) -->
-        <div class="pt-2 border-t border-accent-100 mt-2">
-          <!-- Shown when NOT logged in -->
-          <a
-            href="/alumni/login"
-            id="alumni-login-btn-mobile"
-            class="block px-4 py-3 text-teal-700 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors duration-200 font-medium"
-            style="display:none;"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2 align-middle">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-              <polyline points="10 17 15 12 10 7"></polyline>
-              <line x1="15" y1="12" x2="3" y2="12"></line>
-            </svg>
-            Alumni Login
-          </a>
 
-          <!-- Shown when logged in -->
-          <div id="alumni-user-mobile" style="display:none;">
-            <a href="/alumni/profile" class="block px-4 py-3 text-accent-700 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors duration-200">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2 align-middle">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              My Profile (<span id="alumni-name-mobile"></span>)
+        <!-- ========== ALUMNI AUTH SECTION (Mobile) ========== -->
+        <div class="border-t border-accent-100 pt-4 mt-4 px-4 space-y-2">
+          <!-- Logged OUT (mobile) -->
+          <div id="alumni-auth-loggedout-mobile" class="space-y-2">
+            <a href="/alumni/login" class="block w-full text-center btn btn-outline btn-sm">
+              Login
             </a>
-            <form method="POST" action="/api/auth/alumni-logout">
-              <button type="submit" class="w-full text-left block px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2 align-middle">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                Logout
-              </button>
-            </form>
+            <a href="/alumni/register" class="block w-full text-center btn btn-primary btn-sm">
+              Register
+            </a>
+          </div>
+
+          <!-- Logged IN (mobile) -->
+          <div id="alumni-auth-loggedin-mobile" class="hidden space-y-2">
+            <div class="flex items-center space-x-3 px-2 py-3">
+              <div id="alumniAvatarMobile" class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+                ?
+              </div>
+              <div>
+                <p id="alumniNameMobile" class="text-sm font-semibold text-accent-900"></p>
+                <p id="alumniUsernameMobile" class="text-xs text-accent-500"></p>
+              </div>
+            </div>
+            <a href="/alumni/profile" class="block w-full text-center btn btn-outline btn-sm">
+              My Profile
+            </a>
+            <button id="logoutBtnMobile" class="w-full btn btn-sm bg-red-50 text-red-600 hover:bg-red-100 justify-center">
+              Logout
+            </button>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 </nav>
 
 <script>
-  // Mobile menu toggle
+  // ============ MOBILE MENU ============
   const mobileMenuBtn = document.getElementById('mobile-menu-btn');
   const mobileMenu = document.getElementById('mobile-menu');
   
@@ -286,16 +275,13 @@ const config = getSiteConfig();
     mobileMenu?.classList.toggle('hidden');
   });
   
-  // Mobile mega menu toggles
   const mobileMegaToggles = document.querySelectorAll('.mobile-mega-toggle');
-  
   mobileMegaToggles.forEach(toggle => {
     toggle.addEventListener('click', () => {
       const targetId = toggle.getAttribute('data-target');
       if (!targetId) return;
       const targetContent = document.getElementById(targetId);
       const icon = toggle.querySelector('svg');
-      
       if (targetContent) {
         targetContent.classList.toggle('hidden');
         icon?.classList.toggle('rotate-180');
@@ -303,173 +289,104 @@ const config = getSiteConfig();
     });
   });
   
-  // Close mobile menu when clicking outside
   document.addEventListener('click', (e) => {
     if (!mobileMenu?.contains(e.target as Node) && !mobileMenuBtn?.contains(e.target as Node)) {
       mobileMenu?.classList.add('hidden');
     }
   });
   
-  // Close mobile menu on window resize
   window.addEventListener('resize', () => {
     if (window.innerWidth >= 1024) {
       mobileMenu?.classList.add('hidden');
     }
   });
 
-  // ── Alumni auth state ──
-  async function updateAlumniAuthUI() {
-    try {
-      const res = await fetch('/api/auth/alumni-session');
-      if (!res.ok) return;
-      const data = await res.json();
+  // ============ ALUMNI AUTH STATE ============
+  const loggedOutDesktop = document.getElementById('alumni-auth-loggedout');
+  const loggedInDesktop = document.getElementById('alumni-auth-loggedin');
+  const loggedOutMobile = document.getElementById('alumni-auth-loggedout-mobile');
+  const loggedInMobile = document.getElementById('alumni-auth-loggedin-mobile');
 
-      const loginBtnDesktop = document.getElementById('alumni-login-btn-desktop') as HTMLElement | null;
-      const userMenuDesktop = document.getElementById('alumni-user-menu-desktop') as HTMLElement | null;
-      const loginBtnMobile = document.getElementById('alumni-login-btn-mobile') as HTMLElement | null;
-      const userMobile = document.getElementById('alumni-user-mobile') as HTMLElement | null;
-      const alumniNameDesktop = document.getElementById('alumni-name-desktop');
-      const alumniNameMobile = document.getElementById('alumni-name-mobile');
-      const alumniAvatarDesktop = document.getElementById('alumni-avatar-desktop');
+  function showLoggedInState(data: { name: string; username: string; photoUrl?: string }) {
+    loggedOutDesktop?.classList.add('hidden');
+    loggedInDesktop?.classList.remove('hidden');
+    loggedOutMobile?.classList.add('hidden');
+    loggedInMobile?.classList.remove('hidden');
 
-      if (data.loggedIn) {
-        // Show user menus, hide login buttons
-        if (loginBtnDesktop) loginBtnDesktop.style.display = 'none';
-        if (userMenuDesktop) userMenuDesktop.style.display = '';
-        if (loginBtnMobile) loginBtnMobile.style.display = 'none';
-        if (userMobile) userMobile.style.display = '';
+    const initials = data.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-        const displayName: string = data.name || data.username || '';
-        if (alumniNameDesktop) alumniNameDesktop.textContent = displayName;
-        if (alumniNameMobile) alumniNameMobile.textContent = displayName;
+    const alumniNameDesktop = document.getElementById('alumniNameDesktop');
+    const alumniAvatarDesktop = document.getElementById('alumniAvatarDesktop');
+    const alumniDropdownName = document.getElementById('alumniDropdownName');
+    const alumniDropdownUsername = document.getElementById('alumniDropdownUsername');
+    const alumniNameMobile = document.getElementById('alumniNameMobile');
+    const alumniUsernameMobile = document.getElementById('alumniUsernameMobile');
+    const alumniAvatarMobile = document.getElementById('alumniAvatarMobile');
 
-        // Avatar: photo or initials
-        if (alumniAvatarDesktop) {
-          if (data.photoUrl) {
-            alumniAvatarDesktop.innerHTML = `<img src="${data.photoUrl}" alt="${displayName}" class="w-8 h-8 rounded-full object-cover border-2 border-teal-200" />`;
-          } else {
-            const initials = displayName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
-            alumniAvatarDesktop.innerHTML = `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white text-xs font-bold">${initials}</div>`;
-          }
-        }
-      } else {
-        // Show login buttons, hide user menus
-        if (loginBtnDesktop) loginBtnDesktop.style.display = '';
-        if (userMenuDesktop) userMenuDesktop.style.display = 'none';
-        if (loginBtnMobile) loginBtnMobile.style.display = '';
-        if (userMobile) userMobile.style.display = 'none';
-      }
-    } catch {
-      // If the endpoint is unreachable just show the login button
-      const loginBtnDesktop = document.getElementById('alumni-login-btn-desktop') as HTMLElement | null;
-      const loginBtnMobile = document.getElementById('alumni-login-btn-mobile') as HTMLElement | null;
-      if (loginBtnDesktop) loginBtnDesktop.style.display = '';
-      if (loginBtnMobile) loginBtnMobile.style.display = '';
+    if (alumniNameDesktop) alumniNameDesktop.textContent = data.name;
+    if (alumniDropdownName) alumniDropdownName.textContent = data.name;
+    if (alumniDropdownUsername) alumniDropdownUsername.textContent = `@${data.username}`;
+    if (alumniNameMobile) alumniNameMobile.textContent = data.name;
+    if (alumniUsernameMobile) alumniUsernameMobile.textContent = `@${data.username}`;
+
+    if (data.photoUrl) {
+      if (alumniAvatarDesktop) alumniAvatarDesktop.innerHTML = `<img src="${data.photoUrl}" alt="${data.name}" class="w-full h-full object-cover" />`;
+      if (alumniAvatarMobile) alumniAvatarMobile.innerHTML = `<img src="${data.photoUrl}" alt="${data.name}" class="w-full h-full object-cover" />`;
+    } else {
+      if (alumniAvatarDesktop) alumniAvatarDesktop.innerHTML = `<span>${initials}</span>`;
+      if (alumniAvatarMobile) alumniAvatarMobile.innerHTML = `<span>${initials}</span>`;
     }
   }
 
-  updateAlumniAuthUI();
+  function showLoggedOutState() {
+    loggedOutDesktop?.classList.remove('hidden');
+    loggedInDesktop?.classList.add('hidden');
+    loggedOutMobile?.classList.remove('hidden');
+    loggedInMobile?.classList.add('hidden');
+  }
+
+  // Check session on page load
+  async function checkSession() {
+    try {
+      const res = await fetch('/api/auth/alumni-session');
+      const data = await res.json();
+      if (data.authenticated) {
+        showLoggedInState(data.data);
+      } else {
+        showLoggedOutState();
+      }
+    } catch {
+      showLoggedOutState();
+    }
+  }
+  checkSession();
+
+  // ============ PROFILE DROPDOWN ============
+  const profileBtn = document.getElementById('alumniProfileBtn');
+  const dropdown = document.getElementById('alumniDropdown');
+
+  profileBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown?.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!dropdown?.contains(e.target as Node) && !profileBtn?.contains(e.target as Node)) {
+      dropdown?.classList.add('hidden');
+    }
+  });
+
+  // ============ LOGOUT ============
+  async function handleLogout() {
+    try {
+      await fetch('/api/auth/alumni-logout', { method: 'POST' });
+      showLoggedOutState();
+      window.location.href = '/';
+    } catch {
+      window.location.href = '/api/auth/alumni-logout';
+    }
+  }
+
+  document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
+  document.getElementById('logoutBtnMobile')?.addEventListener('click', handleLogout);
 </script>
-
-<style>
-  /* Alumni auth nav elements */
-  .alumni-login-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.45rem 1rem;
-    background: linear-gradient(135deg, #0d9488, #0891b2);
-    color: white;
-    border-radius: 0.6rem;
-    font-size: 0.825rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-  }
-
-  .alumni-login-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
-  }
-
-  .alumni-user-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.35rem 0.6rem;
-    border-radius: 0.6rem;
-    transition: background 0.2s;
-  }
-
-  .alumni-user-btn:hover {
-    background: #f0fdfa;
-  }
-
-  .alumni-nav-avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .alumni-dropdown {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 0.5rem);
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.75rem;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    min-width: 180px;
-    z-index: 100;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(6px);
-    transition: all 0.2s ease;
-    pointer-events: none;
-  }
-
-  .group:hover .alumni-dropdown,
-  .alumni-dropdown.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  .alumni-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.65rem 1rem;
-    font-size: 0.875rem;
-    color: #374151;
-    text-decoration: none;
-    transition: background 0.15s;
-    border-radius: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    width: 100%;
-  }
-
-  .alumni-dropdown-item:first-child {
-    border-radius: 0.75rem 0.75rem 0 0;
-  }
-
-  .alumni-dropdown-item:hover {
-    background: #f8fafc;
-    color: #0d9488;
-  }
-
-  .alumni-logout-item:hover {
-    background: #fff5f5;
-    color: #dc2626;
-  }
-
-  .alumni-dropdown-divider {
-    height: 1px;
-    background: #f1f5f9;
-    margin: 0.25rem 0;
-  }
-</style>

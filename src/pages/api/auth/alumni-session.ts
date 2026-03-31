@@ -1,30 +1,27 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
-import { getAlumniSession } from '../../../lib/alumni-auth';
+import { getCurrentAlumni } from '../../../lib/alumni-auth';
 
 export const GET: APIRoute = async ({ cookies }) => {
-  const session = getAlumniSession(cookies);
-
-  if (!session) {
-    return new Response(JSON.stringify({ loggedIn: false }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  const alumni = getCurrentAlumni(cookies);
+  
+  if (!alumni) {
+    return new Response(
+      JSON.stringify({ authenticated: false }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   }
-
+  
   return new Response(
     JSON.stringify({
-      loggedIn: true,
-      id: session.id,
-      username: session.username,
-      name: session.name,
-      email: session.email,
-      photoUrl: session.photoUrl || null,
+      authenticated: true,
+      data: {
+        name: alumni.name,
+        username: alumni.username,
+        photoUrl: alumni.photoUrl
+      }
     }),
-    {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    }
+    { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
 };

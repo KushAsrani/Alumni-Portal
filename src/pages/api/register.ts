@@ -2,6 +2,7 @@ export const prerender = false;
 
 import type { APIContext } from 'astro';
 import { connectToDatabase, type AlumniRegistration } from '../../lib/mongodb';
+import { hashAlumniPassword } from '../../lib/alumni-auth';
 
 export async function POST({ request }: APIContext) {
   try {
@@ -38,9 +39,9 @@ export async function POST({ request }: APIContext) {
       );
     }
 
-    const { 
+    const{ 
       name, 
-      email, 
+      email,
       mobile,
       dob,
       gender,
@@ -64,7 +65,7 @@ export async function POST({ request }: APIContext) {
       projects,
       work_experience,
       interests,
-      short_bio 
+      short_bio,
     } = body;
 
     // Validate required fields
@@ -150,6 +151,9 @@ export async function POST({ request }: APIContext) {
       interests: interests || undefined,
       short_bio: short_bio || undefined,
       status: 'pending',
+      username: body.username?.trim(),
+      password_hash: hashAlumniPassword(body.password),
+      login_enabled: false, // Will be set to true when admin approves
       created_at: new Date(),
       updated_at: new Date()
     };

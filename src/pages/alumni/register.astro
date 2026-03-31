@@ -25,7 +25,7 @@ const config = getSiteConfig();
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 Full Name <span class="text-red-500">*</span>
               </label>
-              <input name="name" required class="input" placeholder="" aria-describedby="name-error" />
+              <input name="name" required class="input" placeholder="Enter your full name (First Name Middle Name Last Name)" aria-describedby="name-error" />
               <p id="name-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="name" role="alert"></p>
             </div>
 
@@ -33,15 +33,40 @@ const config = getSiteConfig();
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 Email <span class="text-red-500">*</span>
               </label>
-              <input name="email" type="email" required class="input" placeholder="" aria-describedby="email-error" />
+              <input name="email" type="email" required class="input" placeholder="Enter your email address" aria-describedby="email-error" />
               <p id="email-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="email" role="alert"></p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+                Username <span class="text-red-500">*</span>
+              </label>
+              <input name="username" required class="input" placeholder="Set a username for login" aria-describedby="username-error" />
+              <p class="mt-1 text-xs text-accent-500">This will be used to log in (minimum 4 characters, letters/numbers/underscores only)</p>
+                <p id="username-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="username" role="alert"></p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2"> Password <span class="text-red-500">*</span>
+              </label>
+              <input name="password" type="password" required class="input" placeholder="Set your password" aria-describedby="password-error" />
+              <p class="mt-1 text-xs text-accent-500">Minimum 8 characters, must include uppercase, lowercase characters, and a number</p>
+              <p id="password-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="password" role="alert"></p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-accent-700 mb-2">
+              Confirm Password <span class="text-red-500">*</span>
+            </label>
+            <input name="confirm_password" type="password" required class="input" placeholder="Re-enter your password" aria-describedby="confirm_password-error" />
+            <p id="confirm_password-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="confirm_password" role="alert"></p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-accent-700 mb-2">
                 Mobile Number <span class="text-red-500">*</span>
               </label>
-              <input name="mobile" type="tel" required class="input" placeholder="" aria-describedby="mobile-error" />
+              <input name="mobile" type="tel" required class="input" placeholder="Enter your mobile number" aria-describedby="mobile-error" />
               <p id="mobile-error" class="error-text hidden text-red-600 text-xs mt-1" data-error-for="mobile" role="alert"></p>
               <p class="mt-1 text-xs text-accent-500">Include country code (e.g., +91 for India)</p>
             </div>
@@ -667,6 +692,35 @@ const config = getSiteConfig();
           showFieldError('mobile', 'Please enter a valid mobile number (at least 10 digits)');
           hasErrors = true;
           if (!firstErrorField) firstErrorField = 'mobile';
+        }
+
+        // Username and Password validation
+        const username = form.querySelector('[name="username"]').value.trim();
+        const password = form.querySelector('[name="password"]').value;
+        const confirmPassword = form.querySelector('[name="confirm_password"]').value;
+
+        if (username.length < 4 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+          showFieldError('username', 'Username must be at least 4 characters (letters, numbers, underscores only)');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'username';
+        }
+
+        if (password.length < 8) {
+          showFieldError('password', 'Password must be at least 8 characters');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'password';
+        }
+
+        if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+          showFieldError('password', 'Password must include uppercase, lowercase characters, and a number');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'password';
+        }
+
+        if (password !== confirmPassword) {
+          showFieldError('confirm_password', 'Passwords do not match');
+          hasErrors = true;
+          if (!firstErrorField) firstErrorField = 'confirm_password';
         }
 
         // Date of Birth validation
