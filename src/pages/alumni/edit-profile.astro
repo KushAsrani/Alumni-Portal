@@ -1,0 +1,437 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
+import { connectToDatabase } from '../../lib/mongodb';
+import type { AlumniRegistration } from '../../lib/mongodb';
+import { ObjectId } from 'mongodb';
+
+// Redirect unauthenticated users
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login');
+}
+
+const session = getCurrentAlumni(Astro.cookies)!;
+
+let alumni: AlumniRegistration & { _id: any; username?: string } | null = null;
+let fetchError = '';
+
+try {
+  const { db } = await connectToDatabase();
+  const collection = db.collection('alumni_registrations');
+
+  let record = null;
+  try {
+    record = await collection.findOne({ _id: new ObjectId(session.alumniId) });
+  } catch {
+    record = await collection.findOne({
+      $or: [
+        { username: session.username },
+        { email: session.username },
+      ],
+    });
+  }
+
+  if (record) {
+    alumni = record as AlumniRegistration & { _id: any; username?: string };
+  } else {
+    fetchError = 'Profile not found. Please contact the alumni office.';
+  }
+} catch (err) {
+  console.error('Edit profile fetch error:', err);
+  fetchError = 'Unable to load profile at this time. Please try again later.';
+}
+---
+
+<Layout title="Edit Profile | Alumni Portal">
+  <main class="edit-profile-page">
+    <div class="container-custom max-w-4xl mx-auto py-8 md:py-12">
+
+      <div class="mb-8">
+        <a href="/alumni/profile" class="back-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          Back to Profile
+        </a>
+        <h1 class="text-3xl font-bold text-accent-900 mt-4 mb-1">Edit Profile</h1>
+        <p class="text-accent-600">Update your alumni profile information below.</p>
+      </div>
+
+      {fetchError && (
+        <div class="error-banner">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>{fetchError}</span>
+        </div>
+      )}
+
+      {alumni && (
+        <form id="editProfileForm" class="space-y-8">
+
+          <!-- Read-only account info -->
+          <div class="form-section">
+            <h2 class="form-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              Account (Read-only)
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="form-label">Email</label>
+                <input type="email" value={alumni.email} disabled class="input input-disabled" />
+              </div>
+              <div>
+                <label class="form-label">Username</label>
+                <input type="text" value={alumni.username ?? ''} disabled class="input input-disabled" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Personal Information -->
+          <div class="form-section">
+            <h2 class="form-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              Personal Information
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="name" class="form-label">Full Name <span class="text-red-500">*</span></label>
+                <input id="name" name="name" type="text" required class="input" value={alumni.name} placeholder="Your full name" />
+              </div>
+              <div>
+                <label for="mobile" class="form-label">Mobile Number</label>
+                <input id="mobile" name="mobile" type="tel" class="input" value={alumni.mobile ?? ''} placeholder="+91 9876543210" />
+              </div>
+              <div>
+                <label for="dob" class="form-label">Date of Birth</label>
+                <input id="dob" name="dob" type="date" class="input" value={alumni.dob ?? ''} />
+              </div>
+              <div>
+                <label class="form-label">Gender</label>
+                <div class="flex items-center gap-6 mt-2">
+                  <label class="flex items-center gap-2">
+                    <input type="radio" name="gender" value="Male" checked={alumni.gender === 'Male'} class="w-4 h-4 text-primary-600 focus:ring-primary-500" />
+                    <span class="text-accent-700">Male</span>
+                  </label>
+                  <label class="flex items-center gap-2">
+                    <input type="radio" name="gender" value="Female" checked={alumni.gender === 'Female'} class="w-4 h-4 text-primary-600 focus:ring-primary-500" />
+                    <span class="text-accent-700">Female</span>
+                  </label>
+                </div>
+              </div>
+              <div class="md:col-span-2">
+                <label for="address" class="form-label">Address</label>
+                <textarea id="address" name="address" class="input" rows={3} placeholder="Your address">{alumni.address ?? ''}</textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Education -->
+          <div class="form-section">
+            <h2 class="form-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+              </svg>
+              Education
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="university" class="form-label">University / Institution</label>
+                <input id="university" name="university" type="text" class="input" value={alumni.university ?? ''} placeholder="University name" />
+              </div>
+              <div>
+                <label for="college_name" class="form-label">College Name</label>
+                <input id="college_name" name="college_name" type="text" class="input" value={alumni.college_name ?? ''} placeholder="College name" />
+              </div>
+              <div>
+                <label for="year" class="form-label">Graduation Year</label>
+                <input id="year" name="year" type="number" class="input" value={alumni.year ?? ''} placeholder="e.g. 2022" min="1950" max="2100" />
+              </div>
+              <div>
+                <label for="faculty" class="form-label">Faculty / Department</label>
+                <input id="faculty" name="faculty" type="text" class="input" value={alumni.faculty ?? ''} placeholder="e.g. Computer Science" />
+              </div>
+              <div>
+                <label for="degree" class="form-label">Degree</label>
+                <input id="degree" name="degree" type="text" class="input" value={alumni.degree ?? ''} placeholder="e.g. B.Sc., MCA, B.Tech" />
+              </div>
+              <div>
+                <label for="gpa" class="form-label">CGPA / Percentage</label>
+                <input id="gpa" name="gpa" type="text" class="input" value={alumni.gpa ?? ''} placeholder="e.g. 8.5 or 85%" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Professional Information -->
+          <div class="form-section">
+            <h2 class="form-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              </svg>
+              Professional Information
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="job_designation" class="form-label">Job Designation</label>
+                <input id="job_designation" name="job_designation" type="text" class="input" value={alumni.job_designation ?? ''} placeholder="e.g. Software Engineer" />
+              </div>
+              <div>
+                <label for="company" class="form-label">Current Company</label>
+                <input id="company" name="company" type="text" class="input" value={alumni.company ?? ''} placeholder="e.g. Acme Corp" />
+              </div>
+              <div>
+                <label for="location" class="form-label">Location</label>
+                <input id="location" name="location" type="text" class="input" value={alumni.location ?? ''} placeholder="City, Country" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Social Links -->
+          <div class="form-section">
+            <h2 class="form-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              Social Links
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="linkedin" class="form-label">LinkedIn</label>
+                <input id="linkedin" name="linkedin" type="url" class="input" value={alumni.linkedin ?? ''} placeholder="https://linkedin.com/in/yourprofile" />
+              </div>
+              <div>
+                <label for="github" class="form-label">GitHub</label>
+                <input id="github" name="github" type="url" class="input" value={alumni.github ?? ''} placeholder="https://github.com/yourusername" />
+              </div>
+              <div>
+                <label for="twitter" class="form-label">X (Twitter)</label>
+                <input id="twitter" name="twitter" type="url" class="input" value={alumni.twitter ?? ''} placeholder="https://x.com/yourusername" />
+              </div>
+              <div>
+                <label for="portfolio" class="form-label">Portfolio</label>
+                <input id="portfolio" name="portfolio" type="url" class="input" value={alumni.portfolio ?? ''} placeholder="https://yourportfolio.com" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Skills & More -->
+          <div class="form-section">
+            <h2 class="form-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              Skills & Experience
+            </h2>
+            <div class="space-y-4">
+              <div>
+                <label for="skills" class="form-label">Skills</label>
+                <textarea id="skills" name="skills" class="input" rows={3} placeholder="e.g. JavaScript, Python, React (comma-separated)">{alumni.skills ?? ''}</textarea>
+              </div>
+              <div>
+                <label for="interests" class="form-label">Interests</label>
+                <textarea id="interests" name="interests" class="input" rows={3} placeholder="e.g. Machine Learning, Open Source (comma-separated)">{alumni.interests ?? ''}</textarea>
+              </div>
+              <div>
+                <label for="projects" class="form-label">Projects</label>
+                <textarea id="projects" name="projects" class="input" rows={4} placeholder="Describe your notable projects">{alumni.projects ?? ''}</textarea>
+              </div>
+              <div>
+                <label for="work_experience" class="form-label">Work Experience</label>
+                <textarea id="work_experience" name="work_experience" class="input" rows={4} placeholder="Describe your work experience">{alumni.work_experience ?? ''}</textarea>
+              </div>
+              <div>
+                <label for="short_bio" class="form-label">Short Bio / Achievements</label>
+                <textarea id="short_bio" name="short_bio" class="input" rows={4} placeholder="A brief bio or list of achievements">{alumni.short_bio ?? ''}</textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status messages -->
+          <div id="form-success" class="hidden success-banner">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Profile updated successfully!</span>
+          </div>
+          <div id="form-error" class="hidden error-banner">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span id="form-error-msg">Failed to update profile. Please try again.</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-4 pt-2">
+            <button type="submit" id="submitBtn" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              Save Changes
+            </button>
+            <a href="/alumni/profile" class="btn btn-outline">Cancel</a>
+          </div>
+
+        </form>
+      )}
+
+    </div>
+  </main>
+</Layout>
+
+<script>
+  const form = document.getElementById('editProfileForm') as HTMLFormElement | null;
+  const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement | null;
+  const successBanner = document.getElementById('form-success');
+  const errorBanner = document.getElementById('form-error');
+  const errorMsg = document.getElementById('form-error-msg');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    successBanner?.classList.add('hidden');
+    errorBanner?.classList.add('hidden');
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving…';
+    }
+
+    const data: Record<string, string | number | null> = {};
+    const formData = new FormData(form!);
+
+    for (const [key, value] of formData.entries()) {
+      const str = (value as string).trim();
+      if (key === 'year') {
+        data[key] = str ? parseInt(str, 10) : null;
+      } else {
+        data[key] = str || null;
+      }
+    }
+
+    try {
+      const res = await fetch('/api/alumni/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        successBanner?.classList.remove('hidden');
+        successBanner?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        if (errorMsg) errorMsg.textContent = result.message || 'Failed to update profile.';
+        errorBanner?.classList.remove('hidden');
+        errorBanner?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    } catch {
+      if (errorMsg) errorMsg.textContent = 'An unexpected error occurred. Please try again.';
+      errorBanner?.classList.remove('hidden');
+      errorBanner?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save Changes`;
+      }
+    }
+  });
+</script>
+
+<style>
+  .edit-profile-page {
+    min-height: 100vh;
+    background: #f8fafc;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: #0d9488;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .back-link:hover {
+    color: #0f766e;
+  }
+
+  .form-section {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .form-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.375rem;
+  }
+
+  .input-disabled {
+    background: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+  }
+
+  .success-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.875rem 1.25rem;
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    border-radius: 0.625rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .error-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.875rem 1.25rem;
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    border-radius: 0.625rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+</style>
