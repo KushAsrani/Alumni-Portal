@@ -44,14 +44,24 @@ export async function POST({ request }: APIContext) {
     const collection = db.collection('alumni_registrations');
 
     // Update the document
+    const updateFields: any = { 
+      status: status,
+      updated_at: new Date()
+    };
+
+    // When approving, enable login
+    if (status === 'approved') {
+      updateFields.login_enabled = true;
+    }
+
+    // When rejecting, disable login
+    if (status === 'rejected') {
+      updateFields.login_enabled = false;
+    }
+
     const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
-      { 
-        $set: { 
-          status: status,
-          updated_at: new Date()
-        }
-      },
+      { $set: updateFields },
       { returnDocument: 'after' }
     );
 

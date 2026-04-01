@@ -181,14 +181,16 @@ const interests = alumni?.interests
 
               <!-- Action buttons -->
               <div class="header-actions">
-                <a href="/alumni/edit-profile" class="btn-teal-outline">
+                <!-- 
+                    <a href="/alumni/edit-profile" class="btn-teal-outline">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                   </svg>
                   Edit Profile
                 </a>
-                <form method="POST" action="/api/auth/alumni-logout" style="display:inline;">
+                -->
+                <a href="/api/auth/alumni-logout" style="display:inline;">
                   <button type="submit" class="btn-logout">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -197,7 +199,7 @@ const interests = alumni?.interests
                     </svg>
                     Logout
                   </button>
-                </form>
+                </a>
               </div>
             </div>
           </div>
@@ -326,6 +328,7 @@ const interests = alumni?.interests
                     <dt>Registered</dt>
                     <dd>{formatDate(alumni.created_at)}</dd>
                   </div>
+                  <!--
                   {alumni.degree_certificate_url && (
                     <div class="info-row">
                       <dt>Degree Certificate</dt>
@@ -336,6 +339,7 @@ const interests = alumni?.interests
                       </dd>
                     </div>
                   )}
+                  -->
                 </dl>
               </div>
 
@@ -453,8 +457,8 @@ const interests = alumni?.interests
                 <div class="info-card">
                   <h2 class="info-card-title">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                     </svg>
                     Work Experience
                   </h2>
@@ -483,7 +487,16 @@ const interests = alumni?.interests
           <!-- Edit Profile placeholder section -->
           <div id="edit" class="edit-placeholder">
             <h2>Edit Profile</h2>
-            <p>Profile editing will be available soon. Please contact the alumni office to update your information.</p>
+            <p>Profile editing will be available soon. Please contact the admin to update your information.</p>
+            <!--
+            <a href="/alumni/edit-profile" class="btn-teal-outline mt-4">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  Edit Profile
+                </a>
+              -->
           </div>
 
         </div><!-- /profile-layout -->
@@ -525,7 +538,7 @@ const interests = alumni?.interests
 
   .profile-header-bg {
     height: 120px;
-    background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+    background: linear-gradient(135deg, #2e4096 0%, #2e4096 100%);
   }
 
   .profile-header-content {
@@ -556,7 +569,7 @@ const interests = alumni?.interests
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #0d9488, #0891b2);
+    background: linear-gradient(135deg, #2e4096, #2e4096);
     color: white;
     font-size: 2rem;
     font-weight: 700;
@@ -587,20 +600,20 @@ const interests = alumni?.interests
 
   .profile-role {
     margin: 0.25rem 0 0;
-    color: #475569;
+    color: black;
     font-size: 0.975rem;
   }
 
   .profile-role .separator {
     margin: 0 0.35rem;
-    color: #94a3b8;
+    color: black;
   }
 
   .profile-location {
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    color: #64748b;
+    color: black;
     font-size: 0.875rem;
     margin: 0.35rem 0 0;
   }
@@ -626,7 +639,7 @@ const interests = alumni?.interests
   }
 
   .social-link:hover {
-    background: #0d9488;
+    background: #2e4096;
     color: white;
     transform: translateY(-2px);
   }
@@ -646,8 +659,8 @@ const interests = alumni?.interests
     align-items: center;
     gap: 0.4rem;
     padding: 0.5rem 1.1rem;
-    border: 2px solid #0d9488;
-    color: #0d9488;
+    border: 2px solid #2e4096;
+    color: #2e4096;
     border-radius: 0.6rem;
     font-size: 0.875rem;
     font-weight: 600;
@@ -657,7 +670,7 @@ const interests = alumni?.interests
   }
 
   .btn-teal-outline:hover {
-    background: #0d9488;
+    background: #2e4096;
     color: white;
   }
 
@@ -751,7 +764,7 @@ const interests = alumni?.interests
   }
 
   .info-card-title svg {
-    color: #0d9488;
+    color: #2e4096;
     flex-shrink: 0;
   }
 
@@ -791,14 +804,14 @@ const interests = alumni?.interests
   }
 
   .doc-link {
-    color: #0d9488;
+    color: #2e4096;
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s;
   }
 
   .doc-link:hover {
-    color: #0891b2;
+    color: #2e4096;
     text-decoration: underline;
   }
 
