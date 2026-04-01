@@ -183,82 +183,6 @@ const featuredJobs = jobs
     </div>
   </section>
 -->
-  <!-- Latest Events Section
-  <section class="section">
-    <div class="container-custom">
-      <div class="text-center mb-12">
-        <h2 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">
-          Upcoming Events
-        </h2>
-        <p class="text-xl text-accent-600 max-w-3xl mx-auto">
-          Stay updated with the latest events, reunions, and networking
-          opportunities in our alumni community.
-        </p>
-      </div>
-
-      <div class="grid-responsive mb-12">
-        {
-          latestEvents.map((event) => (
-            <div class="event-card group">
-              <div class="relative mb-4">
-                {event.data.image ? (
-                  <img
-                    src={event.data.image}
-                    alt={event.data.title}
-                    class="w-full h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div class="w-full h-48 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-xl flex items-center justify-center">
-                    <Icon
-                      name="mdi:calendar-event"
-                      class="w-16 h-16 text-primary-400"
-                    />
-                  </div>
-                )}
-                <div class="absolute top-4 right-4">
-                  <span class="badge badge-primary">
-                    {new Date(event.data.date).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              <h3 class="text-xl font-semibold text-accent-900 mb-2 group-hover:text-primary-600 transition-colors duration-200">
-                {event.data.title}
-              </h3>
-              <p class="text-accent-600 mb-4 line-clamp-2">
-                {event.data.description}
-              </p>
-
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2 text-sm text-accent-500">
-                  <Icon name="mdi:map-marker" class="w-4 h-4" />
-                  <span>{event.data.location}</span>
-                </div>
-                <a
-                  href={`/events/${event.data.slug}`}
-                  class="text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  Learn More →
-                </a>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-
-      <div class="text-center">
-        <a href="/events" class="btn btn-outline btn-lg">
-          <Icon name="mdi:calendar-multiple" class="w-6 h-6 mr-2" />
-          View All Events
-        </a>
-      </div>
-    </div>
-  </section>
-  -->
 
 <!-- Job Opportunities Section -->
   <section class="section-md bg-gradient-to-br from-accent-50 to-white">
@@ -266,10 +190,10 @@ const featuredJobs = jobs
       <!-- Section Header -->
       <div class="text-center mb-12">
         <div class="inline-block mb-4">
-          <span class="badge badge-primary flex items-center space-x-2">
+          <!-- <span class="badge badge-primary flex items-center space-x-2">
             <Icon name="mdi:briefcase" class="w-4 h-4" />
             <span>Career Opportunities</span>
-          </span>
+          </span> -->
         </div>
         <h2 class="text-3xl md:text-5xl font-bold text-accent-900 mb-4">
           Job Board
@@ -568,6 +492,82 @@ const featuredJobs = jobs
         <a href="/blog" class="btn btn-outline btn-lg">
           <Icon name="mdi:newspaper" class="w-6 h-6 mr-2" />
           View More Posts
+        </a>
+      </div>
+    </div>
+  </section>
+
+    <!-- Latest Events Section -->
+  <section class="section bg-gradient-to-br from-accent-50 to-secondary-50">
+    <div class="container-custom">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">
+          Upcoming Events
+        </h2>
+        <p class="text-xl text-accent-600 max-w-3xl mx-auto">
+          Stay updated with the latest events, reunions, and networking
+          opportunities in our alumni community.
+        </p>
+      </div>
+
+      <div class="grid-responsive mb-12">
+        {
+          latestEvents.map((event) => (
+            <div class="event-card group">
+              <div class="relative mb-4">
+                {event.data.image ? (
+                  <img
+                    src={event.data.image}
+                    alt={event.data.title}
+                    class="w-full h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="w-full h-48 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-xl flex items-center justify-center">
+                    <Icon
+                      name="mdi:calendar-event"
+                      class="w-16 h-16 text-primary-400"
+                    />
+                  </div>
+                )}
+                <div class="absolute top-4 right-4">
+                  <span class="badge badge-primary">
+                    {new Date(event.data.date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              <h3 class="text-xl font-semibold text-accent-900 mb-2 group-hover:text-primary-600 transition-colors duration-200">
+                {event.data.title}
+              </h3>
+              <p class="text-accent-600 mb-4 line-clamp-2">
+                {event.data.description}
+              </p>
+
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2 text-sm text-accent-500">
+                  <Icon name="mdi:map-marker" class="w-4 h-4" />
+                  <span>{event.data.location}</span>
+                </div>
+                <a
+                  href={`/events/${event.data.slug}`}
+                  class="text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  Learn More →
+                </a>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="text-center">
+        <a href="/events" class="btn btn-outline btn-lg">
+          <Icon name="mdi:calendar-multiple" class="w-6 h-6 mr-2" />
+          View All Events
         </a>
       </div>
     </div>
