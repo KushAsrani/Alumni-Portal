@@ -237,6 +237,15 @@ def get_jobs():
     
     if min_salary:
         filtered_jobs = [j for j in filtered_jobs if j.get('salary') and j['salary']['min'] >= min_salary]
+
+    # Ensure all array fields are actually arrays before returning
+    for job in filtered_jobs:
+        for field in ('skills', 'qualifications', 'certifications'):
+            val = job.get(field)
+            if val is None:
+                job[field] = []
+            elif isinstance(val, str):
+                job[field] = [val] if val else []
     
     # Apply limit
     filtered_jobs = filtered_jobs[:limit]

@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import json
 import time
 import re
+from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 import hashlib
@@ -272,7 +273,7 @@ class ActuarialJobScraper:
     def extract_skills(self, description: str) -> List[str]:
         """Extract skills from job description"""
         skills_keywords = [
-            'excel', 'sql', 'python', 'tableau', 'power bi', 'powerpoint', 'vba', 'sas', 'stata', 'looker', 'access', 'matlab', 'java', 'javascript', 'json', 'hadoop', 'hive', 'impala', 'snowflake', 'spark', 'kafka', 'azure', 'aws', 'devops', 'microsoft 365', 'google analytics', 'gcp', 'artificial intelligence', 'machine learning', 'ai', 'ml', 'aiml', 'prophet', 'moses', 'emblem', 'axis', 'igloo', 'graphql', 'deep learning', 'data visualization', 'data analysis', 'data science', 'data loss prevention', 'dataloss prevention', 'data mining', 'data scrapping', 'cloud computing', 'cloud security', 'statistical analysis', 'predictive modeling', 'data modeling', 'data warehousing', 'etl', 'big data', 'oracle', 'redshift', 'databricks', 'airflow', 'market research', 'research', 'financial reporting', 'communication', 'presentation', 'problem-solving', 'critical thinking', 'teamwork', 'leadership', 'collaboration', 'multitasking', 'interpersonal skills'
+            'excel', 'sql', 'python', 'tableau', 'power bi', 'powerpoint', 'vba', 'sas', 'stata', 'looker', 'matlab', 'java', 'javascript', 'json', 'hadoop', 'hive', 'impala', 'snowflake', 'spark', 'kafka', 'azure', 'aws', 'devops', 'devsecops', 'microsoft 365', 'google analytics', 'gcp', 'artificial intelligence', 'machine learning', 'ai', 'ml', 'aiml', 'business intelligence', 'prophet', 'moses', 'emblem', 'axis', 'igloo', 'graphql', 'deep learning', 'data visualization', 'data analysis', 'data science', 'data loss prevention', 'dataloss prevention', 'data mining', 'data scrapping', 'cloud computing', 'cloud security', 'cybersecurity', 'security testing' 'sap', 'master data', 'mrp', 'mbom', 'statistical analysis', 'predictive modeling', 'data modeling', 'data warehousing', 'etl', 'big data', 'oracle', 'redshift', 'databricks', 'airflow', 'market research', 'research', 'financial reporting', 'communication', 'presentation', 'problem-solving', 'critical thinking', 'teamwork', 'leadership', 'management', 'collaboration', 'planning', 'coordination', 'multitasking', 'interpersonal skills'
         ]
         
         description_lower = description.lower()
@@ -285,7 +286,7 @@ class ActuarialJobScraper:
                 match = skill in description_lower
             if match:
                 # Capitalize properly
-                if skill in ['sql', 'vba', 'sas', 'aws', 'gcp', 'ai', 'ml', 'etl']:
+                if skill in ['sql', 'vba', 'sas', 'aws', 'gcp', 'ai', 'ml', 'etl', 'json', 'mrp']:
                     found_skills.append(skill.upper())
                 else:
                     found_skills.append(skill.title())
@@ -314,7 +315,7 @@ class ActuarialJobScraper:
         qualification_keywords = [
             # Degrees
             ("bachelor", "Bachelor's Degree"),
-            ("master", "Master's Degree"),
+            ("masters", "Master's Degree"),
             ("mba", "MBA"),
             ("phd", "PhD"),
             ("b.tech", "B.Tech"),
@@ -340,6 +341,7 @@ class ActuarialJobScraper:
             ("actuarial science", "Actuarial Science"),
             ("computer science", "Computer Science"),
             ("data science", "Data Science"),
+            ("data analyst", "Data Analyst"),
             ("finance", "Finance"),
             ("economics", "Economics"),
             ("engineering", "Engineering"),
@@ -903,7 +905,7 @@ class ActuarialJobScraper:
                             'posted_date': datetime.now().strftime('%Y-%m-%d'),
                             'featured': True
                         }
-                        
+
                         jobs.append(job)
                         skills_str = ', '.join(job['skills']) if job['skills'] else 'none detected'
                         print(f"  ✓ Found: {title} at {company} [skills: {skills_str}]")
@@ -924,11 +926,11 @@ class ActuarialJobScraper:
     def scrape_all(self) -> List[Dict]:
         """Scrape jobs from all sources"""
         print("\n" + "="*60)
-        print("🚀 ACTUARIAL JOB SCRAPER - INDIA")
+        print("ACTUARIAL JOB SCRAPER - INDIA")
         print("="*60)
-        print(f"📍 Location: {self.location}")
-        print(f"🔑 Keywords: {', '.join(self.keywords)}")
-        print(f"💰 Currency: Indian Rupees (INR)")
+        print(f"Location: {self.location}")
+        print(f"Keywords: {', '.join(self.keywords)}")
+        print(f"Currency: Indian Rupees (INR)")
         print("="*60)
         
         # Scrape from all sources
@@ -940,7 +942,7 @@ class ActuarialJobScraper:
         all_jobs = naukri_jobs + indeed_jobs + linkedin_jobs
         
         print("\n" + "="*60)
-        print(f"📊 SCRAPING SUMMARY")
+        print(f"SCRAPING SUMMARY")
         print("="*60)
         print(f"  Naukri:    {len(naukri_jobs)} jobs")
         print(f"  Indeed:    {len(indeed_jobs)} jobs")
@@ -1031,6 +1033,10 @@ class ActuarialJobScraper:
 
 def main():
     """Main execution function"""
+    repo_root = Path(__file__).resolve().parents[2]
+    jobs_output_dir = repo_root / "src" / "content" / "jobs"
+    json_output_file = repo_root / "actuarial_jobs_india.json"
+
     # Configuration for India
     LOCATION = "India"
     KEYWORDS = [
@@ -1049,8 +1055,8 @@ def main():
     jobs = scraper.scrape_all()
     
     # Save to files
-    scraper.save_to_json('actuarial_jobs_india.json')
-    scraper.save_individual_files('../src/content/jobs')
+    scraper.save_to_json(str(json_output_file))
+    scraper.save_individual_files(str(jobs_output_dir))
     
     # Example: Filter by major Indian cities
     # major_cities = ['Mumbai', 'Delhi', 'Bangalore', 'Pune', 'Hyderabad', 'Chennai']

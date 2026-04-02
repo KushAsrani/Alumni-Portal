@@ -7,3 +7,4 @@ tenacity
 python-dateutil
 tqdm
 schedule
+lxml
