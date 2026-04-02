@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import JobBoard from '../components/JobBoard.astro';
 import { getCollection } from 'astro:content';
+import { Icon } from 'astro-icon';
 
 export const prerender = false; // Enable SSR for dynamic filtering
 
@@ -23,9 +24,12 @@ const url = new URL(Astro.request.url);
 const searchQuery = url.searchParams.get('search')?.toLowerCase() || '';
 const experienceFilter = url.searchParams.get('experience') || '';
 const locationFilter = url.searchParams.get('location') || '';
+const companyFilter = url.searchParams.get('company') || '';
 const jobTypeFilter = url.searchParams.get('jobType') || '';
 const salaryFilter = url.searchParams.get('minSalary') || '';
 const sourceFilter = url.searchParams.get('source') || '';
+const skillsFilter = url.searchParams.getAll('skills') || [];
+const qualificationsFilter = url.searchParams.get('qualifications') || '';
 const featuredOnly = url.searchParams.get('featured') === 'true';
 const currentPage = parseInt(url.searchParams.get('page') || '1');
 
@@ -45,9 +49,32 @@ if (experienceFilter) {
   filteredJobs = filteredJobs.filter(job => job.experienceLevel === experienceFilter);
 }
 
-// Location filter
+// Location filter.
 if (locationFilter) {
-  filteredJobs = filteredJobs.filter(job => job.location.includes(locationFilter));
+  const effectiveLocationFilters =
+    locationFilter === 'India' || locationFilter === 'Remote'
+      ? ['India', 'Remote']
+      : locationFilter === 'Bangalore' || locationFilter === 'Bengaluru'
+      ? ['Bangalore', 'Bengaluru']
+      : locationFilter === 'Karnataka' || locationFilter === 'Karnātaka'
+      ? ['Karnataka', 'Karnātaka']
+      : [locationFilter];
+
+  filteredJobs = filteredJobs.filter(job =>
+    effectiveLocationFilters.some(filter =>
+      job.location.includes(filter) || job.company.includes(filter) || job.description.includes(filter)
+    )
+  );
+}
+
+else if (locationFilter) {
+  const effectiveLocationFilters = locationFilter === 'Bangalore' || locationFilter === 'Bengaluru' 
+    ? ['Bangalore', 'Bengaluru'] 
+    : [locationFilter];
+
+    filteredJobs = filteredJobs.filter(job => 
+      effectiveLocationFilters.some(filter => job.location.includes(filter))
+    );
 }
 
 // Job type filter
@@ -68,6 +95,27 @@ if (salaryFilter) {
 // Source filter
 if (sourceFilter) {
   filteredJobs = filteredJobs.filter(job => job.source === sourceFilter);
+}
+
+// Skills filter
+if (skillsFilter.length > 0) {
+  filteredJobs = filteredJobs.filter(job =>
+    skillsFilter.every(skill => job.skills?.includes(skill)) &&
+    searchQuery.split(' ').every(term => 
+      job.title.toLowerCase().includes(term) ||
+      job.description.toLowerCase().includes(term) ||
+      job.skills?.some(s => s.toLowerCase().includes(term))
+    )
+  );
+}
+
+// Qualifications filter
+if (qualificationsFilter) {
+  filteredJobs = filteredJobs.filter(job => {
+    return job.qualifications?.some(qualification =>
+      qualification.toLowerCase().includes(qualificationsFilter.toLowerCase())
+    );
+  });
 }
 
 // Featured only filter
@@ -176,7 +224,7 @@ const topCertifications = Array.from(certCounts.entries())
             </svg>
             Filter Jobs
           </h2>
-          {(experienceFilter || locationFilter || jobTypeFilter || salaryFilter || sourceFilter || featuredOnly || searchQuery) && (
+          {(experienceFilter || locationFilter || jobTypeFilter || salaryFilter || sourceFilter || skillsFilter.length > 0 || qualificationsFilter || featuredOnly || searchQuery) && (
             <a href="/jobs" class="clear-filters">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -202,16 +250,16 @@ const topCertifications = Array.from(certCounts.entries())
             <select name="experience" id="experience" class="filter-select">
               <option value="">All Levels ({totalJobs})</option>
               <option value="entry" selected={experienceFilter === 'entry'}>
-                Entry Level ({entryJobs})
+                Entry Level
               </option>
               <option value="mid" selected={experienceFilter === 'mid'}>
-                Mid Level ({midJobs})
+                Mid Level
               </option>
               <option value="senior" selected={experienceFilter === 'senior'}>
-                Senior Level ({seniorJobs})
+                Senior Level
               </option>
               <option value="executive" selected={experienceFilter === 'executive'}>
-                Executive ({executiveJobs})
+                Executive
               </option>
             </select>
           </div>
@@ -227,12 +275,15 @@ const topCertifications = Array.from(certCounts.entries())
             </label>
             <select name="location" id="location" class="filter-select">
               <option value="">All Locations</option>
-              <option value="Remote" selected={locationFilter === 'Remote'}>Remote</option>
+              <option value="Remote" selected={locationFilter === 'Remote' || locationFilter === 'India'}>Remote</option>
+              <option value ="Hybrid" selected={locationFilter === 'Hybrid'}>Hybrid</option>
               <option value="Mumbai" selected={locationFilter === 'Mumbai'}>Mumbai</option>
               <option value="Delhi" selected={locationFilter === 'Delhi'}>Delhi/NCR</option>
-              <option value="Bangalore" selected={locationFilter === 'Bangalore'}>Bangalore</option>
+              <option value="Bangalore" selected={locationFilter === 'Bangalore' || locationFilter === 'Bengaluru'}>Bangalore/Bengaluru</option>
+              <option value="Karnataka" selected={locationFilter === 'Karnataka'}>Karnataka</option>
               <option value="Pune" selected={locationFilter === 'Pune'}>Pune</option>
               <option value="Ahmedabad" selected={locationFilter === 'Ahmedabad'}>Ahmedabad</option>
+              <option value="Surat" selected={locationFilter === 'Surat'}>Surat</option>
               <option value="Hyderabad" selected={locationFilter === 'Hyderabad'}>Hyderabad</option>
               <option value="Chennai" selected={locationFilter === 'Chennai'}>Chennai</option>
               <option value="Kolkata" selected={locationFilter === 'Kolkata'}>Kolkata</option>
@@ -305,6 +356,119 @@ const topCertifications = Array.from(certCounts.entries())
             </select>
           </div>
 
+          <!-- Skills Filter -->
+          <div class="filter-group">
+            <label for="skills">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+          Skills
+        </label>
+
+        <div class="custom-dropdown" id="skills-dropdown">
+          <div class="dropdown-selected" id="skills-selected">Select Skills <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <polyline points="6 9 12 15 18 9"></polyline>
+          </svg></div>
+          <div class="dropdown-options">
+        <label>
+          <input type="checkbox" name="skills" value="Excel" checked={url.searchParams.getAll('skills').includes('Excel')}/> Excel
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="SQL" checked={url.searchParams.getAll('skills').includes('SQL')}/> SQL
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Python" checked={url.searchParams.getAll('skills').includes('Python')}/> Python
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="AI" checked={url.searchParams.getAll('skills').includes('AI')}/> AI/ML
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Power Bi" checked={url.searchParams.getAll('skills').includes('Power Bi')}/> PowerBI
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Tableau" checked={url.searchParams.getAll('skills').includes('Tableau')}/> Tableau
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Data Analysis" checked={url.searchParams.getAll('skills').includes('Data Analysis')}/> Data Analysis
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Data Visualization" checked={url.searchParams.getAll('skills').includes('Data Visualization')}/> Data Visualization
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Data Warehousing" checked={url.searchParams.getAll('skills').includes('Data Warehousing')}/> Data Warehousing
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Databricks" checked={url.searchParams.getAll('skills').includes('Databricks')}/> Databricks
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Snowflake" checked={url.searchParams.getAll('skills').includes('Snowflake')}/> Snowflake
+        </label>
+        <label>
+         <input type="checkbox" name="skills" value="Looker" checked={url.searchParams.getAll('skills').includes('Looker')}/> Looker
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="AWS" checked={url.searchParams.getAll('skills').includes('AWS')}/> AWS
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Azure" checked={url.searchParams.getAll('skills').includes('Azure')}/> Azure
+        </label>
+        <label>
+         <input type="checkbox" name="skills" value="DevOps" checked={url.searchParams.getAll('skills').includes('DevOps')}/> DevOps
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Cloud Computing" checked={url.searchParams.getAll('skills').includes('Cloud Computing')}/> Cloud Computing
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Cloud Security" checked={url.searchParams.getAll('skills').includes('Cloud Security')}/> Cloud Security
+        </label>
+         <label>
+          <input type="checkbox" name="skills" value="Cybersecurity" checked={url.searchParams.getAll('skills').includes('Cybersecurity')}/> Cybersecurity
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="DevSecOps" checked={url.searchParams.getAll('skills').includes('DevSecOps')}/> DevSecOps
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="SAP" checked={url.searchParams.getAll('skills').includes('SAP')}/> SAP
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Google Analytics" checked={url.searchParams.getAll('skills').includes('Google Analytics')}/> Google Analytics
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="GCP" checked={url.searchParams.getAll('skills').includes('GCP')}/> GCP
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="GraphQL" checked={url.searchParams.getAll('skills').includes('GraphQL')}/> GraphQL
+        </label>
+        <label>
+          <input type="checkbox" name="skills" value="Research" checked={url.searchParams.getAll('skills').includes('Research')}/> Research
+        </label>
+    </div>
+  </div>
+</div>
+
+<!-- Qualifications Filter -->
+   <div class="filter-group">
+            <label for="qualifications">
+              <Icon name="mdi:school" class="filter-icon" />
+              Education/Qualifications
+            </label>
+            <select name="qualifications" id="qualifications" class="filter-select">
+              <option value="">All Levels</option>
+              <option value="Data Analyst" selected={url.searchParams.get('qualifications') === "Data Analyst"}>Data Analyst</option>
+              <option value="Data Science" selected={url.searchParams.get('qualifications') === "Data Science"}>Data Science</option>
+              <option value="Statistics" selected={url.searchParams.get('qualifications') === "Statistics"}>Statistics</option>
+              <option value="Computer Science" selected={url.searchParams.get('qualifications') === "Computer Science"}>Computer Science</option>
+              <option value="M.Tech" selected={url.searchParams.get('qualifications') === "M.Tech"}>M.Tech</option>
+              <option value="Engineering" selected={url.searchParams.get('qualifications') === "Engineering"}>Engineering</option>
+              <option value ="Finance" selected={url.searchParams.get('qualifications') === "Finance"}>Finance</option>
+              <option value="Accounting" selected={url.searchParams.get('qualifications') === "Accounting"}>Accounting</option>
+              <option value="bachelor's" selected={url.searchParams.get('qualifications') === "bachelor's"}>Bachelor's Degree</option>
+              <option value="master's" selected={url.searchParams.get('qualifications') === "master's"}>Master's Degree</option>
+              <option value="MBA" selected={url.searchParams.get('qualifications') === "MBA"}>MBA</option>
+              <option value="phd" selected={url.searchParams.get('qualifications') === "phd"}>PhD</option>
+            </select>
+
           <!-- Featured Only
           <div class="filter-group">
             <label for="featured" class="checkbox-label">
@@ -325,8 +489,8 @@ const topCertifications = Array.from(certCounts.entries())
           -->
 
           <!-- Submit Button -->
-          <div class="filter-group filter-actions">
-            <button type="submit" class="btn btn-primary">
+          <div class="filter-group filter-actions flex justify-center">
+            <button type="submit" class="btn btn-primary mt-4 justify-center">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
@@ -418,7 +582,7 @@ const topCertifications = Array.from(certCounts.entries())
               </svg>
             </div>
             <div class="stat-number">Top Skills</div>
-            <div class="stat-label">{topSkills.length > 0 ? topSkills.join(' • ') : 'R • Powerbi'}  • PowerBI • Tableau </div>
+            <div class="stat-label">Excel • SQL • Python • AI/ML • PowerBI • Tableau • Snowflake • Looker • Azure • DevOps • AWS • Cloud Computing • Data Analysis • Databricks • SAP • Google Analytics • GCP • GraphQL • Cloud Security • Research • Problem-Solving • Communication Skills • Leadership • Collaboration</div>
             <p>Most in-demand technical competencies</p>
           </div>
 
@@ -430,8 +594,9 @@ const topCertifications = Array.from(certCounts.entries())
                 <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
               </svg>
             </div>
-            <div class="stat-number">Key Certifications</div>
-            <div class="stat-label">{topCertifications.length > 0 ? topCertifications.join(' • ') : 'FSA • ASA • EA'}</div>
+            <div class="stat-number">Top Certifications</div>
+            <!-- Please suggest me as many Indian certifications you can. Please add Indian certifications here: -->
+            <div class="stat-label"> CERA • FSA • CFA  • FRM  • PRM  • Actuarial Science Certification (IIBF)  • Certificate in Quantitative Finance (CQF)  • Certified Actuarial Analyst (CAA)  • Associate of the Institute of Actuaries of India (AIAI)  • Fellow of the Institute of Actuaries of India (FIAI) </div>
             <p>Credentials that boost your career</p>
           </div>
         </div>
@@ -655,8 +820,80 @@ const topCertifications = Array.from(certCounts.entries())
 
   .filter-actions {
     display: flex;
-    align-items: flex-end;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    text-align: center;
   }
+
+  .filter-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .custom-dropdown {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .dropdown-selected {
+    padding: 0.625rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background: white;
+    cursor: pointer;
+    font-size: 0.875rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .dropdown-options {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .dropdown-options label {
+    display: block;
+    padding: 0.5rem;
+    cursor: pointer;
+  }
+
+  .dropdown-options label:hover {
+    background: #f3f4f6;
+  }
+
+  .dropdown-options input[type="checkbox"] {
+    margin-right: 0.5rem;
+  }
+
+  .custom-dropdown.open .dropdown-options {
+    display: block;
+  }
+
+  .custom-dropdown {
+    width: 100%;
+    height: 90%;
+    margin-top: -2px;
+  }
+
+  /* Style for the dropdown icon */
+.dropdown-icon {
+  margin-left: auto;
+  pointer-events: none; /* Prevent the icon from interfering with clicks */
+  transition: transform 0.3s ease;
+}
 
   .btn {
     display: inline-flex;
@@ -894,7 +1131,7 @@ const topCertifications = Array.from(certCounts.entries())
 </style>
 
 <script>
-  // Auto-submit form when filter changes
+  /* Auto-submit form when filter changes
   const filterForm = document.getElementById('filter-form') as HTMLFormElement;
   const filterSelects = filterForm?.querySelectorAll('select, input[type="checkbox"]');
 
@@ -902,6 +1139,66 @@ const topCertifications = Array.from(certCounts.entries())
     element.addEventListener('change', () => {
       filterForm?.submit();
     });
+  });
+  */
+
+  // Skills filter
+  const dropdown = document.getElementById('skills-dropdown');
+  const selected = document.getElementById('skills-selected');
+  const options = dropdown.querySelector('.dropdown-options');
+
+// Function to update the dropdown text
+function updateSelectedSkills() {
+  const selectedOptions = Array.from(
+    options.querySelectorAll('input[type="checkbox"]:checked')
+  ).map((checkbox) => checkbox.value);
+
+  // Update the text content
+  selected.textContent = selectedOptions.length
+    ? `Skills selected: ${selectedOptions.join(', ')}`
+    : 'Select Skills';
+
+  // Add the dropdown icon back to the text content
+  const dropdownIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  dropdownIcon.setAttribute('class', 'dropdown-icon');
+  dropdownIcon.setAttribute('width', '16');
+  dropdownIcon.setAttribute('height', '16');
+  dropdownIcon.setAttribute('viewBox', '0 0 24 24');
+  dropdownIcon.setAttribute('fill', 'none');
+  dropdownIcon.setAttribute('stroke', 'currentColor');
+  dropdownIcon.setAttribute('stroke-width', '3');
+
+  const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  polyline.setAttribute('points', '6 9 12 15 18 9');
+  dropdownIcon.appendChild(polyline);
+
+  selected.appendChild(dropdownIcon);
+}
+
+// Update the dropdown text on page load
+updateSelectedSkills();
+
+  // Toggle dropdown open/close
+  dropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+    dropdown.classList.remove('open');
+  });
+
+  // Update the dropdown text dynamically when checkboxes are changed
+  options.addEventListener('change', updateSelectedSkills);
+
+  options.addEventListener('change', () => {
+    const selectedOptions = Array.from(
+      options.querySelectorAll('input[type="checkbox"]:checked')
+    ).map((checkbox) => checkbox.value);
+    selected.textContent = selectedOptions.length
+      ? selectedOptions.join(', ')
+      : 'Select Skills';
   });
 
   // Pagination handling

@@ -4,7 +4,7 @@
   "company": "Randstad Enterprise",
   "location": "India, Remote",
   "description": "about randstad enterpriseAs the leading global talent solutions provider, Randstad Enterprise enables companies to create sustainable business value and agility by keeping people at the heart of their organizations. Part of Randstad N.V., we combine unmatched talent data and market insights with smart technologies and deep people expertise. Our integrated talent solutions  delivered by Randstad Advisory, Randstad Sourceright and Randstad RiseSmart  help companies build skilled and agile workforc",
-  "url": "https://in.linkedin.com/jobs/view/marketing-data-analyst-at-randstad-enterprise-4359513793?position=17&pageNum=0&refId=1Ux5KCA2C9RO60xFHIzTXw%3D%3D&trackingId=Jx6xk1tBUNxjOfkpjvGV8Q%3D%3D",
+  "url": "https://in.linkedin.com/jobs/view/marketing-data-analyst-at-randstad-enterprise-4359513793?position=12&pageNum=0&refId=oHMDhG3HiTZviKLEWztLkA%3D%3D&trackingId=QgzjTKFhfm2FMN9FJgEXKQ%3D%3D",
   "source": "LinkedIn",
   "jobType": "full-time",
   "experienceLevel": "senior",
@@ -14,12 +14,16 @@
     "Looker",
     "GCP",
     "AI",
+    "Business Intelligence",
     "Data Visualization",
     "Data Modeling",
+    "Management",
     "Collaboration"
   ],
-  "qualifications": [],
-  "posted_date": "2026-03-09",
+  "qualifications": [
+    "Data Analyst"
+  ],
+  "posted_date": "2026-03-31",
   "featured": true,
   "certifications": [
     "EA"

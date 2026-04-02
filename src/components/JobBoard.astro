@@ -135,8 +135,8 @@ function formatIndianSalary(salary: any) {
             {/* Job Description */}
             {job.description && (
               <p class="job-description">
-                {job.description.length > 150 
-                  ? job.description.substring(0, 150) + '...' 
+                {job.description.length > 500 
+                  ? job.description.substring(0, 500) + '...' 
                   : job.description}
               </p>
             )}
@@ -146,16 +146,32 @@ function formatIndianSalary(salary: any) {
               <div class="skills-section">
                 <h4>Required Skills</h4>
                 <div class="skills-list">
-                  {job.skills.slice(0, 5).map((skill: string) => (
+                  {job.skills.slice(0, 15).map((skill: string) => (
                     <span class="skill-tag">{skill}</span>
                   ))}
-                  {job.skills.length > 5 && (
-                    <span class="skill-tag more">+{job.skills.length - 5} more</span>
+                  {job.skills.length > 15 && (
+                    <span class="skill-tag more">+{job.skills.length - 15} more</span>
                   )}
                 </div>
               </div>
             )}
 
+             {/* Qualifications Section */}
+            {job.qualifications && job.qualifications.length > 0 && (
+              <div class="qualifications-section">
+                <h4>Qualifications</h4>
+                <div class="qualifications-list">
+                  {job.qualifications.slice(0, 15).map((qual: string) => (
+                    <span class="qualification-tag">{qual}</span>
+                  ))}
+                  {job.qualifications.length > 15 && (
+                    <span class="qualification-tag more">+{job.qualifications.length - 15} more</span>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <!--
             {/* Certifications Section */}
             {job.certifications && job.certifications.length > 0 && (
               <div class="certifications-section">
@@ -167,6 +183,7 @@ function formatIndianSalary(salary: any) {
                 </div>
               </div>
             )}
+            -->
 
             {/* Job Footer */}
             <div class="job-footer">
@@ -468,12 +485,14 @@ function formatIndianSalary(salary: any) {
   }
 
   .skills-section,
-  .certifications-section {
+  .certifications-section,
+  .qualifications-section {
     margin: 1rem 0;
   }
 
   .skills-section h4,
-  .certifications-section h4 {
+  .certifications-section h4,
+  .qualifications-section h4 {
     margin: 0 0 0.5rem 0;
     font-size: 0.7rem;
     font-weight: 700;
@@ -483,14 +502,16 @@ function formatIndianSalary(salary: any) {
   }
 
   .skills-list,
-  .cert-list {
+  .cert-list,
+  .qualifications-list {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
   }
 
   .skill-tag,
-  .cert-badge {
+  .cert-badge,
+  .qualification-tag {
     display: inline-block;
     padding: 0.3rem 0.75rem;
     border-radius: 0.375rem;
@@ -498,13 +519,15 @@ function formatIndianSalary(salary: any) {
     font-weight: 500;
   }
 
-  .skill-tag {
+  .skill-tag,
+  .qualification-tag {
     background: #f0fdf4;
     color: #166534;
     border: 1px solid #bbf7d0;
   }
 
-  .skill-tag.more {
+  .skill-tag.more,
+  .qualification-tag.more {
     background: #f3f4f6;
     color: #6b7280;
     border: 1px solid #e5e7eb;
