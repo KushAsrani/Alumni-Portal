@@ -31,3 +31,18 @@ model alumni_registrations {
   @@index([email], map: "idx_alumni_email")
   @@index([status], map: "idx_alumni_status")
 }
+
+model ResumeAnalysis {
+  id              Int      @id @default(autoincrement())
+  alumniEmail     String   @db.VarChar(255)
+  fileName        String?  @db.VarChar(500)
+  fileUrl         String?  @db.VarChar(1000)
+  atsScore        Int?
+  matchScore      Float?
+  missingKeywords String[]
+  improvements    Json?
+  topJobMatches   Json?
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([alumniEmail], map: "idx_resume_alumni_email")
+}
