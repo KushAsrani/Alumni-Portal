@@ -1,9 +1,9 @@
 ---
-import Layout from '../layouts/Layout.astro';
 export const prerender = false;
+
+return Astro.redirect('/jobs#resume-analyzer', 301);
 ---
 
-<Layout title="AI Resume Analyzer">
   <!-- Hero Section -->
   <section class="resume-hero">
     <div class="resume-hero__inner">

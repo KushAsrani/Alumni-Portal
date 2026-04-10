@@ -318,17 +318,26 @@ def calculate_ats_score(resume: Dict) -> Dict:
 # ---------------------------------------------------------------------------
 
 def load_jobs() -> List[Dict]:
-    """Load jobs from jobs.json and actuarial_jobs.json."""
+    """Load jobs from actuarial_jobs_india.json."""
     jobs = []
-    for path in ["/app/jobs.json", "/app/actuarial_jobs.json"]:
-        if os.path.exists(path):
+    # Try multiple possible paths: Docker mount, repo root, relative
+    candidate_paths = [
+        "/app/actuarial_jobs_india.json",
+        os.path.join(os.path.dirname(__file__), "..", "actuarial_jobs_india.json"),
+        os.path.join(os.path.dirname(__file__), "actuarial_jobs_india.json"),
+        "actuarial_jobs_india.json",
+    ]
+    for path in candidate_paths:
+        resolved = os.path.realpath(path)
+        if os.path.exists(resolved):
             try:
-                with open(path, "r", encoding="utf-8") as f:
+                with open(resolved, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     if isinstance(data, list):
                         jobs.extend(data)
                     elif isinstance(data, dict) and "jobs" in data:
                         jobs.extend(data["jobs"])
+                break  # stop after first successful load
             except Exception:
                 pass
     return jobs
