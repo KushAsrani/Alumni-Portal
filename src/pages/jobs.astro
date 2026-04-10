@@ -2375,6 +2375,7 @@ updateSelectedSkills();
       else { llmNoteEl.style.display = 'none'; }
 
       // Summary rewrite
+      document.getElementById('ra-original-summary').textContent = '(original summary not returned by API)';
       document.getElementById('ra-suggested-summary').textContent = improvements.summary_rewrite || '(no suggestion)';
 
       // Weak bullets
@@ -2532,11 +2533,17 @@ updateSelectedSkills();
       }
     });
 
-    // Deep-link: if URL hash is #resume-analyzer, scroll to it
+    // Deep-link: if URL hash is #resume-analyzer, scroll to it.
+    // The 300ms delay allows the auth check fetch to complete so the section is visible before scrolling.
     if (window.location.hash === '#resume-analyzer') {
       setTimeout(() => {
         document.getElementById('resume-analyzer').scrollIntoView({ behavior: 'smooth' });
       }, 300);
     }
+
+    // Revoke any object URL when the user navigates away to prevent memory leaks
+    window.addEventListener('beforeunload', () => {
+      if (localFileObjectUrl) { URL.revokeObjectURL(localFileObjectUrl); localFileObjectUrl = null; }
+    });
   })();
 </script>
