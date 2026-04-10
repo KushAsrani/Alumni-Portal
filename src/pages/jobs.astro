@@ -603,6 +603,251 @@ const topCertifications = Array.from(certCounts.entries())
       </div>
     </section>
 
+    <!-- Resume Analyzer Section -->
+    <section class="resume-analyzer-section" id="resume-analyzer">
+      <div class="container">
+        <div class="ra-section-header">
+          <h2 class="ra-section-title">🤖 AI Resume Analyzer</h2>
+          <p class="ra-section-subtitle">Upload your resume to get an ATS score, missing keywords, and match it against actuarial job listings</p>
+        </div>
+
+        <!-- Auth Gate (shown when logged out) -->
+        <div id="resume-auth-gate" style="display:none;" class="ra-auth-gate">
+          <div class="ra-gate-card">
+            <svg class="ra-gate-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+            <h3 class="ra-gate-title">Login Required</h3>
+            <p class="ra-gate-text">Please log in to use the AI Resume Analyzer and access your analysis history.</p>
+            <a href="/alumni/login?redirect=/jobs%23resume-analyzer" class="btn btn-primary ra-gate-btn">Login to Continue</a>
+          </div>
+        </div>
+
+        <!-- Upload Form (shown when logged in) -->
+        <div id="resume-upload-form" style="display:none;">
+
+          <!-- Tab navigation -->
+          <div class="ra-tab-nav">
+            <button class="ra-tab-btn ra-tab-btn--active" id="ra-tab-analyze" type="button">Analyze New</button>
+            <button class="ra-tab-btn" id="ra-tab-history" type="button">Past Analyses</button>
+          </div>
+
+          <!-- ===== ANALYZE PANEL ===== -->
+          <div id="ra-panel-analyze">
+
+            <!-- Upload Card -->
+            <div class="ra-card ra-upload-card">
+              <h3 class="ra-card__title">Upload Your Resume</h3>
+              <p class="ra-card__subtitle">PDF or DOCX — max 10 MB</p>
+
+              <form id="ra-resume-form" novalidate>
+                <!-- Drag-and-drop zone -->
+                <div class="ra-drop-zone" id="ra-drop-zone" tabindex="0" role="button" aria-label="Click or drag to upload resume">
+                  <div class="ra-drop-zone__icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <p class="ra-drop-zone__text">Drag &amp; drop your resume here, or <span class="ra-drop-zone__link">click to browse</span></p>
+                  <p class="ra-drop-zone__hint" id="ra-file-name-display">Accepts .pdf and .docx</p>
+                  <input type="file" id="ra-resume-file" name="document" accept=".pdf,.doc,.docx" class="ra-drop-zone__input" aria-label="Resume file upload" />
+                </div>
+
+                <!-- File preview row (shown after file selected) -->
+                <div id="ra-file-preview-row" style="display:none;" class="ra-file-preview-row">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true" style="flex-shrink:0;color:#6b7280;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                  <span id="ra-file-preview-name" class="ra-file-preview-name"></span>
+                  <span id="ra-file-preview-size" class="ra-file-preview-size"></span>
+                  <button type="button" id="ra-view-resume-btn-local" class="ra-btn-view-resume">👁 Preview</button>
+                  <button type="button" id="ra-remove-file-btn" class="ra-btn-remove-file">✕ Remove</button>
+                </div>
+
+                <!-- Email input -->
+                <div class="ra-form-group">
+                  <label for="ra-alumni-email" class="ra-form-label">Your Email</label>
+                  <input
+                    type="email"
+                    id="ra-alumni-email"
+                    name="email"
+                    class="ra-form-input"
+                    placeholder="you@example.com"
+                    required
+                    autocomplete="email"
+                  />
+                </div>
+
+                <!-- Error display -->
+                <div class="ra-alert ra-alert--error" id="ra-upload-error" role="alert" style="display:none;"></div>
+
+                <!-- Submit button -->
+                <button type="submit" class="btn btn-primary ra-btn--full" id="ra-analyze-btn">
+                  <span id="ra-btn-text">Analyze Resume</span>
+                  <span id="ra-btn-spinner" class="ra-spinner" style="display:none;" aria-hidden="true"></span>
+                </button>
+              </form>
+
+              <!-- Upload Progress Bar -->
+              <div id="ra-upload-progress-wrap" style="display:none;" class="ra-upload-progress-wrap">
+                <div class="ra-upload-progress-label">
+                  <span id="ra-upload-progress-text">Uploading resume…</span>
+                  <span id="ra-upload-progress-pct">0%</span>
+                </div>
+                <div class="ra-upload-progress-bar-track">
+                  <div class="ra-upload-progress-bar-fill" id="ra-upload-progress-bar" style="width:0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Results Dashboard (hidden until analysis completes) -->
+            <div id="ra-results-section" style="display:none;">
+
+              <!-- View Uploaded Resume row -->
+              <div class="ra-view-resume-row" id="ra-view-resume-row" style="display:none;">
+                <a id="ra-view-resume-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary ra-btn--outline">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  View Uploaded Resume
+                </a>
+              </div>
+
+              <!-- ATS Score Card -->
+              <div class="ra-card ra-results-card">
+                <h3 class="ra-card__title">ATS Score</h3>
+                <div class="ra-ats-score-layout">
+                  <div class="ra-ats-gauge-wrap">
+                    <svg class="ra-ats-gauge" viewBox="0 0 120 120" aria-label="ATS Score gauge">
+                      <circle class="ra-ats-gauge__track" cx="60" cy="60" r="50" />
+                      <circle class="ra-ats-gauge__fill" id="ra-ats-arc" cx="60" cy="60" r="50"
+                        stroke-dasharray="0 314"
+                        stroke-dashoffset="78.5"
+                        stroke-linecap="round" />
+                    </svg>
+                    <div class="ra-ats-gauge__label">
+                      <span class="ra-ats-gauge__score" id="ra-ats-score-value">—</span>
+                      <span class="ra-ats-gauge__max">/100</span>
+                    </div>
+                  </div>
+                  <div class="ra-ats-breakdown">
+                    <h4 class="ra-breakdown-title">Category Breakdown</h4>
+                    <div id="ra-breakdown-bars"></div>
+                  </div>
+                </div>
+                <div id="ra-ats-feedback" class="ra-feedback-list"></div>
+              </div>
+
+              <!-- Missing Keywords -->
+              <div class="ra-card ra-results-card" id="ra-keywords-card">
+                <h3 class="ra-card__title">Missing Keywords</h3>
+                <p class="ra-card__subtitle">Keywords found in job descriptions but absent from your resume</p>
+                <div id="ra-missing-keywords-tags" class="ra-tags-container"></div>
+              </div>
+
+              <!-- Job Matches -->
+              <div class="ra-card ra-results-card" id="ra-job-matches-card">
+                <h3 class="ra-card__title">Top Job Matches</h3>
+                <div class="ra-table-wrap">
+                  <table class="ra-match-table" id="ra-job-matches-table">
+                    <thead>
+                      <tr>
+                        <th>Job Title</th>
+                        <th>Company</th>
+                        <th>Location</th>
+                        <th>Match</th>
+                        <th>Missing Keywords</th>
+                        <th>Apply</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ra-job-matches-body"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- AI Suggestions Accordion -->
+              <div class="ra-card ra-results-card" id="ra-suggestions-card">
+                <h3 class="ra-card__title">AI Improvement Suggestions</h3>
+                <div id="ra-llm-note" class="ra-alert ra-alert--info" style="display:none;"></div>
+
+                <details class="ra-accordion" id="ra-acc-summary">
+                  <summary class="ra-accordion__header">
+                    <span>✏️ Summary Rewrite</span>
+                    <span class="ra-accordion__arrow">▾</span>
+                  </summary>
+                  <div class="ra-accordion__body">
+                    <div class="ra-suggestion-comparison">
+                      <div class="ra-suggestion-panel ra-suggestion-panel--before">
+                        <div class="ra-suggestion-panel__label">Original</div>
+                        <div id="ra-original-summary" class="ra-suggestion-panel__text">—</div>
+                      </div>
+                      <div class="ra-suggestion-panel__arrow">→</div>
+                      <div class="ra-suggestion-panel ra-suggestion-panel--after">
+                        <div class="ra-suggestion-panel__label">Suggested</div>
+                        <div id="ra-suggested-summary" class="ra-suggestion-panel__text">—</div>
+                      </div>
+                    </div>
+                  </div>
+                </details>
+
+                <details class="ra-accordion" id="ra-acc-bullets">
+                  <summary class="ra-accordion__header">
+                    <span>🔄 Weak Bullet Rewrites</span>
+                    <span class="ra-accordion__arrow">▾</span>
+                  </summary>
+                  <div class="ra-accordion__body" id="ra-weak-bullets-body"></div>
+                </details>
+
+                <details class="ra-accordion" id="ra-acc-formatting">
+                  <summary class="ra-accordion__header">
+                    <span>📐 Formatting Tips</span>
+                    <span class="ra-accordion__arrow">▾</span>
+                  </summary>
+                  <div class="ra-accordion__body">
+                    <ul id="ra-formatting-tips-list" class="ra-tips-list"></ul>
+                  </div>
+                </details>
+              </div>
+
+            </div><!-- /ra-results-section -->
+          </div><!-- /ra-panel-analyze -->
+
+          <!-- ===== HISTORY PANEL ===== -->
+          <div id="ra-panel-history" style="display:none;">
+            <div class="ra-card">
+              <h3 class="ra-card__title">Past Analyses</h3>
+              <div class="ra-form-group">
+                <label for="ra-history-email" class="ra-form-label">Email</label>
+                <div class="ra-input-row">
+                  <input type="email" id="ra-history-email" class="ra-form-input" placeholder="you@example.com" />
+                  <button type="button" class="btn btn-primary" id="ra-load-history-btn">Load</button>
+                </div>
+              </div>
+              <div id="ra-history-error" class="ra-alert ra-alert--error" style="display:none;"></div>
+              <div id="ra-history-loading" style="display:none;" class="ra-loading-state">Loading history…</div>
+              <div class="ra-table-wrap" id="ra-history-table-wrap" style="display:none;">
+                <table class="ra-match-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>File</th>
+                      <th>ATS Score</th>
+                      <th>Match Score</th>
+                      <th>Download</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ra-history-table-body"></tbody>
+                </table>
+              </div>
+              <div id="ra-history-empty" class="ra-empty-state" style="display:none;">No past analyses found for this email.</div>
+            </div>
+          </div><!-- /ra-panel-history -->
+
+        </div><!-- /resume-upload-form -->
+      </div><!-- /container -->
+    </section>
+
     <!-- CTA Section -->
     <section class="cta-section">
       <div class="container">
@@ -1128,6 +1373,626 @@ const topCertifications = Array.from(certCounts.entries())
       justify-content: center;
     }
   }
+
+  /* =========================================================
+     Resume Analyzer Section
+  ========================================================= */
+  .resume-analyzer-section {
+    background: white;
+    padding: 4rem 0;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .ra-section-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .ra-section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 0.75rem;
+  }
+
+  .ra-section-subtitle {
+    font-size: 1rem;
+    color: #6b7280;
+    margin: 0;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Auth Gate */
+  .ra-auth-gate {
+    display: flex;
+    justify-content: center;
+  }
+
+  .ra-gate-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 3rem 2.5rem;
+    text-align: center;
+    max-width: 480px;
+    width: 100%;
+  }
+
+  .ra-gate-icon {
+    color: #9ca3af;
+    margin: 0 auto 1.25rem;
+    display: block;
+  }
+
+  .ra-gate-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.6rem;
+  }
+
+  .ra-gate-text {
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin: 0 0 1.5rem;
+    line-height: 1.6;
+  }
+
+  .ra-gate-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.75rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  /* Tabs */
+  .ra-tab-nav {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 2rem;
+  }
+
+  .ra-tab-btn {
+    padding: 0.6rem 1.4rem;
+    border: none;
+    background: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .ra-tab-btn--active {
+    color: var(--color-primary, #22c55e);
+    border-bottom-color: var(--color-primary, #22c55e);
+  }
+
+  .ra-tab-btn:hover:not(.ra-tab-btn--active) { color: #374151; }
+
+  /* Cards */
+  .ra-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #f3f4f6;
+  }
+
+  .ra-card__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.35rem;
+  }
+
+  .ra-card__subtitle {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin: 0 0 1.25rem;
+  }
+
+  .ra-results-card {
+    animation: ra-fadeIn 0.35s ease both;
+  }
+
+  @keyframes ra-fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Upload Card */
+  .ra-upload-card {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .ra-drop-zone {
+    border: 2px dashed #d1d5db;
+    border-radius: 10px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    margin-bottom: 1.25rem;
+  }
+
+  .ra-drop-zone:hover,
+  .ra-drop-zone.drag-over {
+    border-color: var(--color-primary, #22c55e);
+    background: #f0fdf4;
+  }
+
+  .ra-drop-zone__input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ra-drop-zone__icon { color: #9ca3af; margin-bottom: 0.75rem; }
+  .ra-drop-zone__icon svg { display: inline-block; }
+
+  .ra-drop-zone__text {
+    font-size: 0.95rem;
+    color: #374151;
+    margin: 0 0 0.25rem;
+  }
+
+  .ra-drop-zone__link {
+    color: var(--color-primary, #22c55e);
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  .ra-drop-zone__hint {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    margin: 0;
+  }
+
+  /* File Preview Row */
+  .ra-file-preview-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .ra-file-preview-name {
+    flex: 1;
+    font-weight: 500;
+    color: #111827;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ra-file-preview-size {
+    color: #9ca3af;
+    white-space: nowrap;
+  }
+
+  .ra-btn-view-resume {
+    padding: 0.3rem 0.75rem;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .ra-btn-remove-file {
+    padding: 0.3rem 0.6rem;
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  /* Form */
+  .ra-form-group { margin-bottom: 1.25rem; }
+
+  .ra-form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.4rem;
+  }
+
+  .ra-form-input {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #111827;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+  }
+
+  .ra-form-input:focus { border-color: var(--color-primary, #22c55e); }
+
+  .ra-input-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .ra-input-row .ra-form-input { flex: 1; }
+
+  /* Buttons */
+  .ra-btn--full { width: 100%; }
+
+  .ra-btn--outline {
+    background: white;
+    border: 1.5px solid var(--color-primary, #22c55e) !important;
+    color: var(--color-primary, #22c55e) !important;
+  }
+
+  .ra-btn--outline:hover { background: #f0fdf4; }
+
+  /* Spinner */
+  .ra-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: ra-spin 0.7s linear infinite;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  @keyframes ra-spin { to { transform: rotate(360deg); } }
+
+  /* Alerts */
+  .ra-alert {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+
+  .ra-alert--error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .ra-alert--info  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+  /* Progress Bar */
+  .ra-upload-progress-wrap { margin: 1rem 0; }
+
+  .ra-upload-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #374151;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+  }
+
+  .ra-upload-progress-bar-track {
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .ra-upload-progress-bar-fill {
+    height: 100%;
+    background: var(--color-primary, #22c55e);
+    border-radius: 9999px;
+    transition: width 0.4s ease;
+  }
+
+  /* View Resume Row */
+  .ra-view-resume-row { margin-bottom: 1.25rem; }
+
+  /* ATS Score */
+  .ra-ats-score-layout {
+    display: flex;
+    gap: 2.5rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .ra-ats-gauge-wrap {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    flex-shrink: 0;
+  }
+
+  .ra-ats-gauge {
+    width: 130px;
+    height: 130px;
+  }
+
+  .ra-ats-gauge__track {
+    fill: none;
+    stroke: #e5e7eb;
+    stroke-width: 12;
+  }
+
+  .ra-ats-gauge__fill {
+    fill: none;
+    stroke-width: 12;
+    transform-origin: center;
+    transform: rotate(-90deg);
+    transition: stroke-dasharray 0.6s ease;
+  }
+
+  .ra-ats-gauge__label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.1;
+  }
+
+  .ra-ats-gauge__score {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #111827;
+  }
+
+  .ra-ats-gauge__max {
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+
+  .ra-ats-breakdown { flex: 1; min-width: 200px; }
+
+  .ra-breakdown-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #374151;
+    margin: 0 0 0.75rem;
+  }
+
+  .ra-breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .ra-breakdown-row__label {
+    width: 120px;
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: capitalize;
+    flex-shrink: 0;
+  }
+
+  .ra-breakdown-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .ra-breakdown-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  .ra-breakdown-row__score {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    flex-shrink: 0;
+    width: 32px;
+    text-align: right;
+  }
+
+  /* Score colors */
+  .ra-score-green { background: #22c55e; }
+  .ra-score-amber { background: #f59e0b; }
+  .ra-score-red   { background: #ef4444; }
+  .ra-text-green  { color: #16a34a !important; }
+  .ra-text-amber  { color: #d97706 !important; }
+  .ra-text-red    { color: #dc2626 !important; }
+
+  /* Feedback */
+  .ra-feedback-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .ra-feedback-item {
+    background: #f9fafb;
+    border-left: 3px solid #e5e7eb;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.875rem;
+    color: #374151;
+  }
+
+  /* Tags */
+  .ra-tags-container { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+  .ra-tag {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    border-radius: 9999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  /* Table */
+  .ra-table-wrap { overflow-x: auto; }
+
+  .ra-match-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .ra-match-table th {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .ra-match-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151;
+    vertical-align: middle;
+  }
+
+  .ra-match-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 100px;
+  }
+
+  .ra-match-progress-track {
+    flex: 1;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .ra-match-progress-fill {
+    height: 100%;
+    border-radius: 3px;
+  }
+
+  /* Accordion */
+  .ra-accordion {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+
+  .ra-accordion__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #374151;
+    list-style: none;
+    background: #f9fafb;
+  }
+
+  .ra-accordion__header::-webkit-details-marker { display: none; }
+  .ra-accordion__body { padding: 1rem; }
+
+  /* Suggestion panels */
+  .ra-suggestion-comparison {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .ra-suggestion-panel {
+    flex: 1;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .ra-suggestion-panel--before { background: #fef2f2; }
+  .ra-suggestion-panel--after  { background: #f0fdf4; }
+
+  .ra-suggestion-panel__label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+    margin-bottom: 0.4rem;
+  }
+
+  .ra-suggestion-panel__text { color: #374151; }
+
+  .ra-suggestion-panel__arrow {
+    font-size: 1.5rem;
+    color: #9ca3af;
+    align-self: center;
+    flex-shrink: 0;
+  }
+
+  /* Tips list */
+  .ra-tips-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.875rem;
+    color: #374151;
+    line-height: 1.7;
+  }
+
+  /* Bullet item */
+  .ra-bullet-item { margin-bottom: 1rem; }
+
+  /* Loading / Empty states */
+  .ra-loading-state {
+    text-align: center;
+    padding: 2rem;
+    color: #9ca3af;
+    font-size: 0.95rem;
+  }
+
+  .ra-empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #9ca3af;
+    font-size: 0.95rem;
+    border: 1px dashed #e5e7eb;
+    border-radius: 8px;
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .ra-ats-score-layout { flex-direction: column; align-items: center; }
+    .ra-breakdown-row__label { width: 90px; font-size: 0.72rem; }
+    .ra-suggestion-comparison { flex-direction: column; }
+    .ra-suggestion-panel__arrow { display: none; }
+    .ra-input-row { flex-direction: column; }
+    .ra-file-preview-row { flex-wrap: wrap; }
+  }
 </style>
 
 <script>
@@ -1211,4 +2076,474 @@ updateSelectedSkills();
       window.location.href = url.toString();
     });
   });
+
+  // =========================================================
+  // Resume Analyzer Widget
+  // =========================================================
+
+  (function () {
+    // ----- Auth check -----
+    const authGate = document.getElementById('resume-auth-gate');
+    const uploadForm = document.getElementById('resume-upload-form');
+    const raEmailInput = document.getElementById('ra-alumni-email');
+
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/auth/alumni-session');
+        const data = await res.json();
+        if (data.authenticated) {
+          authGate.style.display = 'none';
+          uploadForm.style.display = '';
+          // Pre-fill email if username looks like an email
+          const username = data.data && data.data.username;
+          if (username && username.includes('@') && raEmailInput) {
+            raEmailInput.value = username;
+          }
+          // Pre-fill history email too
+          const histEmailEl = document.getElementById('ra-history-email');
+          if (username && username.includes('@') && histEmailEl) {
+            histEmailEl.value = username;
+          }
+        } else {
+          authGate.style.display = '';
+          uploadForm.style.display = 'none';
+        }
+      } catch {
+        // If session check fails, show gate (safe default)
+        authGate.style.display = '';
+        uploadForm.style.display = 'none';
+      }
+    }
+
+    checkSession();
+
+    // ----- Tab switching -----
+    const tabAnalyze = document.getElementById('ra-tab-analyze');
+    const tabHistory = document.getElementById('ra-tab-history');
+    const panelAnalyze = document.getElementById('ra-panel-analyze');
+    const panelHistory = document.getElementById('ra-panel-history');
+
+    function switchRaTab(tab) {
+      if (tab === 'analyze') {
+        tabAnalyze.classList.add('ra-tab-btn--active');
+        tabHistory.classList.remove('ra-tab-btn--active');
+        panelAnalyze.style.display = '';
+        panelHistory.style.display = 'none';
+      } else {
+        tabHistory.classList.add('ra-tab-btn--active');
+        tabAnalyze.classList.remove('ra-tab-btn--active');
+        panelHistory.style.display = '';
+        panelAnalyze.style.display = 'none';
+      }
+    }
+
+    tabAnalyze.addEventListener('click', () => switchRaTab('analyze'));
+    tabHistory.addEventListener('click', () => switchRaTab('history'));
+
+    // ----- Drag-and-drop -----
+    const dropZone = document.getElementById('ra-drop-zone');
+    const fileInput = document.getElementById('ra-resume-file');
+    const fileNameDisplay = document.getElementById('ra-file-name-display');
+    const filePreviewRow = document.getElementById('ra-file-preview-row');
+    const filePreviewName = document.getElementById('ra-file-preview-name');
+    const filePreviewSize = document.getElementById('ra-file-preview-size');
+    const viewResumeLocalBtn = document.getElementById('ra-view-resume-btn-local');
+    const removeFileBtn = document.getElementById('ra-remove-file-btn');
+
+    let localFileObjectUrl = null;
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function showFilePreview(file) {
+      filePreviewName.textContent = file.name;
+      filePreviewSize.textContent = formatBytes(file.size);
+      filePreviewRow.style.display = 'flex';
+      fileNameDisplay.textContent = file.name;
+      if (localFileObjectUrl) URL.revokeObjectURL(localFileObjectUrl);
+      localFileObjectUrl = URL.createObjectURL(file);
+    }
+
+    function clearFilePreview() {
+      filePreviewRow.style.display = 'none';
+      fileNameDisplay.textContent = 'Accepts .pdf and .docx';
+      filePreviewName.textContent = '';
+      filePreviewSize.textContent = '';
+      if (localFileObjectUrl) { URL.revokeObjectURL(localFileObjectUrl); localFileObjectUrl = null; }
+    }
+
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (files && files.length > 0) {
+        fileInput.files = files;
+        showFilePreview(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files.length > 0) {
+        showFilePreview(fileInput.files[0]);
+      }
+    });
+
+    viewResumeLocalBtn.addEventListener('click', () => {
+      if (localFileObjectUrl) window.open(localFileObjectUrl, '_blank', 'noopener');
+    });
+
+    removeFileBtn.addEventListener('click', () => {
+      fileInput.value = '';
+      clearFilePreview();
+    });
+
+    // ----- Score helpers -----
+    function raScoreClass(score) {
+      if (score >= 75) return 'ra-score-green';
+      if (score >= 50) return 'ra-score-amber';
+      return 'ra-score-red';
+    }
+
+    function raTextClass(score) {
+      if (score >= 75) return 'ra-text-green';
+      if (score >= 50) return 'ra-text-amber';
+      return 'ra-text-red';
+    }
+
+    function raGaugeColor(score) {
+      if (score >= 75) return '#22c55e';
+      if (score >= 50) return '#f59e0b';
+      return '#ef4444';
+    }
+
+    // ----- Progress bar -----
+    let progressInterval = null;
+
+    function startProgress() {
+      const wrap = document.getElementById('ra-upload-progress-wrap');
+      const bar = document.getElementById('ra-upload-progress-bar');
+      const text = document.getElementById('ra-upload-progress-text');
+      const pct = document.getElementById('ra-upload-progress-pct');
+
+      wrap.style.display = '';
+      bar.style.width = '0%';
+      pct.textContent = '0%';
+      text.textContent = 'Uploading resume…';
+
+      let current = 0;
+
+      function animateTo(target, label, duration) {
+        const steps = 20;
+        const stepTime = duration / steps;
+        const stepSize = (target - current) / steps;
+        let step = 0;
+        return new Promise((resolve) => {
+          const iv = setInterval(() => {
+            step++;
+            current = Math.min(current + stepSize, target);
+            bar.style.width = current + '%';
+            pct.textContent = Math.round(current) + '%';
+            text.textContent = label;
+            if (step >= steps) { clearInterval(iv); resolve(); }
+          }, stepTime);
+          progressInterval = iv;
+        });
+      }
+
+      // Run stages sequentially
+      animateTo(30, 'Uploading resume…', 1000)
+        .then(() => animateTo(60, 'Analyzing with AI…', 1000))
+        .then(() => animateTo(90, 'Matching against job listings…', 2000));
+    }
+
+    function completeProgress() {
+      if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+      const bar = document.getElementById('ra-upload-progress-bar');
+      const text = document.getElementById('ra-upload-progress-text');
+      const pct = document.getElementById('ra-upload-progress-pct');
+      bar.style.width = '100%';
+      pct.textContent = '100%';
+      text.textContent = 'Complete!';
+      setTimeout(() => {
+        document.getElementById('ra-upload-progress-wrap').style.display = 'none';
+      }, 1200);
+    }
+
+    function resetProgress() {
+      if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+      document.getElementById('ra-upload-progress-wrap').style.display = 'none';
+    }
+
+    // ----- Render results -----
+    function renderRaResults(data) {
+      document.getElementById('ra-results-section').style.display = '';
+
+      const ats = data.ats || {};
+      const score = ats.score || 0;
+
+      // Circular gauge
+      const circ = 314;
+      const dashFilled = (score / 100) * circ;
+      const arc = document.getElementById('ra-ats-arc');
+      arc.setAttribute('stroke-dasharray', `${dashFilled} ${circ - dashFilled}`);
+      arc.style.stroke = raGaugeColor(score);
+
+      const scoreVal = document.getElementById('ra-ats-score-value');
+      scoreVal.textContent = score;
+      scoreVal.className = `ra-ats-gauge__score ${raTextClass(score)}`;
+
+      // Breakdown bars
+      const maxPts = { contact_info: 15, sections: 20, bullet_points: 15, length: 15, keywords_density: 20, formatting: 15 };
+      const breakdown = ats.breakdown || {};
+      const barsEl = document.getElementById('ra-breakdown-bars');
+      barsEl.innerHTML = '';
+      for (const [key, pts] of Object.entries(breakdown)) {
+        const max = maxPts[key] || 20;
+        const p = Math.round((pts / max) * 100);
+        const label = key.replace(/_/g, ' ');
+        barsEl.insertAdjacentHTML('beforeend', `
+          <div class="ra-breakdown-row">
+            <span class="ra-breakdown-row__label">${label}</span>
+            <div class="ra-breakdown-bar-track">
+              <div class="ra-breakdown-bar-fill ${raScoreClass(p)}" style="width:${p}%"></div>
+            </div>
+            <span class="ra-breakdown-row__score">${pts}/${max}</span>
+          </div>
+        `);
+      }
+
+      // Feedback
+      const feedbackEl = document.getElementById('ra-ats-feedback');
+      feedbackEl.innerHTML = (ats.feedback || []).map(f =>
+        `<div class="ra-feedback-item">${f}</div>`
+      ).join('');
+
+      // Missing keywords
+      const improvements = data.improvements || {};
+      const missingKws = improvements.missing_keywords || [];
+      const kwEl = document.getElementById('ra-missing-keywords-tags');
+      if (missingKws.length > 0) {
+        kwEl.innerHTML = missingKws.map(kw => `<span class="ra-tag">${kw}</span>`).join('');
+        document.getElementById('ra-keywords-card').style.display = '';
+      } else {
+        document.getElementById('ra-keywords-card').style.display = 'none';
+      }
+
+      // Job matches
+      const matches = data.job_matches || [];
+      const tbody = document.getElementById('ra-job-matches-body');
+      tbody.innerHTML = '';
+      if (matches.length > 0) {
+        for (const m of matches) {
+          const ms = m.match_score || 0;
+          const shortKws = (m.missing_keywords || []).slice(0, 4).join(', ');
+          const applyLink = m.apply_url
+            ? `<a href="${m.apply_url}" target="_blank" rel="noopener" class="btn btn-primary" style="padding:0.3rem 0.75rem;font-size:0.8rem;">Apply</a>`
+            : '—';
+          tbody.insertAdjacentHTML('beforeend', `
+            <tr>
+              <td>${m.job_title || '—'}</td>
+              <td>${m.company || '—'}</td>
+              <td>${m.location || '—'}</td>
+              <td>
+                <div class="ra-match-progress-wrap">
+                  <div class="ra-match-progress-track">
+                    <div class="ra-match-progress-fill ${raScoreClass(ms)}" style="width:${ms}%"></div>
+                  </div>
+                  <span class="${raTextClass(ms)}">${ms}%</span>
+                </div>
+              </td>
+              <td style="max-width:220px;font-size:0.78rem;color:#6b7280;">${shortKws || '—'}</td>
+              <td>${applyLink}</td>
+            </tr>
+          `);
+        }
+        document.getElementById('ra-job-matches-card').style.display = '';
+      } else {
+        document.getElementById('ra-job-matches-card').style.display = 'none';
+      }
+
+      // LLM note
+      const note = improvements.note || '';
+      const llmNoteEl = document.getElementById('ra-llm-note');
+      if (note) { llmNoteEl.textContent = note; llmNoteEl.style.display = ''; }
+      else { llmNoteEl.style.display = 'none'; }
+
+      // Summary rewrite
+      document.getElementById('ra-original-summary').textContent = '(original summary not returned by API)';
+      document.getElementById('ra-suggested-summary').textContent = improvements.summary_rewrite || '(no suggestion)';
+
+      // Weak bullets
+      const bulletsBody = document.getElementById('ra-weak-bullets-body');
+      const weakBullets = improvements.weak_bullets || [];
+      if (weakBullets.length > 0) {
+        bulletsBody.innerHTML = weakBullets.map(b => `
+          <div class="ra-bullet-item">
+            <div class="ra-suggestion-comparison">
+              <div class="ra-suggestion-panel ra-suggestion-panel--before">
+                <div class="ra-suggestion-panel__label">Original</div>
+                <div class="ra-suggestion-panel__text">${b.original || '—'}</div>
+              </div>
+              <div class="ra-suggestion-panel__arrow">→</div>
+              <div class="ra-suggestion-panel ra-suggestion-panel--after">
+                <div class="ra-suggestion-panel__label">Improved</div>
+                <div class="ra-suggestion-panel__text">${b.improved || '—'}</div>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        bulletsBody.innerHTML = '<p style="color:#9ca3af;font-size:0.875rem;">No weak bullets identified.</p>';
+      }
+
+      // Formatting tips
+      const tipsList = document.getElementById('ra-formatting-tips-list');
+      const tips = improvements.formatting_tips || [];
+      tipsList.innerHTML = tips.length > 0
+        ? tips.map(t => `<li>${t}</li>`).join('')
+        : '<li style="color:#9ca3af;">No formatting tips generated.</li>';
+
+      // View uploaded resume link
+      if (data.file_url) {
+        const viewRow = document.getElementById('ra-view-resume-row');
+        const viewLink = document.getElementById('ra-view-resume-link');
+        viewLink.href = data.file_url;
+        viewRow.style.display = '';
+      }
+
+      document.getElementById('ra-results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ----- Form submit -----
+    const form = document.getElementById('ra-resume-form');
+    const analyzeBtn = document.getElementById('ra-analyze-btn');
+    const btnText = document.getElementById('ra-btn-text');
+    const btnSpinner = document.getElementById('ra-btn-spinner');
+    const uploadError = document.getElementById('ra-upload-error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      uploadError.style.display = 'none';
+
+      const file = fileInput.files && fileInput.files[0];
+      const email = raEmailInput ? raEmailInput.value.trim() : '';
+
+      if (!file) {
+        uploadError.textContent = 'Please select a resume file.';
+        uploadError.style.display = '';
+        return;
+      }
+      if (!email) {
+        uploadError.textContent = 'Please enter your email address.';
+        uploadError.style.display = '';
+        return;
+      }
+
+      analyzeBtn.disabled = true;
+      btnText.textContent = 'Analyzing…';
+      btnSpinner.style.display = '';
+      startProgress();
+
+      try {
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('email', email);
+
+        const response = await fetch('/api/resume/analyze', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+        completeProgress();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Analysis failed. Please try again.');
+        }
+
+        renderRaResults(data);
+      } catch (err) {
+        resetProgress();
+        uploadError.textContent = err.message || 'An unexpected error occurred.';
+        uploadError.style.display = '';
+      } finally {
+        analyzeBtn.disabled = false;
+        btnText.textContent = 'Analyze Resume';
+        btnSpinner.style.display = 'none';
+      }
+    });
+
+    // ----- History tab -----
+    document.getElementById('ra-load-history-btn').addEventListener('click', async () => {
+      const email = document.getElementById('ra-history-email').value.trim();
+      const historyError = document.getElementById('ra-history-error');
+      const historyLoading = document.getElementById('ra-history-loading');
+      const historyTableWrap = document.getElementById('ra-history-table-wrap');
+      const historyEmpty = document.getElementById('ra-history-empty');
+      const historyBody = document.getElementById('ra-history-table-body');
+
+      historyError.style.display = 'none';
+      historyTableWrap.style.display = 'none';
+      historyEmpty.style.display = 'none';
+
+      if (!email) {
+        historyError.textContent = 'Please enter your email.';
+        historyError.style.display = '';
+        return;
+      }
+
+      historyLoading.style.display = '';
+
+      try {
+        const res = await fetch(`/api/resume/history?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load history');
+
+        const analyses = data.analyses || [];
+        if (analyses.length === 0) {
+          historyEmpty.style.display = '';
+        } else {
+          historyBody.innerHTML = '';
+          for (const a of analyses) {
+            const date = new Date(a.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            const atsClass = raTextClass(a.ats_score || 0);
+            const matchClass = raTextClass(a.match_score || 0);
+            historyBody.insertAdjacentHTML('beforeend', `
+              <tr>
+                <td>${date}</td>
+                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.file_name || ''}">${a.file_name || '—'}</td>
+                <td><span class="${atsClass}">${a.ats_score != null ? a.ats_score + '/100' : '—'}</span></td>
+                <td><span class="${matchClass}">${a.match_score != null ? a.match_score + '%' : '—'}</span></td>
+                <td>${a.file_url ? `<a href="${a.file_url}" target="_blank" rel="noopener" style="color:var(--color-primary,#22c55e);font-weight:600;">View</a>` : '—'}</td>
+              </tr>
+            `);
+          }
+          historyTableWrap.style.display = '';
+        }
+      } catch (err) {
+        historyError.textContent = err.message || 'Failed to load history.';
+        historyError.style.display = '';
+      } finally {
+        historyLoading.style.display = 'none';
+      }
+    });
+
+    // Deep-link: if URL hash is #resume-analyzer, scroll to it.
+    // The 300ms delay allows the auth check fetch to complete so the section is visible before scrolling.
+    if (window.location.hash === '#resume-analyzer') {
+      setTimeout(() => {
+        document.getElementById('resume-analyzer').scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    }
+
+    // Revoke any object URL when the user navigates away to prevent memory leaks
+    window.addEventListener('beforeunload', () => {
+      if (localFileObjectUrl) { URL.revokeObjectURL(localFileObjectUrl); localFileObjectUrl = null; }
+    });
+  })();
 </script>
