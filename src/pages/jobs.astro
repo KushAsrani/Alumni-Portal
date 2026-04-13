@@ -2089,20 +2089,52 @@ updateSelectedSkills();
 
     async function checkSession() {
       try {
+        // First check auth status
         const res = await fetch('/api/auth/alumni-session');
         const data = await res.json();
         if (data.authenticated) {
           authGate.style.display = 'none';
           uploadForm.style.display = '';
-          // Pre-fill email if username looks like an email
-          const username = data.data && data.data.username;
-          if (username && username.includes('@') && raEmailInput) {
-            raEmailInput.value = username;
-          }
-          // Pre-fill history email too
-          const histEmailEl = document.getElementById('ra-history-email');
-          if (username && username.includes('@') && histEmailEl) {
-            histEmailEl.value = username;
+          // Fetch full profile to get email
+          try {
+            const meRes = await fetch('/api/alumni/me');
+            const meData = await meRes.json();
+            if (meData.success && meData.data) {
+              const email = meData.data.email || meData.data.username || '';
+              // Pre-fill and lock the analyze email field
+              if (raEmailInput && email) {
+                raEmailInput.value = email;
+                raEmailInput.readOnly = true;
+                raEmailInput.style.backgroundColor = '#f3f4f6';
+                raEmailInput.style.cursor = 'not-allowed';
+                // Add note below the field if not already present
+                if (!document.getElementById('ra-email-note')) {
+                  const note = document.createElement('p');
+                  note.id = 'ra-email-note';
+                  note.style.cssText = 'font-size:0.75rem;color:#6b7280;margin:0.25rem 0 0;';
+                  note.textContent = 'Using your account email';
+                  raEmailInput.parentNode.appendChild(note);
+                }
+              }
+              // Pre-fill the history email field
+              const histEmailEl = document.getElementById('ra-history-email');
+              if (histEmailEl && email) {
+                histEmailEl.value = email;
+                histEmailEl.readOnly = true;
+                histEmailEl.style.backgroundColor = '#f3f4f6';
+                histEmailEl.style.cursor = 'not-allowed';
+              }
+            }
+          } catch {
+            // Profile fetch failed — fall back to username from session
+            const username = data.data && data.data.username;
+            if (username && username.includes('@') && raEmailInput) {
+              raEmailInput.value = username;
+            }
+            const histEmailEl = document.getElementById('ra-history-email');
+            if (username && username.includes('@') && histEmailEl) {
+              histEmailEl.value = username;
+            }
           }
         } else {
           authGate.style.display = '';
@@ -2138,7 +2170,14 @@ updateSelectedSkills();
     }
 
     tabAnalyze.addEventListener('click', () => switchRaTab('analyze'));
-    tabHistory.addEventListener('click', () => switchRaTab('history'));
+    tabHistory.addEventListener('click', () => {
+      switchRaTab('history');
+      // Auto-load if email is already filled
+      const histEmail = document.getElementById('ra-history-email');
+      if (histEmail && histEmail.value.trim()) {
+        loadHistory(histEmail.value.trim());
+      }
+    });
 
     // ----- Drag-and-drop -----
     const dropZone = document.getElementById('ra-drop-zone');
@@ -2479,8 +2518,7 @@ updateSelectedSkills();
     });
 
     // ----- History tab -----
-    document.getElementById('ra-load-history-btn').addEventListener('click', async () => {
-      const email = document.getElementById('ra-history-email').value.trim();
+    async function loadHistory(email) {
       const historyError = document.getElementById('ra-history-error');
       const historyLoading = document.getElementById('ra-history-loading');
       const historyTableWrap = document.getElementById('ra-history-table-wrap');
@@ -2531,6 +2569,11 @@ updateSelectedSkills();
       } finally {
         historyLoading.style.display = 'none';
       }
+    }
+
+    document.getElementById('ra-load-history-btn').addEventListener('click', () => {
+      const email = document.getElementById('ra-history-email').value.trim();
+      loadHistory(email);
     });
 
     // Deep-link: if URL hash is #resume-analyzer, scroll to it.

@@ -1,40 +1,49 @@
 export const prerender = false;
 
 import type { APIContext } from 'astro';
-import { sql } from '@vercel/postgres';
+import { connectToDatabase } from '../../../lib/mongodb';
+import { getCurrentAlumni } from '../../../lib/alumni-auth';
 
-export async function GET({ request }: APIContext) {
+export async function GET({ request, cookies }: APIContext) {
   try {
-    const url = new URL(request.url);
-    const email = url.searchParams.get('email');
+    // Auth check — only the logged-in user may view their own history
+    const session = getCurrentAlumni(cookies);
+    if (!session) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
-    if (!email) {
+    const url = new URL(request.url);
+    const requestedEmail = url.searchParams.get('email');
+
+    if (!requestedEmail) {
       return new Response(
         JSON.stringify({ success: false, message: 'email query parameter is required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const result = await sql`
-      SELECT
-        id,
-        alumni_email,
-        file_name,
-        file_url,
-        ats_score,
-        match_score,
-        missing_keywords,
-        improvements,
-        top_job_matches,
-        created_at
-      FROM resume_analyses
-      WHERE alumni_email = ${email}
-      ORDER BY created_at DESC
-      LIMIT 10
-    `;
+    // Security: only allow users to view their own history.
+    // The session username is the email used at login, so we compare case-insensitively.
+    if (requestedEmail.toLowerCase() !== session.username.toLowerCase()) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Forbidden' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { db } = await connectToDatabase();
+    const collection = db.collection('resume_analyses');
+    const analyses = await collection
+      .find({ alumni_email: requestedEmail })
+      .sort({ created_at: -1 })
+      .limit(10)
+      .toArray();
 
     return new Response(
-      JSON.stringify({ success: true, analyses: result.rows }),
+      JSON.stringify({ success: true, analyses }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
 
