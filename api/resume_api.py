@@ -320,17 +320,17 @@ def calculate_ats_score(resume: Dict) -> Dict:
 def load_jobs() -> List[Dict]:
     """Load jobs from actuarial_jobs_india.json."""
     jobs = []
-    # Try multiple possible paths: Docker mount, repo root, relative
     candidate_paths = [
         "/app/actuarial_jobs_india.json",
-        os.path.join(os.path.dirname(__file__), "..", "actuarial_jobs_india.json"),
-        os.path.join(os.path.dirname(__file__), "actuarial_jobs_india.json"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "actuarial_jobs_india.json"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "actuarial_jobs_india.json"),
+        os.path.join(os.getcwd(), "actuarial_jobs_india.json"),
         "actuarial_jobs_india.json",
     ]
     for path in candidate_paths:
-        resolved = os.path.realpath(path)
-        if os.path.exists(resolved):
-            try:
+        try:
+            resolved = os.path.realpath(path)
+            if os.path.exists(resolved):
                 with open(resolved, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     if isinstance(data, list):
@@ -338,8 +338,8 @@ def load_jobs() -> List[Dict]:
                     elif isinstance(data, dict) and "jobs" in data:
                         jobs.extend(data["jobs"])
                 break  # stop after first successful load
-            except Exception:
-                pass
+        except Exception:
+            pass
     return jobs
 
 
@@ -579,6 +579,15 @@ def analyze_resume():
         "word_count": resume["word_count"],
         "overall_match_score": overall_match,
     })
+
+
+@app.route("/debug/jobs", methods=["GET"])
+def debug_jobs():
+    """Debug endpoint to inspect loaded jobs (non-production only)."""
+    if os.environ.get("FLASK_ENV", "production") == "production":
+        return jsonify({"error": "Not available in production"}), 403
+    jobs = load_jobs()
+    return jsonify({"count": len(jobs), "sample": jobs[:2] if jobs else []})
 
 
 if __name__ == "__main__":

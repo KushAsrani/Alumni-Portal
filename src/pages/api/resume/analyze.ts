@@ -2,7 +2,7 @@ export const prerender = false;
 
 import type { APIContext } from 'astro';
 import { put } from '@vercel/blob';
-import { sql } from '@vercel/postgres';
+import { connectToDatabase } from '../../../lib/mongodb';
 
 const RESUME_API_URL = import.meta.env.RESUME_API_URL || process.env.RESUME_API_URL || 'http://localhost:5001';
 
@@ -93,7 +93,7 @@ export async function POST({ request }: APIContext) {
       );
     }
 
-    // Persist result to Postgres
+    // Persist result to MongoDB
     try {
       const ats = analysisResult.ats as Record<string, unknown> | undefined;
       const atsScore = ats ? (ats.score as number) : null;
@@ -103,13 +103,19 @@ export async function POST({ request }: APIContext) {
       const missingKeywords: string[] =
         (improvements as Record<string, unknown> | null)?.missing_keywords as string[] ?? [];
 
-      await sql`
-        INSERT INTO resume_analyses
-          (alumni_email, file_name, file_url, ats_score, match_score, missing_keywords, improvements, top_job_matches, created_at)
-        VALUES
-          (${email}, ${file.name}, ${blob.url}, ${atsScore}, ${overallMatchScore},
-           ${missingKeywords as unknown as string}, ${JSON.stringify(improvements)}, ${JSON.stringify(jobMatches)}, NOW())
-      `;
+      const { db } = await connectToDatabase();
+      const collection = db.collection('resume_analyses');
+      await collection.insertOne({
+        alumni_email: email,
+        file_name: file.name,
+        file_url: blob.url,
+        ats_score: atsScore,
+        match_score: overallMatchScore,
+        missing_keywords: missingKeywords,
+        improvements: improvements,
+        top_job_matches: jobMatches,
+        created_at: new Date(),
+      });
     } catch (_dbError) {
       // DB write failure is non-fatal — still return the analysis
       console.error('Failed to save resume analysis to DB:', _dbError);
