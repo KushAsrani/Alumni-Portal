@@ -318,9 +318,11 @@ def calculate_ats_score(resume: Dict) -> Dict:
 # ---------------------------------------------------------------------------
 
 def load_jobs() -> List[Dict]:
-    """Load jobs from actuarial_jobs_india.json."""
+    """Load jobs from actuarial_jobs_india.json (default) or JOBS_DATA_PATH."""
     jobs = []
+    env_path = os.getenv("JOBS_DATA_PATH", "").strip()
     candidate_paths = [
+        env_path,
         "/app/actuarial_jobs_india.json",
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "actuarial_jobs_india.json"),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "actuarial_jobs_india.json"),
@@ -328,6 +330,8 @@ def load_jobs() -> List[Dict]:
         "actuarial_jobs_india.json",
     ]
     for path in candidate_paths:
+        if not path:
+            continue
         try:
             resolved = os.path.realpath(path)
             if os.path.exists(resolved):
@@ -337,22 +341,71 @@ def load_jobs() -> List[Dict]:
                         jobs.extend(data)
                     elif isinstance(data, dict) and "jobs" in data:
                         jobs.extend(data["jobs"])
+                app.logger.info(f"Loaded {len(jobs)} jobs from {resolved}")
                 break  # stop after first successful load
         except Exception:
             pass
+    if not jobs:
+        app.logger.warning(
+            "No jobs were loaded. Checked paths: %s",
+            [p for p in candidate_paths if p],
+        )
     return jobs
 
 
 def _get_job_description(job: Dict) -> str:
     """Extract a usable description string from a job dict."""
     parts = []
-    for field in ("description", "title", "company", "skills", "qualifications", "requirements"):
+    for field in (
+        "description",
+        "job_description",
+        "summary",
+        "title",
+        "job_title",
+        "company",
+        "skills",
+        "qualifications",
+        "requirements",
+    ):
         val = job.get(field, "")
         if isinstance(val, list):
             parts.append(" ".join(str(v) for v in val))
         elif isinstance(val, str):
             parts.append(val)
     return " ".join(parts)
+
+
+def _fallback_match_against_jobs(resume_text: str, jobs: List[Dict], top_n: int = 5) -> List[Dict]:
+    """Dependency-light matcher used if sklearn is unavailable or TF-IDF fails."""
+    resume_tokens = set(re.findall(r"\b\w{3,}\b", resume_text.lower()))
+    if not resume_tokens:
+        return []
+
+    scored = []
+    for idx, job in enumerate(jobs):
+        job_desc = _get_job_description(job)
+        job_tokens = set(re.findall(r"\b\w{3,}\b", job_desc.lower()))
+        if not job_tokens:
+            continue
+
+        overlap = resume_tokens & job_tokens
+        score = (len(overlap) / len(job_tokens)) * 100
+        missing = sorted(list(job_tokens - resume_tokens))[:10]
+        scored.append((idx, score, missing))
+
+    scored.sort(key=lambda x: x[1], reverse=True)
+    top = scored[:top_n]
+    return [
+        {
+            "job_title": jobs[idx].get("title", jobs[idx].get("job_title", "Unknown Title")),
+            "company": jobs[idx].get("company", "Unknown Company"),
+            "location": jobs[idx].get("location", ""),
+            "match_score": round(score, 1),
+            "missing_keywords": missing,
+            "apply_url": jobs[idx].get("url", jobs[idx].get("apply_url", jobs[idx].get("link", ""))),
+        }
+        for idx, score, missing in top
+    ]
 
 
 def match_against_jobs(resume_text: str, jobs: List[Dict], top_n: int = 5) -> List[Dict]:
@@ -419,9 +472,11 @@ def match_against_jobs(resume_text: str, jobs: List[Dict], top_n: int = 5) -> Li
         return results
 
     except ImportError:
-        return []
-    except Exception:
-        return []
+        app.logger.warning("scikit-learn unavailable for resume matching. Using fallback matcher.")
+        return _fallback_match_against_jobs(resume_text, jobs, top_n)
+    except Exception as exc:
+        app.logger.exception(f"TF-IDF matching failed ({exc}). Using fallback matcher.")
+        return _fallback_match_against_jobs(resume_text, jobs, top_n)
 
 
 # ---------------------------------------------------------------------------
