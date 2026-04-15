@@ -317,9 +317,10 @@ def calculate_ats_score(resume: Dict) -> Dict:
 # Job Matching (TF-IDF cosine similarity)
 # ---------------------------------------------------------------------------
 
-def load_jobs() -> List[Dict]:
+def load_jobs() -> Tuple[List[Dict], str]:
     """Load jobs from actuarial_jobs_india.json (default) or JOBS_DATA_PATH."""
     jobs = []
+    loaded_from = ""
     env_path = os.getenv("JOBS_DATA_PATH", "").strip()
     candidate_paths = [
         env_path,
@@ -341,16 +342,17 @@ def load_jobs() -> List[Dict]:
                         jobs.extend(data)
                     elif isinstance(data, dict) and "jobs" in data:
                         jobs.extend(data["jobs"])
+                loaded_from = resolved
                 app.logger.info(f"Loaded {len(jobs)} jobs from {resolved}")
                 break  # stop after first successful load
-        except Exception:
-            pass
+        except Exception as exc:
+            app.logger.warning(f"Failed loading jobs from {path}: {exc}")
     if not jobs:
         app.logger.warning(
             "No jobs were loaded. Checked paths: %s",
             [p for p in candidate_paths if p],
         )
-    return jobs
+    return jobs, loaded_from
 
 
 def _get_job_description(job: Dict) -> str:
@@ -613,7 +615,13 @@ def analyze_resume():
     ats_result = calculate_ats_score(resume)
 
     # Job Matching
-    jobs = load_jobs()
+    jobs, loaded_from = load_jobs()
+    if not jobs:
+        return jsonify({
+            "success": False,
+            "error": "No jobs were loaded for matching.",
+            "hint": "Set JOBS_DATA_PATH to an absolute path for actuarial_jobs_india.json or mount the file at /app/actuarial_jobs_india.json.",
+        }), 500
     job_matches = match_against_jobs(resume["raw_text"], jobs)
 
     # LLM Improvements
@@ -633,6 +641,8 @@ def analyze_resume():
         "improvements": improvements,
         "word_count": resume["word_count"],
         "overall_match_score": overall_match,
+        "jobs_loaded_count": len(jobs),
+        "jobs_loaded_from": loaded_from,
     })
 
 
@@ -641,8 +651,12 @@ def debug_jobs():
     """Debug endpoint to inspect loaded jobs (non-production only)."""
     if os.environ.get("FLASK_ENV", "production") == "production":
         return jsonify({"error": "Not available in production"}), 403
-    jobs = load_jobs()
-    return jsonify({"count": len(jobs), "sample": jobs[:2] if jobs else []})
+    jobs, loaded_from = load_jobs()
+    return jsonify({
+        "count": len(jobs),
+        "loaded_from": loaded_from,
+        "sample": jobs[:2] if jobs else [],
+    })
 
 
 if __name__ == "__main__":
