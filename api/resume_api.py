@@ -317,10 +317,13 @@ def calculate_ats_score(resume: Dict) -> Dict:
 # Job Matching (TF-IDF cosine similarity)
 # ---------------------------------------------------------------------------
 
-def load_jobs() -> List[Dict]:
-    """Load jobs from actuarial_jobs_india.json."""
+def load_jobs() -> Tuple[List[Dict], str]:
+    """Load jobs from actuarial_jobs_india.json (default) or JOBS_DATA_PATH."""
     jobs = []
+    loaded_from = ""
+    env_path = os.getenv("JOBS_DATA_PATH", "").strip()
     candidate_paths = [
+        env_path,
         "/app/actuarial_jobs_india.json",
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "actuarial_jobs_india.json"),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "actuarial_jobs_india.json"),
@@ -328,6 +331,8 @@ def load_jobs() -> List[Dict]:
         "actuarial_jobs_india.json",
     ]
     for path in candidate_paths:
+        if not path:
+            continue
         try:
             resolved = os.path.realpath(path)
             if os.path.exists(resolved):
@@ -337,22 +342,72 @@ def load_jobs() -> List[Dict]:
                         jobs.extend(data)
                     elif isinstance(data, dict) and "jobs" in data:
                         jobs.extend(data["jobs"])
+                loaded_from = resolved
+                app.logger.info(f"Loaded {len(jobs)} jobs from {resolved}")
                 break  # stop after first successful load
-        except Exception:
-            pass
-    return jobs
+        except Exception as exc:
+            app.logger.warning(f"Failed loading jobs from {path}: {exc}")
+    if not jobs:
+        app.logger.warning(
+            "No jobs were loaded. Checked paths: %s",
+            [p for p in candidate_paths if p],
+        )
+    return jobs, loaded_from
 
 
 def _get_job_description(job: Dict) -> str:
     """Extract a usable description string from a job dict."""
     parts = []
-    for field in ("description", "title", "company", "skills", "qualifications", "requirements"):
+    for field in (
+        "description",
+        "job_description",
+        "summary",
+        "title",
+        "job_title",
+        "company",
+        "skills",
+        "qualifications",
+        "requirements",
+    ):
         val = job.get(field, "")
         if isinstance(val, list):
             parts.append(" ".join(str(v) for v in val))
         elif isinstance(val, str):
             parts.append(val)
     return " ".join(parts)
+
+
+def _fallback_match_against_jobs(resume_text: str, jobs: List[Dict], top_n: int = 5) -> List[Dict]:
+    """Dependency-light matcher used if sklearn is unavailable or TF-IDF fails."""
+    resume_tokens = set(re.findall(r"\b\w{3,}\b", resume_text.lower()))
+    if not resume_tokens:
+        return []
+
+    scored = []
+    for idx, job in enumerate(jobs):
+        job_desc = _get_job_description(job)
+        job_tokens = set(re.findall(r"\b\w{3,}\b", job_desc.lower()))
+        if not job_tokens:
+            continue
+
+        overlap = resume_tokens & job_tokens
+        score = (len(overlap) / len(job_tokens)) * 100
+        missing = sorted(list(job_tokens - resume_tokens))[:10]
+        scored.append((idx, score, missing))
+
+    scored.sort(key=lambda x: x[1], reverse=True)
+    top = scored[:top_n]
+    return [
+        {
+            "job_title": jobs[idx].get("title", jobs[idx].get("job_title", "Unknown Title")),
+            "company": jobs[idx].get("company", "Unknown Company"),
+            "location": jobs[idx].get("location", ""),
+            "match_score": round(score, 1),
+            "missing_keywords": missing,
+            "apply_url": jobs[idx].get("url", jobs[idx].get("apply_url", jobs[idx].get("link", ""))),
+        }
+        for idx, score, missing in top
+    ]
 
 
 def match_against_jobs(resume_text: str, jobs: List[Dict], top_n: int = 5) -> List[Dict]:
@@ -419,9 +474,11 @@ def match_against_jobs(resume_text: str, jobs: List[Dict], top_n: int = 5) -> Li
         return results
 
     except ImportError:
-        return []
-    except Exception:
-        return []
+        app.logger.warning("scikit-learn unavailable for resume matching. Using fallback matcher.")
+        return _fallback_match_against_jobs(resume_text, jobs, top_n)
+    except Exception as exc:
+        app.logger.exception(f"TF-IDF matching failed ({exc}). Using fallback matcher.")
+        return _fallback_match_against_jobs(resume_text, jobs, top_n)
 
 
 # ---------------------------------------------------------------------------
@@ -558,7 +615,13 @@ def analyze_resume():
     ats_result = calculate_ats_score(resume)
 
     # Job Matching
-    jobs = load_jobs()
+    jobs, loaded_from = load_jobs()
+    if not jobs:
+        return jsonify({
+            "success": False,
+            "error": "No jobs were loaded for matching.",
+            "hint": "Set JOBS_DATA_PATH to an absolute path for actuarial_jobs_india.json or mount the file at /app/actuarial_jobs_india.json.",
+        }), 500
     job_matches = match_against_jobs(resume["raw_text"], jobs)
 
     # LLM Improvements
@@ -578,6 +641,8 @@ def analyze_resume():
         "improvements": improvements,
         "word_count": resume["word_count"],
         "overall_match_score": overall_match,
+        "jobs_loaded_count": len(jobs),
+        "jobs_loaded_from": loaded_from,
     })
 
 
@@ -586,8 +651,12 @@ def debug_jobs():
     """Debug endpoint to inspect loaded jobs (non-production only)."""
     if os.environ.get("FLASK_ENV", "production") == "production":
         return jsonify({"error": "Not available in production"}), 403
-    jobs = load_jobs()
-    return jsonify({"count": len(jobs), "sample": jobs[:2] if jobs else []})
+    jobs, loaded_from = load_jobs()
+    return jsonify({
+        "count": len(jobs),
+        "loaded_from": loaded_from,
+        "sample": jobs[:2] if jobs else [],
+    })
 
 
 if __name__ == "__main__":
