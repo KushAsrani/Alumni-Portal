@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIContext } from 'astro';
 import { connectToDatabase } from '../../../lib/mongodb';
 import { getCurrentAlumni } from '../../../lib/alumni-auth';
+import { ObjectId } from 'mongodb';
 
 export async function GET({ request, cookies }: APIContext) {
   try {
@@ -16,7 +17,7 @@ export async function GET({ request, cookies }: APIContext) {
     }
 
     const url = new URL(request.url);
-    const requestedEmail = url.searchParams.get('email');
+    const requestedEmail = url.searchParams.get('email')?.trim().toLowerCase();
 
     if (!requestedEmail) {
       return new Response(
@@ -26,18 +27,38 @@ export async function GET({ request, cookies }: APIContext) {
     }
 
     // Security: only allow users to view their own history.
-    // The session username is the email used at login, so we compare case-insensitively.
-    if (requestedEmail.toLowerCase() !== session.username.toLowerCase()) {
+    // Users can log in with username OR email. The session.username may therefore
+    // not be an email, so we resolve the canonical account email from DB.
+    const { db } = await connectToDatabase();
+    const alumniCollection = db.collection('alumni_registrations');
+    const alumni = await alumniCollection.findOne(
+      { _id: new ObjectId(session.alumniId) },
+      { projection: { email: 1, username: 1 } }
+    );
+
+    const allowedEmails = new Set<string>();
+    const profileEmail = typeof alumni?.email === 'string' ? alumni.email.trim().toLowerCase() : '';
+    if (profileEmail) allowedEmails.add(profileEmail);
+
+    // Backward compatibility for sessions where username itself is an email.
+    const sessionUsername = session.username.trim().toLowerCase();
+    if (sessionUsername.includes('@')) allowedEmails.add(sessionUsername);
+
+    if (!allowedEmails.has(requestedEmail)) {
       return new Response(
         JSON.stringify({ success: false, message: 'Forbidden' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const { db } = await connectToDatabase();
     const collection = db.collection('resume_analyses');
     const analyses = await collection
-      .find({ alumni_email: requestedEmail })
+      .find({
+        alumni_email: {
+          $regex: `^${requestedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+          $options: 'i',
+        },
+      })
       .sort({ created_at: -1 })
       .limit(10)
       .toArray();
