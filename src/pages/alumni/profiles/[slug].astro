@@ -2,7 +2,7 @@
 import Layout from '@/layouts/Layout.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import { getCollection } from 'astro:content';
-import { Icon } from '../../../components/astro-icon';
+import Icon from '../../../components/Icon.astro';
 
 export async function getStaticPaths() {
   const alumni = await getCollection('alumni');
