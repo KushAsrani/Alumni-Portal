@@ -607,8 +607,8 @@ const topCertifications = Array.from(certCounts.entries())
     <section class="resume-analyzer-section" id="resume-analyzer">
       <div class="container">
         <div class="ra-section-header">
-          <h2 class="ra-section-title">🤖 AI Resume Analyzer</h2>
-          <p class="ra-section-subtitle">Upload your resume to get an ATS score, missing keywords, and match it against actuarial job listings</p>
+          <h2 class="ra-section-title">AI Resume Analyzer</h2>
+          <p class="ra-section-subtitle">Upload and analyze your resume using AI to get an ATS score, missing keywords, and match it against actuarial job listings</p>
         </div>
 
         <!-- Auth Gate (shown when logged out) -->
@@ -758,7 +758,7 @@ const topCertifications = Array.from(certCounts.entries())
                         <th>Location</th>
                         <th>Match</th>
                         <th>Missing Keywords</th>
-                        <th>Apply</th>
+                        <th>View</th>
                       </tr>
                     </thead>
                     <tbody id="ra-job-matches-body"></tbody>
@@ -1157,13 +1157,13 @@ const topCertifications = Array.from(certCounts.entries())
   .btn-primary {
     background: var(--color-primary, #2e4096);
     color: white;
-    border: 2px solid white;
+    border: 1px solid white;
   }
 
   .btn-primary:hover {
     background: var(--color-primary-dark, #2e4096);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    box-shadow: 0 4px 12px #2e4096;
   }
 
   .btn-secondary {
@@ -1473,8 +1473,8 @@ const topCertifications = Array.from(certCounts.entries())
   }
 
   .ra-tab-btn--active {
-    color: var(--color-primary, #22c55e);
-    border-bottom-color: var(--color-primary, #22c55e);
+    color: var(--color-primary, #2e4096);
+    border-bottom-color: var(--color-primary, #2e4096);
   }
 
   .ra-tab-btn:hover:not(.ra-tab-btn--active) { color: #374151; }
@@ -1531,7 +1531,7 @@ const topCertifications = Array.from(certCounts.entries())
 
   .ra-drop-zone:hover,
   .ra-drop-zone.drag-over {
-    border-color: var(--color-primary, #22c55e);
+    border-color: var(--color-primary, #2e4096);
     background: #f0fdf4;
   }
 
@@ -1554,7 +1554,7 @@ const topCertifications = Array.from(certCounts.entries())
   }
 
   .ra-drop-zone__link {
-    color: var(--color-primary, #22c55e);
+    color: var(--color-primary, #2e4096);
     font-weight: 600;
     text-decoration: underline;
   }
@@ -1638,7 +1638,7 @@ const topCertifications = Array.from(certCounts.entries())
     transition: border-color 0.15s;
   }
 
-  .ra-form-input:focus { border-color: var(--color-primary, #22c55e); }
+  .ra-form-input:focus { border-color: var(--color-primary, #2e4096); }
 
   .ra-input-row {
     display: flex;
@@ -1651,12 +1651,14 @@ const topCertifications = Array.from(certCounts.entries())
   .ra-btn--full { width: 100%; }
 
   .ra-btn--outline {
-    background: white;
-    border: 1.5px solid var(--color-primary, #22c55e) !important;
-    color: var(--color-primary, #22c55e) !important;
+    background: #2e4096;
+    border: 1px solid var(--color-primary, #2e4096) !important;
+    color: var(--color-primary, #2e4096) !important;
   }
 
-  .ra-btn--outline:hover { background: #f0fdf4; }
+  .ra-btn:hover {
+    background: var(--color-primary, #2e4096);
+  }
 
   /* Spinner */
   .ra-spinner {
@@ -1704,7 +1706,7 @@ const topCertifications = Array.from(certCounts.entries())
 
   .ra-upload-progress-bar-fill {
     height: 100%;
-    background: var(--color-primary, #22c55e);
+    background: var(--color-primary, #2e4096);
     border-radius: 9999px;
     transition: width 0.4s ease;
   }
@@ -2382,7 +2384,7 @@ updateSelectedSkills();
           const ms = m.match_score || 0;
           const shortKws = (m.missing_keywords || []).slice(0, 4).join(', ');
           const applyLink = m.apply_url
-            ? `<a href="${m.apply_url}" target="_blank" rel="noopener" class="btn btn-primary" style="padding:0.3rem 0.75rem;font-size:0.8rem;">Apply</a>`
+            ? `<a href="${m.apply_url}" target="_blank" rel="noopener" class="btn btn-primary" style="padding:0.3rem 0.75rem;font-size:0.8rem;">View</a>`
             : '—';
           tbody.insertAdjacentHTML('beforeend', `
             <tr>
@@ -2557,7 +2559,7 @@ updateSelectedSkills();
                 <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.file_name || ''}">${a.file_name || '—'}</td>
                 <td><span class="${atsClass}">${a.ats_score != null ? a.ats_score + '/100' : '—'}</span></td>
                 <td><span class="${matchClass}">${a.match_score != null ? a.match_score + '%' : '—'}</span></td>
-                <td>${a.file_url ? `<a href="${a.file_url}" target="_blank" rel="noopener" style="color:var(--color-primary,#22c55e);font-weight:600;">View</a>` : '—'}</td>
+                <td>${a.file_url ? `<a href="${a.file_url}" target="_blank" rel="noopener" style="color:var(--color-primary,#2e4096);font-weight:600;">View</a>` : '—'}</td>
               </tr>
             `);
           }
