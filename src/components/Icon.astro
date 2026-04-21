@@ -1,0 +1,22 @@
+---
+interface Props {
+  name?: string;
+  class?: string;
+  style?: string | Record<string, string>;
+  [key: string]: unknown;
+}
+
+const { name = '', class: className = '', ...rest } = Astro.props as Props;
+---
+
+<span
+  class={`inline-flex items-center justify-center ${className}`}
+  aria-hidden="true"
+  title={name}
+  {...rest}
+>
+  <svg viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+    <circle cx="12" cy="12" r="8" opacity="0.2" />
+    <circle cx="12" cy="12" r="4" />
+  </svg>
+</span>
