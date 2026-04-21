@@ -133,7 +133,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - BLOB_READ_WRITE_TOKEN=${BLOB_READ_WRITE_TOKEN}
     volumes:
-      - ./actuarial_jobs_india.json:/app/actuarial_jobs_india.json:ro
+      - ./actuarial_jobs_india.json:/app/actuarial_jobs_india.json
     networks:
       - alumni-portal-network
     extra_hosts:
