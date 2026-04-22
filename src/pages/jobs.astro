@@ -826,15 +826,27 @@ const topCertifications = Array.from(certCounts.entries())
               </div>
               <div id="ra-history-error" class="ra-alert ra-alert--error" style="display:none;"></div>
               <div id="ra-history-loading" style="display:none;" class="ra-loading-state">Loading history…</div>
+              <div id="ra-history-actions" class="ra-history-actions" style="display:none;">
+                <label class="ra-history-select-all">
+                  <input type="checkbox" id="ra-history-select-all" />
+                  Select all
+                </label>
+                <div class="ra-history-actions__buttons">
+                  <button type="button" class="btn btn-secondary" id="ra-delete-selected-btn" disabled>Delete Selected</button>
+                  <button type="button" class="btn btn-danger" id="ra-delete-all-btn">Delete All</button>
+                </div>
+              </div>
               <div class="ra-table-wrap" id="ra-history-table-wrap" style="display:none;">
                 <table class="ra-match-table">
                   <thead>
                     <tr>
+                      <th>Select</th>
                       <th>Date</th>
                       <th>File</th>
                       <th>ATS Score</th>
                       <th>Match Score</th>
                       <th>Download</th>
+                      <th>Delete</th>
                     </tr>
                   </thead>
                   <tbody id="ra-history-table-body"></tbody>
@@ -1658,6 +1670,20 @@ const topCertifications = Array.from(certCounts.entries())
 
   .ra-btn--outline:hover { background: #f0fdf4; }
 
+  .btn.btn-danger {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+  }
+
+  .btn.btn-danger:hover { background: #b91c1c; }
+
+  .btn.btn-secondary:disabled,
+  .btn.btn-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   /* Spinner */
   .ra-spinner {
     width: 18px;
@@ -1850,6 +1876,34 @@ const topCertifications = Array.from(certCounts.entries())
   /* Table */
   .ra-table-wrap { overflow-x: auto; }
 
+  .ra-history-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0.5rem 0 0.75rem;
+  }
+
+  .ra-history-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #374151;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .ra-history-actions__buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .ra-history-delete-one-btn {
+    padding: 0.3rem 0.65rem !important;
+    font-size: 0.8rem !important;
+  }
+
   .ra-match-table {
     width: 100%;
     border-collapse: collapse;
@@ -1991,6 +2045,7 @@ const topCertifications = Array.from(certCounts.entries())
     .ra-suggestion-comparison { flex-direction: column; }
     .ra-suggestion-panel__arrow { display: none; }
     .ra-input-row { flex-direction: column; }
+    .ra-history-actions { flex-direction: column; align-items: stretch; }
     .ra-file-preview-row { flex-wrap: wrap; }
   }
 </style>
@@ -2518,15 +2573,105 @@ updateSelectedSkills();
     });
 
     // ----- History tab -----
+    let historyAnalyses = [];
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function selectedHistoryIds() {
+      return Array.from(document.querySelectorAll('.ra-history-row-checkbox:checked'))
+        .map(el => el.value)
+        .filter(Boolean);
+    }
+
+    function updateHistorySelectionUi() {
+      const selectAll = document.getElementById('ra-history-select-all');
+      const checkboxes = Array.from(document.querySelectorAll('.ra-history-row-checkbox'));
+      const selectedCount = checkboxes.filter(cb => cb.checked).length;
+      if (selectAll) {
+        selectAll.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
+        selectAll.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+      }
+      const deleteSelectedBtn = document.getElementById('ra-delete-selected-btn');
+      if (deleteSelectedBtn) deleteSelectedBtn.disabled = selectedCount === 0;
+    }
+
+    function renderHistoryTable() {
+      const historyTableWrap = document.getElementById('ra-history-table-wrap');
+      const historyEmpty = document.getElementById('ra-history-empty');
+      const historyBody = document.getElementById('ra-history-table-body');
+      const historyActions = document.getElementById('ra-history-actions');
+      const selectAll = document.getElementById('ra-history-select-all');
+
+      historyBody.innerHTML = '';
+      if (!historyAnalyses.length) {
+        historyTableWrap.style.display = 'none';
+        historyActions.style.display = 'none';
+        historyEmpty.style.display = '';
+        if (selectAll) {
+          selectAll.checked = false;
+          selectAll.indeterminate = false;
+        }
+        return;
+      }
+
+      historyEmpty.style.display = 'none';
+      historyTableWrap.style.display = '';
+      historyActions.style.display = '';
+
+      for (const a of historyAnalyses) {
+        const date = new Date(a.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const atsClass = raTextClass(a.ats_score || 0);
+        const matchClass = raTextClass(a.match_score || 0);
+        const id = typeof a._id === 'string' ? a._id : (a._id && a._id.$oid ? a._id.$oid : '');
+        historyBody.insertAdjacentHTML('beforeend', `
+          <tr data-id="${escapeHtml(id)}">
+            <td><input type="checkbox" class="ra-history-row-checkbox" value="${escapeHtml(id)}" /></td>
+            <td>${date}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(a.file_name || '')}">${escapeHtml(a.file_name || '—')}</td>
+            <td><span class="${atsClass}">${a.ats_score != null ? a.ats_score + '/100' : '—'}</span></td>
+            <td><span class="${matchClass}">${a.match_score != null ? a.match_score + '%' : '—'}</span></td>
+            <td>${a.file_url ? `<a href="${a.file_url}" target="_blank" rel="noopener" style="color:var(--color-primary,#22c55e);font-weight:600;">View</a>` : '—'}</td>
+            <td><button type="button" class="btn btn-danger ra-history-delete-one-btn" data-id="${escapeHtml(id)}">Delete</button></td>
+          </tr>
+        `);
+      }
+
+      updateHistorySelectionUi();
+    }
+
+    async function deleteHistory(email, payload, confirmText) {
+      const historyError = document.getElementById('ra-history-error');
+      if (!window.confirm(confirmText)) return false;
+
+      historyError.style.display = 'none';
+
+      const res = await fetch('/api/resume/history', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, ...payload }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'Failed to delete history');
+      return true;
+    }
+
     async function loadHistory(email) {
       const historyError = document.getElementById('ra-history-error');
       const historyLoading = document.getElementById('ra-history-loading');
       const historyTableWrap = document.getElementById('ra-history-table-wrap');
       const historyEmpty = document.getElementById('ra-history-empty');
-      const historyBody = document.getElementById('ra-history-table-body');
+      const historyActions = document.getElementById('ra-history-actions');
 
       historyError.style.display = 'none';
       historyTableWrap.style.display = 'none';
+      historyActions.style.display = 'none';
       historyEmpty.style.display = 'none';
 
       if (!email) {
@@ -2542,27 +2687,8 @@ updateSelectedSkills();
         const data = await res.json();
         if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load history');
 
-        const analyses = data.analyses || [];
-        if (analyses.length === 0) {
-          historyEmpty.style.display = '';
-        } else {
-          historyBody.innerHTML = '';
-          for (const a of analyses) {
-            const date = new Date(a.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-            const atsClass = raTextClass(a.ats_score || 0);
-            const matchClass = raTextClass(a.match_score || 0);
-            historyBody.insertAdjacentHTML('beforeend', `
-              <tr>
-                <td>${date}</td>
-                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.file_name || ''}">${a.file_name || '—'}</td>
-                <td><span class="${atsClass}">${a.ats_score != null ? a.ats_score + '/100' : '—'}</span></td>
-                <td><span class="${matchClass}">${a.match_score != null ? a.match_score + '%' : '—'}</span></td>
-                <td>${a.file_url ? `<a href="${a.file_url}" target="_blank" rel="noopener" style="color:var(--color-primary,#22c55e);font-weight:600;">View</a>` : '—'}</td>
-              </tr>
-            `);
-          }
-          historyTableWrap.style.display = '';
-        }
+        historyAnalyses = data.analyses || [];
+        renderHistoryTable();
       } catch (err) {
         historyError.textContent = err.message || 'Failed to load history.';
         historyError.style.display = '';
@@ -2574,6 +2700,71 @@ updateSelectedSkills();
     document.getElementById('ra-load-history-btn').addEventListener('click', () => {
       const email = document.getElementById('ra-history-email').value.trim();
       loadHistory(email);
+    });
+
+    document.getElementById('ra-history-select-all').addEventListener('change', (e) => {
+      const checked = e.target.checked;
+      document.querySelectorAll('.ra-history-row-checkbox').forEach(cb => {
+        cb.checked = checked;
+      });
+      updateHistorySelectionUi();
+    });
+
+    document.getElementById('ra-history-table-body').addEventListener('change', (e) => {
+      if (e.target.classList.contains('ra-history-row-checkbox')) {
+        updateHistorySelectionUi();
+      }
+    });
+
+    document.getElementById('ra-history-table-body').addEventListener('click', async (e) => {
+      const btn = e.target.closest('.ra-history-delete-one-btn');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const email = document.getElementById('ra-history-email').value.trim();
+      if (!id || !email) return;
+      const historyError = document.getElementById('ra-history-error');
+      try {
+        await deleteHistory(email, { id }, 'Delete this analysis record? This action cannot be undone.');
+        await loadHistory(email);
+      } catch (err) {
+        historyError.textContent = err.message || 'Failed to delete history.';
+        historyError.style.display = '';
+      }
+    });
+
+    document.getElementById('ra-delete-selected-btn').addEventListener('click', async () => {
+      const email = document.getElementById('ra-history-email').value.trim();
+      const ids = selectedHistoryIds();
+      const historyError = document.getElementById('ra-history-error');
+      if (!email || ids.length === 0) return;
+      try {
+        await deleteHistory(
+          email,
+          { ids },
+          `Delete ${ids.length} selected analysis record${ids.length > 1 ? 's' : ''}? This action cannot be undone.`
+        );
+        await loadHistory(email);
+      } catch (err) {
+        historyError.textContent = err.message || 'Failed to delete selected history.';
+        historyError.style.display = '';
+      }
+    });
+
+    document.getElementById('ra-delete-all-btn').addEventListener('click', async () => {
+      const email = document.getElementById('ra-history-email').value.trim();
+      const historyError = document.getElementById('ra-history-error');
+      if (!email) return;
+      try {
+        await deleteHistory(
+          email,
+          { deleteAll: true },
+          'Delete all analysis history for this email? This action cannot be undone.'
+        );
+        await loadHistory(email);
+      } catch (err) {
+        historyError.textContent = err.message || 'Failed to delete all history.';
+        historyError.style.display = '';
+      }
     });
 
     // Deep-link: if URL hash is #resume-analyzer, scroll to it.
