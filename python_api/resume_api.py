@@ -18,6 +18,10 @@ from typing import Dict, List, Optional, Tuple
 app = Flask(__name__)
 CORS(app)
 
+# Register the events blueprint
+from events_api import events_bp  # noqa: E402
+app.register_blueprint(events_bp)
+
 # ---------------------------------------------------------------------------
 # Constants & keyword lists
 # ---------------------------------------------------------------------------
