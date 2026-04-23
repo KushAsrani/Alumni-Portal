@@ -167,12 +167,6 @@ export class EventService {
     const eventsCollection = await getCollection<EventDocument>(this.EVENTS_COLLECTION);
     const rsvpsCollection = await getCollection<EventRSVPDocument>(this.RSVPS_COLLECTION);
 
-    // Ensure compound unique index
-    await rsvpsCollection.createIndex(
-      { eventId: 1, userEmail: 1 },
-      { unique: true }
-    );
-
     const eventObjId = new ObjectId(eventId);
     const event = await eventsCollection.findOne({ _id: eventObjId });
     if (!event) throw new Error('Event not found');

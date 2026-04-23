@@ -49,7 +49,7 @@ def send_email(to_address: str, subject: str, body_html: str) -> bool:
     smtp_password = os.getenv('SMTP_PASSWORD', '')
 
     if not smtp_user or not smtp_password:
-        print(f'[events_api] SMTP credentials not configured — skipping email to {to_address}')
+        print('[events_api] SMTP credentials not configured — skipping email')
         return False
 
     try:
@@ -66,7 +66,7 @@ def send_email(to_address: str, subject: str, body_html: str) -> bool:
 
         return True
     except Exception as exc:
-        print(f'[events_api] Failed to send email to {to_address}: {exc}')
+        print(f'[events_api] Failed to send email: {exc}')
         return False
 
 
@@ -138,7 +138,7 @@ def send_reminders():
                     )
                     total_sent += 1
                 else:
-                    errors.append(f'Failed to send reminder to {user_email}')
+                    errors.append('Failed to send a reminder email')
 
     return jsonify({'success': True, 'remindersSent': total_sent, 'errors': errors}), 200
 
