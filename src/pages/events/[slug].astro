@@ -30,6 +30,17 @@ const spotsLeft = Math.max(0, event.capacity - (event.confirmedCount || 0));
 const isFull = spotsLeft === 0;
 const isEnded = event.status === 'ended';
 
+// Sanitize bannerUrl to only allow http/https URLs (prevent XSS via inline style)
+const safeBannerUrl = (() => {
+  if (!event.bannerUrl) return '';
+  try {
+    const u = new URL(event.bannerUrl);
+    return (u.protocol === 'https:' || u.protocol === 'http:') ? event.bannerUrl : '';
+  } catch {
+    return '';
+  }
+})();
+
 const breadcrumbItems = [
   { label: 'Home', href: '/' },
   { label: 'Events', href: '/events' },
@@ -45,6 +56,50 @@ const eventTypeLabels: Record<string, string> = {
 
 <Layout title={event.title} description={event.description}>
   <Breadcrumbs items={breadcrumbItems} />
+
+  <!-- Event Banner -->
+  <div class={`w-full py-16 px-6 relative overflow-hidden ${
+    event.eventType === 'ama'      ? 'bg-gradient-to-br from-purple-600 to-purple-800' :
+    event.eventType === 'workshop' ? 'bg-gradient-to-br from-green-600 to-green-800' :
+                                     'bg-gradient-to-br from-primary-600 to-secondary-700'
+  }`}
+    style={safeBannerUrl ? `background-image: url('${safeBannerUrl}'); background-size: cover; background-position: center;` : ''}>
+    {safeBannerUrl && <div class="absolute inset-0 bg-black/50"></div>}
+    <div class="container-custom relative z-10 text-white text-center">
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <span class="bg-white/20 backdrop-blur-sm text-white text-sm font-semibold px-4 py-1 rounded-full uppercase tracking-wide">
+          {eventTypeLabels[event.eventType] || event.eventType}
+        </span>
+        <span class={`text-sm font-semibold px-4 py-1 rounded-full uppercase tracking-wide ${
+          event.status === 'live'      ? 'bg-red-500' :
+          event.status === 'ended'     ? 'bg-gray-500' :
+          event.status === 'cancelled' ? 'bg-red-700' :
+                                         'bg-green-500'
+        }`}>
+          {event.status === 'live' ? '🔴 Live Now' : event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+        </span>
+      </div>
+      <h1 class="text-3xl md:text-5xl font-bold mb-4 drop-shadow-md">{event.title}</h1>
+      {event.description && (
+        <p class="text-white/85 text-lg max-w-2xl mx-auto mb-6">{event.description}</p>
+      )}
+      <div class="flex items-center justify-center gap-6 text-sm text-white/80 flex-wrap">
+        <span>📅 {new Date(event.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+        <span>🕐 {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+        <span>👤 Hosted by {event.hostEmail}</span>
+        {!isFull && !isEnded && <span class="text-green-300 font-medium">✅ {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span>}
+        {isFull && !isEnded && <span class="text-yellow-300 font-medium">⚠️ Full — Waitlist Open</span>}
+      </div>
+      {!isEnded && (
+        <div class="mt-8">
+          <a href="#rsvp-section" class="btn btn-lg bg-white text-primary-700 hover:bg-gray-100 font-bold px-8">
+            {isFull ? '📋 Join Waitlist' : '✅ Register Now'}
+          </a>
+        </div>
+      )}
+    </div>
+  </div>
+
   <section class="section">
     <div class="container-custom">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -52,16 +107,14 @@ const eventTypeLabels: Record<string, string> = {
         <!-- Main content -->
         <div class="lg:col-span-2 space-y-6">
           <div class="card p-6">
-            <div class="flex items-center gap-3 mb-4">
+            <div class="flex items-center gap-3 mb-3">
               <span class="badge badge-primary">{eventTypeLabels[event.eventType] || event.eventType}</span>
               <span class={`badge ${event.status === 'upcoming' ? 'badge-primary' : event.status === 'live' ? 'badge-accent' : 'badge-secondary'}`}>
                 {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
               </span>
             </div>
-            <h1 class="text-3xl font-bold mb-2">{event.title}</h1>
-            {event.description && <p class="text-gray-600 mb-4">{event.description}</p>}
             {event.tags && event.tags.length > 0 && (
-              <div class="flex flex-wrap gap-2 mt-2">
+              <div class="flex flex-wrap gap-2">
                 {event.tags.map((tag: string) => (
                   <span class="badge badge-secondary text-xs">{tag}</span>
                 ))}
@@ -124,7 +177,7 @@ const eventTypeLabels: Record<string, string> = {
 
         <!-- Sidebar -->
         <div class="lg:col-span-1 space-y-4">
-          <div class="card p-6">
+          <div class="card p-6" data-meeting-url={event.meetingUrl || ''}>
             <h2 class="font-semibold mb-3">Details</h2>
             <ul class="text-sm text-gray-700 space-y-2">
               <li><strong>Start:</strong> {new Date(event.startTime).toLocaleString()}</li>
@@ -147,6 +200,13 @@ const eventTypeLabels: Record<string, string> = {
             {event.waitlistCount > 0 && (
               <p class="text-xs text-amber-600 mt-1">{event.waitlistCount} on waitlist</p>
             )}
+            <div id="meeting-link-section" class="hidden mt-4 pt-4 border-t border-gray-100">
+              <p class="text-sm font-semibold text-gray-700 mb-2">🎥 Join Link</p>
+              <a id="meeting-link-btn" href="#" target="_blank" rel="noopener noreferrer"
+                 class="btn btn-primary btn-sm w-full text-center">
+                Join the Event →
+              </a>
+            </div>
           </div>
         </div>
 
@@ -180,6 +240,8 @@ const eventTypeLabels: Record<string, string> = {
         const name  = (document.getElementById('rsvp-name')  as HTMLInputElement).value.trim();
         if (!email) return;
 
+        const submitBtn = rsvpForm.querySelector('[type="submit"]') as HTMLButtonElement;
+
         try {
           const res = await fetch(`/api/events/${eventId}/rsvp`, {
             method: 'POST',
@@ -188,12 +250,28 @@ const eventTypeLabels: Record<string, string> = {
           });
           const data = await res.json();
           if (res.ok && data.success) {
-            const statusLabel = data.status === 'waitlisted' ? 'added to the waitlist' : 'confirmed';
-            showMsg(`✅ You're ${statusLabel}!`, 'success');
+            if (data.status === 'waitlisted') {
+              showMsg(`✅ You're on the waitlist!`, 'success');
+              if (submitBtn) { submitBtn.textContent = "You're on the waitlist ✓"; submitBtn.disabled = true; }
+            } else {
+              showMsg(`✅ You're confirmed!`, 'success');
+              if (submitBtn) { submitBtn.textContent = 'Registered ✓'; submitBtn.disabled = true; }
+              // Reveal meeting link if available
+              const meetingUrl = document.querySelector('[data-meeting-url]')?.getAttribute('data-meeting-url');
+              if (meetingUrl) {
+                const section = document.getElementById('meeting-link-section');
+                const link = document.getElementById('meeting-link-btn') as HTMLAnchorElement;
+                if (section && link) {
+                  link.href = meetingUrl;
+                  section.classList.remove('hidden');
+                }
+              }
+            }
             cancelBtn.classList.remove('hidden');
           } else if (res.status === 409) {
-            showMsg('You have already RSVP\'d for this event.', 'info');
+            showMsg('You are already registered for this event.', 'info');
             cancelBtn.classList.remove('hidden');
+            if (submitBtn) { submitBtn.textContent = 'Registered ✓'; submitBtn.disabled = true; }
           } else {
             showMsg(data.message || 'Something went wrong.', 'error');
           }
