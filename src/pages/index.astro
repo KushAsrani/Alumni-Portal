@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import Layout from "../layouts/Layout.astro";
 import { getCollection } from "astro:content";
 import { getSiteConfig } from "../utils/config";
@@ -8,19 +10,23 @@ const config = getSiteConfig();
 
 // Get sample data for preview
 const alumni = await getCollection("alumni");
-const events = await getCollection("events");
 const blogPosts = await getCollection("blog");
 const jobs = await getCollection("jobs");
 
 // Get featured alumni (first 3)
 const featuredAlumni = alumni.slice(0, 3);
 
-// Get latest events (first 4)
-const latestEvents = events
-  .sort(
-    (a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime()
-  )
-  .slice(0, 4);
+// Fetch live upcoming events from MongoDB
+let latestEvents: any[] = [];
+try {
+  const eventsRes = await fetch(`${Astro.url.origin}/api/events?status=upcoming&limit=3`);
+  if (eventsRes.ok) {
+    const eventsData = await eventsRes.json();
+    latestEvents = eventsData.events || [];
+  }
+} catch (e) {
+  latestEvents = [];
+}
 
 // Get latest blog posts (first 3)
 const latestBlogPosts = blogPosts
@@ -512,55 +518,51 @@ const featuredJobs = jobs
 
       <div class="grid-responsive mb-12">
         {
-          latestEvents.map((event) => (
-            <div class="event-card group">
-              <div class="relative mb-4">
-                {event.data.image ? (
-                  <img
-                    src={event.data.image}
-                    alt={event.data.title}
-                    class="w-full h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div class="w-full h-48 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-xl flex items-center justify-center">
-                    <Icon
-                      name="mdi:calendar-event"
-                      class="w-16 h-16 text-primary-400"
-                    />
-                  </div>
-                )}
-                <div class="absolute top-4 right-4">
-                  <span class="badge badge-primary">
-                    {new Date(event.data.date).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              <h3 class="text-xl font-semibold text-accent-900 mb-2 group-hover:text-primary-600 transition-colors duration-200">
-                {event.data.title}
-              </h3>
-              <p class="text-accent-600 mb-4 line-clamp-2">
-                {event.data.description}
-              </p>
-
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2 text-sm text-accent-500">
-                  <Icon name="mdi:map-marker" class="w-4 h-4" />
-                  <span>{event.data.location}</span>
-                </div>
-                <a
-                  href={`/events/${event.data.slug}`}
-                  class="text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  Learn More →
-                </a>
-              </div>
+          latestEvents.length === 0 ? (
+            <div class="text-center py-12 col-span-3">
+              <Icon name="mdi:calendar-blank" class="w-16 h-16 mx-auto text-accent-300 mb-4" />
+              <p class="text-accent-600">No upcoming events at the moment. Check back soon!</p>
             </div>
-          ))
+          ) : (
+            latestEvents.map((event) => {
+              const eventType = event.eventType || '';
+              return (
+                <div class="event-card group">
+                  <div class="relative mb-4">
+                    <div class={`w-full h-48 rounded-xl flex items-center justify-center ${
+                      eventType === 'ama' ? 'bg-gradient-to-br from-purple-100 to-purple-200' :
+                      eventType === 'workshop' ? 'bg-gradient-to-br from-green-100 to-green-200' :
+                      'bg-gradient-to-br from-primary-100 to-secondary-100'
+                    }`}>
+                      <Icon name="mdi:calendar-event" class="w-16 h-16 text-primary-400" />
+                    </div>
+                    <div class="absolute top-4 right-4">
+                      <span class="badge badge-primary">
+                        {new Date(event.startTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                    <div class="absolute top-4 left-4">
+                      <span class="badge badge-secondary uppercase text-xs">{event.eventType}</span>
+                    </div>
+                  </div>
+
+                  <h3 class="text-xl font-semibold text-accent-900 mb-2 group-hover:text-primary-600 transition-colors duration-200">
+                    {event.title}
+                  </h3>
+                  <p class="text-accent-600 mb-4 line-clamp-2">{event.description}</p>
+
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-accent-500">
+                      {event.confirmedCount ?? 0} / {event.capacity} registered
+                    </span>
+                    <a href={`/events/${event.slug}`} class="text-primary-600 hover:text-primary-700 font-medium">
+                      Learn More →
+                    </a>
+                  </div>
+                </div>
+              );
+            })
+          )
         }
       </div>
 
