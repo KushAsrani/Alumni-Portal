@@ -1,35 +1,28 @@
 ---
 export const prerender = false;
 
+import { isAlumniAuthenticated } from '../../lib/alumni-auth';
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login?redirect=/events');
+}
+
 import Layout from '../../layouts/Layout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 
 const base = Astro.url.origin;
 
-async function fetchEvents(status: string) {
-  try {
-    const res = await fetch(`${base}/api/events?status=${status}&limit=100`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.events || [];
-  } catch {
-    return [];
-  }
-}
+const allEventsRes = await fetch(`${base}/api/events?limit=200`);
+const allEventsData = allEventsRes.ok ? await allEventsRes.json() : { events: [] };
+const allEvents: any[] = allEventsData.events || [];
 
-const [upcoming, past] = await Promise.all([
-  fetchEvents('upcoming'),
-  fetchEvents('ended'),
-]);
+// Collect unique event types and tags for filter dropdowns
+const allTypes = [...new Set(allEvents.map((e: any) => e.eventType).filter(Boolean))];
+const allTags = [...new Set(allEvents.flatMap((e: any) => e.tags || []).filter(Boolean))];
 
 const breadcrumbItems = [
   { label: 'Home', href: '/' },
   { label: 'Events' },
 ];
-
-function spotsLeft(event: any): number {
-  return Math.max(0, event.capacity - (event.confirmedCount || 0));
-}
 ---
 
 <Layout title="Events">
@@ -38,73 +31,152 @@ function spotsLeft(event: any): number {
     <div class="container-custom">
       <h1 class="text-3xl font-bold mb-6">Events</h1>
 
-      <div class="mb-6 flex gap-2">
-        <button class="tab-btn btn btn-outline btn-sm" data-tab="upcoming">Upcoming</button>
-        <button class="tab-btn btn btn-outline btn-sm" data-tab="past">Past</button>
-      </div>
+      <!-- Filter Bar -->
+      <div class="mb-8 space-y-4">
+        <!-- Search bar -->
+        <div class="relative">
+          <input
+            id="event-search"
+            type="text"
+            placeholder="Search events by title or description..."
+            class="input w-full pl-10"
+          />
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+        </div>
 
-      <div id="tab-upcoming">
-        {upcoming.length === 0 && <p class="text-gray-500">No upcoming events at the moment.</p>}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {upcoming.map((e: any) => {
-            const spots = spotsLeft(e);
-            const isFull = spots === 0;
-            return (
-              <a href={`/events/${e.slug}`} class="card card-hover block">
-                <div class="p-6">
-                  <div class="flex items-center justify-between mb-4">
-                    <span class="badge badge-primary">Upcoming</span>
-                    <span class="text-sm text-gray-500">{new Date(e.startTime).toDateString()}</span>
-                  </div>
-                  <h3 class="text-xl font-semibold mb-2">{e.title}</h3>
-                  {e.description && <p class="text-gray-600 mb-4">{e.description}</p>}
-                  <div class="mt-2">
-                    <div class="flex items-center justify-between text-sm mb-1">
-                      <span class="text-gray-500">{isFull ? 'Full' : `${spots} spot${spots !== 1 ? 's' : ''} left`}</span>
-                      {isFull && <span class="badge badge-accent">Waitlist Available</span>}
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        class="bg-primary h-2 rounded-full"
-                        style={`width: ${Math.min(100, Math.round(((e.confirmedCount || 0) / e.capacity) * 100))}%`}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </a>
-            );
-          })}
+        <!-- Filter row -->
+        <div class="flex flex-wrap gap-3 items-center">
+          <!-- Status filter (All / Upcoming / Past) -->
+          <div class="flex gap-2">
+            <button class="filter-status-btn btn btn-sm btn-primary" data-status="all">All</button>
+            <button class="filter-status-btn btn btn-sm btn-outline" data-status="upcoming">Upcoming</button>
+            <button class="filter-status-btn btn btn-sm btn-outline" data-status="ended">Past</button>
+          </div>
+
+          <!-- Type filter -->
+          <select id="filter-type" class="input input-sm max-w-[160px]">
+            <option value="">All Types</option>
+            {allTypes.map((t: any) => <option value={t}>{String(t).charAt(0).toUpperCase() + String(t).slice(1)}</option>)}
+          </select>
+
+          <!-- Tag filter -->
+          <select id="filter-tag" class="input input-sm max-w-[160px]">
+            <option value="">All Tags</option>
+            {allTags.map((t: any) => <option value={t}>{t}</option>)}
+          </select>
+
+          <!-- Result count -->
+          <span id="result-count" class="text-sm text-gray-500 ml-auto"></span>
         </div>
       </div>
 
-      <div id="tab-past" class="hidden">
-        {past.length === 0 && <p class="text-gray-500">No past events yet.</p>}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {past.map((e: any) => (
-            <a href={`/events/${e.slug}`} class="card card-hover block">
-              <div class="p-6">
-                <div class="flex items-center justify-between mb-4">
-                  <span class="badge badge-accent">Past</span>
-                  <span class="text-sm text-gray-500">{new Date(e.startTime).toDateString()}</span>
-                </div>
-                <h3 class="text-xl font-semibold mb-2">{e.title}</h3>
-                {e.description && <p class="text-gray-600 mb-4">{e.description}</p>}
-              </div>
-            </a>
-          ))}
-        </div>
+      <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- events rendered here by JS -->
+      </div>
+      <div id="events-empty" class="hidden text-center py-12 text-gray-500">
+        No events match your filters.
       </div>
     </div>
   </section>
 
+  <script id="events-data" type="application/json" set:html={JSON.stringify(allEvents)}></script>
+
   <script>
-    const buttons = document.querySelectorAll('.tab-btn');
-    const up = document.getElementById('tab-upcoming');
-    const past = document.getElementById('tab-past');
-    buttons.forEach(b => b.addEventListener('click', () => {
-      const tab = b.getAttribute('data-tab');
-      if (tab === 'upcoming') { up!.classList.remove('hidden'); past!.classList.add('hidden'); }
-      else { past!.classList.remove('hidden'); up!.classList.add('hidden'); }
-    }));
+    const raw = JSON.parse((document.getElementById('events-data') as HTMLScriptElement).text);
+    let activeStatus = 'all';
+    let activeType = '';
+    let activeTag = '';
+    let searchQuery = '';
+
+    function spotsLeft(e: any) { return Math.max(0, e.capacity - (e.confirmedCount || 0)); }
+
+    function renderEvents() {
+      const now = new Date();
+      const filtered = raw.filter((e: any) => {
+        if (activeStatus === 'upcoming' && new Date(e.startTime) < now) return false;
+        if (activeStatus === 'ended' && new Date(e.startTime) >= now) return false;
+        if (activeType && e.eventType !== activeType) return false;
+        if (activeTag && !(e.tags || []).includes(activeTag)) return false;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const haystack = `${e.title} ${e.description || ''}`.toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const grid = document.getElementById('events-grid')!;
+      const empty = document.getElementById('events-empty')!;
+      const count = document.getElementById('result-count')!;
+      count.textContent = `${filtered.length} event${filtered.length !== 1 ? 's' : ''} found`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      const badgeClass = (status: string) => status === 'upcoming' ? 'badge-primary' :
+        status === 'live' ? 'badge-accent' : 'badge-secondary';
+
+      grid.innerHTML = filtered.map((e: any) => {
+        const spots = spotsLeft(e);
+        const isFull = spots === 0;
+        const date = new Date(e.startTime).toDateString();
+        const pct = Math.min(100, Math.round(((e.confirmedCount || 0) / e.capacity) * 100));
+        return `
+          <a href="/events/${e.slug}" class="card card-hover block">
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-3">
+                <span class="badge ${badgeClass(e.status)} text-xs">${e.status.charAt(0).toUpperCase() + e.status.slice(1)}</span>
+                ${e.eventType ? `<span class="badge badge-secondary text-xs uppercase">${e.eventType}</span>` : ''}
+                <span class="text-sm text-gray-500">${date}</span>
+              </div>
+              <h3 class="text-xl font-semibold mb-2">${e.title}</h3>
+              ${e.description ? `<p class="text-gray-600 mb-3 text-sm line-clamp-2">${e.description}</p>` : ''}
+              ${e.tags && e.tags.length ? `<div class="flex flex-wrap gap-1 mb-3">${e.tags.map((t: string) => `<span class="badge badge-secondary text-xs">${t}</span>`).join('')}</div>` : ''}
+              <div class="mt-2">
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="text-gray-500">${isFull ? 'Full' : `${spots} spot${spots !== 1 ? 's' : ''} left`}</span>
+                  ${isFull ? '<span class="badge badge-accent text-xs">Waitlist</span>' : ''}
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-primary h-2 rounded-full" style="width: ${pct}%"></div>
+                </div>
+              </div>
+            </div>
+          </a>
+        `;
+      }).join('');
+    }
+
+    document.querySelectorAll('.filter-status-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeStatus = btn.getAttribute('data-status') || 'all';
+        document.querySelectorAll('.filter-status-btn').forEach(b => {
+          b.classList.remove('btn-primary');
+          b.classList.add('btn-outline');
+        });
+        btn.classList.remove('btn-outline');
+        btn.classList.add('btn-primary');
+        renderEvents();
+      });
+    });
+
+    (document.getElementById('filter-type') as HTMLSelectElement).addEventListener('change', (e) => {
+      activeType = (e.target as HTMLSelectElement).value;
+      renderEvents();
+    });
+    (document.getElementById('filter-tag') as HTMLSelectElement).addEventListener('change', (e) => {
+      activeTag = (e.target as HTMLSelectElement).value;
+      renderEvents();
+    });
+    (document.getElementById('event-search') as HTMLInputElement).addEventListener('input', (e) => {
+      searchQuery = (e.target as HTMLInputElement).value;
+      renderEvents();
+    });
+
+    renderEvents();
   </script>
 </Layout>

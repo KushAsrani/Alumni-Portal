@@ -1,0 +1,34 @@
+export const prerender = false;
+
+import type { APIRoute } from 'astro';
+import { getCollection } from '../../../../lib/db/mongodb.ts';
+import { ObjectId } from 'mongodb';
+
+export const PATCH: APIRoute = async ({ params, request }) => {
+  try {
+    const { eventId } = params;
+    if (!eventId) {
+      return new Response(JSON.stringify({ success: false, error: 'Missing eventId' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const body = await request.json();
+    const allowedFields = ['bannerUrl', 'status', 'meetingUrl', 'venue', 'location', 'hostName', 'description', 'tags', 'capacity'];
+    const updates: Record<string, any> = { updatedAt: new Date() };
+    for (const field of allowedFields) {
+      if (field in body) updates[field] = body[field];
+    }
+    const collection = await getCollection('events');
+    await collection.updateOne({ _id: new ObjectId(eventId as string) }, { $set: updates });
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ success: false, error: String(err) }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};

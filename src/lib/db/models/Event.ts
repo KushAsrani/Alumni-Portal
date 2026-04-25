@@ -6,11 +6,15 @@ export interface EventDocument {
   slug: string;
   description?: string;
   hostEmail: string;
+  hostName?: string;   // display name for host
   eventType: 'webinar' | 'ama' | 'workshop';
   startTime: Date;
   endTime: Date;
   capacity: number;
   meetingUrl?: string;
+  bannerUrl?: string;
+  venue?: string;      // e.g. "Main Campus Auditorium, NCIT" or "Online"
+  location?: string;   // physical address or "Remote/Online"
   status: 'upcoming' | 'live' | 'ended' | 'cancelled';
   tags?: string[];
   createdAt: Date;
@@ -26,6 +30,18 @@ export interface EventRSVPDocument {
   checkedIn: boolean;
   checkedInAt?: Date;
   reminderSent: boolean;
+  mobile?: string;
+  faculty?: string;
+  graduationYear?: number;
+  hasGuest?: boolean;
+  guestName?: string;
+  guestEmail?: string;
+  guestMobile?: string;
+  guestFaculty?: string;
+  guestYear?: number;
+  guestCount?: number;
+  activities?: string[];
+  comments?: string;
   createdAt: Date;
 }
 

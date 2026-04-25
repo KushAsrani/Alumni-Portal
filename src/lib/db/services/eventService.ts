@@ -162,7 +162,21 @@ export class EventService {
   static async rsvp(
     eventId: string,
     userEmail: string,
-    userName?: string
+    userName?: string,
+    extraFields?: {
+      mobile?: string;
+      faculty?: string;
+      graduationYear?: number;
+      hasGuest?: boolean;
+      guestName?: string;
+      guestEmail?: string;
+      guestMobile?: string;
+      guestFaculty?: string;
+      guestYear?: number;
+      guestCount?: number;
+      activities?: string[];
+      comments?: string;
+    }
   ): Promise<{ status: 'confirmed' | 'waitlisted'; rsvp: EventRSVPDocument }> {
     const eventsCollection = await getCollection<EventDocument>(this.EVENTS_COLLECTION);
     const rsvpsCollection = await getCollection<EventRSVPDocument>(this.RSVPS_COLLECTION);
@@ -187,6 +201,7 @@ export class EventService {
       rsvpStatus,
       checkedIn: false,
       reminderSent: false,
+      ...extraFields,
       createdAt: now,
     };
 
