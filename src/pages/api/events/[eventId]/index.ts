@@ -20,7 +20,13 @@ export const PATCH: APIRoute = async ({ params, request }) => {
       if (field in body) updates[field] = body[field];
     }
     const collection = await getCollection('events');
-    await collection.updateOne({ _id: new ObjectId(eventId as string) }, { $set: updates });
+    const result = await collection.updateOne({ _id: new ObjectId(eventId as string) }, { $set: updates });
+    if (result.matchedCount === 0) {
+      return new Response(JSON.stringify({ success: false, error: 'Event not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
