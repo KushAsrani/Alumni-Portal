@@ -30,7 +30,7 @@ const spotsLeft = Math.max(0, event.capacity - (event.confirmedCount || 0));
 const isFull = spotsLeft === 0;
 const isEnded = event.status === 'ended';
 
-// Sanitize bannerUrl to only allow http/https URLs (prevent XSS via inline style)
+// Sanitize bannerUrl to only allow http/https URLs
 const safeBannerUrl = (() => {
   if (!event.bannerUrl) return '';
   try {
@@ -58,19 +58,20 @@ const eventTypeLabels: Record<string, string> = {
   <Breadcrumbs items={breadcrumbItems} />
 
   <!-- Event Banner -->
-  <div class={`w-full py-16 px-6 relative overflow-hidden ${
-    event.eventType === 'ama'      ? 'bg-gradient-to-br from-purple-600 to-purple-800' :
-    event.eventType === 'workshop' ? 'bg-gradient-to-br from-green-600 to-green-800' :
-                                     'bg-gradient-to-br from-primary-600 to-secondary-700'
+  <div class={`w-full py-16 px-6 relative overflow-hidden border-t border-b ${
+    event.eventType === 'ama'      ? 'bg-gradient-to-br from-white to-white text-black' :
+    event.eventType === 'workshop' ? 'bg-gradient-to-br from-white to-white text-black' :
+    event.eventType === 'webinar'  ? 'bg-gradient-to-br from-white to-white text-black' :
+                                     'bg-gradient-to-br from-white to-white text-black'             
   }`}
     style={safeBannerUrl ? `background-image: url('${safeBannerUrl}'); background-size: cover; background-position: center;` : ''}>
     {safeBannerUrl && <div class="absolute inset-0 bg-black/50"></div>}
     <div class="container-custom relative z-10 text-white text-center">
       <div class="flex items-center justify-center gap-3 mb-4">
-        <span class="bg-white/20 backdrop-blur-sm text-white text-sm font-semibold px-4 py-1 rounded-full uppercase tracking-wide">
+        <span class="badge badge-primary backdrop-blur-sm text-black text-sm font-semibold px-4 py-1 rounded-full tracking-wide" style="width: max-content; height: 30px;">
           {eventTypeLabels[event.eventType] || event.eventType}
         </span>
-        <span class={`text-sm font-semibold px-4 py-1 rounded-full uppercase tracking-wide ${
+        <span class={`text-sm font-semibold px-4 py-1 rounded-full tracking-wide ${
           event.status === 'live'      ? 'bg-red-500' :
           event.status === 'ended'     ? 'bg-gray-500' :
           event.status === 'cancelled' ? 'bg-red-700' :
@@ -79,24 +80,17 @@ const eventTypeLabels: Record<string, string> = {
           {event.status === 'live' ? '🔴 Live Now' : event.status.charAt(0).toUpperCase() + event.status.slice(1)}
         </span>
       </div>
-      <h1 class="text-3xl md:text-5xl font-bold mb-4 drop-shadow-md">{event.title}</h1>
+      <h1 class="text-3xl text-black md:text-5xl font-bold mb-4 drop-shadow-md">{event.title}</h1>
       {event.description && (
-        <p class="text-white/85 text-lg max-w-2xl mx-auto mb-6">{event.description}</p>
+        <p class="text-black/85 text-lg max-w-2xl mx-auto mb-6">{event.description}</p>
       )}
-      <div class="flex items-center justify-center gap-6 text-sm text-white/80 flex-wrap">
-        <span>📅 {new Date(event.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
-        <span>🕐 {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-        <span>👤 Hosted by {event.hostEmail}</span>
-        {!isFull && !isEnded && <span class="text-green-300 font-medium">✅ {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span>}
-        {isFull && !isEnded && <span class="text-yellow-300 font-medium">⚠️ Full — Waitlist Open</span>}
+      <div class="flex items-center justify-center gap-6 text-sm text-black/80 flex-wrap">
+        <span><b>Date:</b> {new Date(event.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+        <span><b>Time:</b> {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+        <span><b>Hosted by:</b>{event.hostEmail}</span>
+        {!isFull && !isEnded && <span class="text-green-600 font-medium">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span>}
+        {isFull && !isEnded && <span class="text-yellow-300 font-medium">⚠️ This event is full please join the waitlist.</span>}
       </div>
-      {!isEnded && (
-        <div class="mt-8">
-          <a href="#rsvp-section" class="btn btn-lg bg-white text-primary-700 hover:bg-gray-100 font-bold px-8">
-            {isFull ? '📋 Join Waitlist' : '✅ Register Now'}
-          </a>
-        </div>
-      )}
     </div>
   </div>
 
@@ -113,6 +107,8 @@ const eventTypeLabels: Record<string, string> = {
                 {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
               </span>
             </div>
+            <h1 class="text-3xl font-bold mb-2">{event.title}</h1>
+            {event.description && <p class="text-gray-600 mb-4">{event.description}</p>}
             {event.tags && event.tags.length > 0 && (
               <div class="flex flex-wrap gap-2">
                 {event.tags.map((tag: string) => (
@@ -125,7 +121,7 @@ const eventTypeLabels: Record<string, string> = {
           <!-- RSVP Form (only for non-ended events) -->
           {!isEnded && (
             <div class="card p-6" id="rsvp-section">
-              <h2 class="text-xl font-semibold mb-4">RSVP for this Event</h2>
+              <h2 class="text-xl font-semibold mb-4">Register for this Event</h2>
               {isFull && (
                 <p class="text-amber-600 mb-3 font-medium">⚠️ This event is full — you'll be added to the waitlist.</p>
               )}
@@ -134,17 +130,17 @@ const eventTypeLabels: Record<string, string> = {
                 <input type="hidden" id="event-id" value={event._id} />
                 <div>
                   <label class="block text-sm font-medium mb-1" for="rsvp-name">Your Name</label>
-                  <input id="rsvp-name" type="text" class="input w-full" placeholder="Jane Doe" />
+                  <input id="rsvp-name" type="text" class="input w-full" placeholder="Enter your name" />
                 </div>
                 <div>
                   <label class="block text-sm font-medium mb-1" for="rsvp-email">Email <span class="text-red-500">*</span></label>
-                  <input id="rsvp-email" type="email" class="input w-full" placeholder="jane@example.com" required />
+                  <input id="rsvp-email" type="email" class="input w-full" placeholder="Enter your email" required />
                 </div>
                 <div class="flex gap-3">
                   <button type="submit" class="btn btn-primary btn-sm">
-                    {isFull ? 'Join Waitlist' : 'Confirm RSVP'}
+                    {isFull ? 'Join Waitlist' : 'Register'}
                   </button>
-                  <button type="button" id="cancel-rsvp-btn" class="btn btn-outline btn-sm hidden">Cancel RSVP</button>
+                  <button type="button" id="cancel-rsvp-btn" class="btn btn-outline btn-sm hidden">Cancel Registration</button>
                 </div>
               </form>
             </div>
@@ -178,15 +174,16 @@ const eventTypeLabels: Record<string, string> = {
         <!-- Sidebar -->
         <div class="lg:col-span-1 space-y-4">
           <div class="card p-6" data-meeting-url={event.meetingUrl || ''}>
-            <h2 class="font-semibold mb-3">Details</h2>
+            <h2 class="font-semibold mb-3">Event Details</h2>
             <ul class="text-sm text-gray-700 space-y-2">
-              <li><strong>Start:</strong> {new Date(event.startTime).toLocaleString()}</li>
-              <li><strong>End:</strong> {new Date(event.endTime).toLocaleString()}</li>
+              <li><strong>Date:</strong> {new Date(event.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</li>
+              <li><strong>Time:</strong> {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</li>
               <li><strong>Host:</strong> {event.hostEmail}</li>
               <li>
-                <strong>Capacity:</strong> {event.capacity} total &mdash;
-                {isFull
-                  ? <span class="text-red-500 font-medium">Full</span>
+                <strong>No. of Guests:</strong> {event.capacity}
+              <li>
+                <strong>Spots Left:</strong> {spotsLeft} / {event.capacity} - {isFull
+                  ? <span class="text-red-500 font-medium">No spots left, please join the waitlist.</span>
                   : <span class="text-green-600 font-medium">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span>
                 }
               </li>

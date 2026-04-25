@@ -1,4 +1,4 @@
-import { getCollection } from '../mongodb';
+import { getCollection } from '../mongodb.ts';
 import type {
   EventDocument,
   EventRSVPDocument,
