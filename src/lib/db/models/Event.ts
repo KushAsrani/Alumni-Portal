@@ -12,6 +12,7 @@ export interface EventDocument {
   endTime: Date;
   capacity: number;
   meetingUrl?: string;
+  meetingUrlActive?: boolean;  // default false — admin must activate before it's shown to attendees
   bannerUrl?: string;
   venue?: string;      // e.g. "Main Campus Auditorium, NCIT" or "Online"
   location?: string;   // physical address or "Remote/Online"
@@ -40,6 +41,7 @@ export interface EventRSVPDocument {
   guestFaculty?: string;
   guestYear?: number;
   guestCount?: number;
+  guests?: Array<{ name?: string; email?: string; mobile?: string; faculty?: string; year?: number }>;
   activities?: string[];
   comments?: string;
   createdAt: Date;

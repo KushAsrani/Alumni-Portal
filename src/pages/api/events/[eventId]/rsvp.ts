@@ -27,6 +27,7 @@ export const POST: APIRoute = async ({ request, params }) => {
       guestFaculty,
       guestYear,
       guestCount,
+      guests,
       activities,
       comments,
     } = body;
@@ -49,6 +50,7 @@ export const POST: APIRoute = async ({ request, params }) => {
       guestFaculty,
       guestYear: guestYear ? parseInt(String(guestYear)) : undefined,
       guestCount: guestCount ? parseInt(String(guestCount)) : undefined,
+      guests: Array.isArray(guests) ? guests : undefined,
       activities,
       comments,
     });

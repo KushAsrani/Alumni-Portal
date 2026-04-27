@@ -14,6 +14,13 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
+// NOTE: Existing events in MongoDB may have meetingUrlActive: undefined.
+// This is intentional — undefined is treated as falsy (false), so the join
+// link remains hidden until an admin explicitly sets meetingUrlActive: true
+// via PATCH /api/events/:id. The frontend checks `event.meetingUrlActive === true`
+// (strict equality) and the join API checks `event.meetingUrlActive !== true`,
+// so both correctly reject undefined. No migration script is needed.
+
 export class EventService {
   private static readonly EVENTS_COLLECTION = 'events';
   private static readonly RSVPS_COLLECTION = 'event_rsvps';
@@ -174,6 +181,7 @@ export class EventService {
       guestFaculty?: string;
       guestYear?: number;
       guestCount?: number;
+      guests?: Array<{ name?: string; email?: string; mobile?: string; faculty?: string; year?: number }>;
       activities?: string[];
       comments?: string;
     }
@@ -211,6 +219,7 @@ export class EventService {
       guestFaculty: extraFields?.guestFaculty,
       guestYear: extraFields?.guestYear,
       guestCount: extraFields?.guestCount,
+      guests: extraFields?.guests,
       activities: extraFields?.activities,
       comments: extraFields?.comments,
       createdAt: now,
