@@ -17,7 +17,9 @@ function slugify(text: string): string {
 // NOTE: Existing events in MongoDB may have meetingUrlActive: undefined.
 // This is intentional — undefined is treated as falsy (false), so the join
 // link remains hidden until an admin explicitly sets meetingUrlActive: true
-// via PATCH /api/events/:id. No migration script needed.
+// via PATCH /api/events/:id. The frontend checks `event.meetingUrlActive === true`
+// (strict equality) and the join API checks `event.meetingUrlActive !== true`,
+// so both correctly reject undefined. No migration script is needed.
 
 export class EventService {
   private static readonly EVENTS_COLLECTION = 'events';

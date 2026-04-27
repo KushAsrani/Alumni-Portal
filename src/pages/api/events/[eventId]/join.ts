@@ -47,17 +47,16 @@ export const GET: APIRoute = async ({ params }) => {
     // Validate that the stored URL uses http/https before redirecting
     let safeUrl: string;
     try {
-      // Explicit protocol allowlist check before constructing URL object
-      if (!/^https?:\/\//i.test(event.meetingUrl)) {
-        throw new Error('Invalid protocol');
-      }
       const u = new URL(event.meetingUrl);
       if (u.protocol !== 'https:' && u.protocol !== 'http:') {
-        throw new Error('Invalid protocol');
+        return new Response(JSON.stringify({ success: false, error: 'Only http and https protocols are allowed' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
       safeUrl = u.toString();
     } catch {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid meeting URL' }), {
+      return new Response(JSON.stringify({ success: false, error: 'Meeting URL is not a valid URL' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });

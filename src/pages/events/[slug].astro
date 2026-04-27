@@ -403,15 +403,15 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
     function buildGuestEntries(count: number) {
       const container = document.getElementById('guest-entries');
       if (!container) return;
-      container.innerHTML = '';
+      let html = '';
       for (let i = 1; i <= count; i++) {
-        container.innerHTML += `
+        html += `
           <div class="border border-gray-200 rounded-lg p-4 mb-4 bg-white">
             <p class="text-sm font-semibold text-gray-700 mb-3">Guest ${i}</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="md:col-span-2">
                 <label class="block text-sm font-medium mb-1" for="guestName_${i}">Guest Full Name <span class="text-red-500">*</span></label>
-                <input id="guestName_${i}" name="guestName_${i}" type="text" class="input w-full" placeholder="Guest full name" />
+                <input id="guestName_${i}" name="guestName_${i}" type="text" class="input w-full" placeholder="Guest full name" aria-required="true" />
                 <p id="guestName_${i}_error" class="text-red-500 text-xs mt-1 hidden">Guest Full Name is required.</p>
               </div>
               <div>
@@ -434,6 +434,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
           </div>
         `;
       }
+      container.innerHTML = html;
     }
 
     const guestCountInput = document.getElementById('guest-count') as HTMLInputElement | null;
