@@ -14,7 +14,22 @@ export const POST: APIRoute = async ({ request, params }) => {
     }
 
     const body = await request.json();
-    const { userEmail, userName } = body;
+    const {
+      userEmail,
+      userName,
+      mobile,
+      faculty,
+      graduationYear,
+      hasGuest,
+      guestName,
+      guestEmail,
+      guestMobile,
+      guestFaculty,
+      guestYear,
+      guestCount,
+      activities,
+      comments,
+    } = body;
 
     if (!userEmail) {
       return new Response(JSON.stringify({ success: false, message: 'Missing userEmail' }), {
@@ -23,7 +38,20 @@ export const POST: APIRoute = async ({ request, params }) => {
       });
     }
 
-    const result = await EventService.rsvp(eventId, userEmail, userName);
+    const result = await EventService.rsvp(eventId, userEmail, userName, {
+      mobile,
+      faculty,
+      graduationYear: graduationYear ? parseInt(String(graduationYear)) : undefined,
+      hasGuest,
+      guestName,
+      guestEmail,
+      guestMobile,
+      guestFaculty,
+      guestYear: guestYear ? parseInt(String(guestYear)) : undefined,
+      guestCount: guestCount ? parseInt(String(guestCount)) : undefined,
+      activities,
+      comments,
+    });
 
     return new Response(
       JSON.stringify({

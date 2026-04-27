@@ -1,8 +1,16 @@
 ---
 export const prerender = false;
 
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect(`/alumni/login?redirect=/events/${Astro.params.slug}`);
+}
+const currentAlumni = getCurrentAlumni(Astro.cookies);
+
 import Layout from '../../layouts/Layout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { connectToDatabase } from '../../lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 const { slug } = Astro.params;
 const base = Astro.url.origin;
@@ -25,6 +33,35 @@ try {
 if (!event) {
   return Astro.redirect('/events');
 }
+
+// Look up host name from alumni_registrations
+let hostName: string = event.hostName || event.hostEmail;
+try {
+  const { db } = await connectToDatabase();
+  if (!event.hostName) {
+    const hostAlumni = await db.collection('alumni_registrations').findOne(
+      { email: event.hostEmail },
+      { projection: { name: 1 } }
+    );
+    if (hostAlumni?.name) hostName = hostAlumni.name;
+  }
+} catch {}
+
+// Fetch logged-in alumni's profile for pre-filling the form
+let alumniProfile: any = null;
+try {
+  const { db } = await connectToDatabase();
+  let query: any = { $or: [
+    { username: currentAlumni?.username },
+    { email: currentAlumni?.username },
+  ]};
+  if (currentAlumni?.alumniId) {
+    try { query = { _id: new ObjectId(currentAlumni.alumniId) }; } catch {}
+  }
+  alumniProfile = await db.collection('alumni_registrations').findOne(query, {
+    projection: { name: 1, email: 1, mobile: 1, faculty: 1, year: 1 }
+  });
+} catch {}
 
 const spotsLeft = Math.max(0, event.capacity - (event.confirmedCount || 0));
 const isFull = spotsLeft === 0;
@@ -52,6 +89,14 @@ const eventTypeLabels: Record<string, string> = {
   ama: 'AMA',
   workshop: 'Workshop',
 };
+
+// Activities options based on event type
+const activitiesMap: Record<string, string[]> = {
+  webinar: ['Q&A Session', 'Panel Discussion', 'Networking Session', 'Live Demo', 'Guest Lectures'],
+  ama: ['Ask Me Anything', 'Networking Session', 'Career Guidance', 'Industry Insights'],
+  workshop: ['Hands-on Workshop', 'Group Activities', 'Networking Session', 'Mentorship Circles', 'Campus Tours', 'Alumni Awards Ceremony', 'Talent Showcases & Concerts'],
+};
+const activities = activitiesMap[event.eventType] || ['Networking Session', 'Panel Discussion', 'Workshops', 'Guest Lectures', 'Alumni Awards Ceremony', 'Campus Tours/Revisiting Dorms', 'Talent Showcases & Concerts', 'Industry Panels/Mentorship Circles'];
 ---
 
 <Layout title={event.title} description={event.description}>
@@ -87,7 +132,8 @@ const eventTypeLabels: Record<string, string> = {
       <div class="flex items-center justify-center gap-6 text-sm text-black/80 flex-wrap">
         <span><b>Date:</b> {new Date(event.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
         <span><b>Time:</b> {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-        <span><b>Hosted by:</b>{event.hostEmail}</span>
+        <span><b>Hosted by:</b> {hostName}</span>
+        <span>📍 {event.venue || (event.eventType === 'webinar' ? 'Online / Remote' : 'TBD')}</span>
         {!isFull && !isEnded && <span class="text-green-600 font-medium">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span>}
         {isFull && !isEnded && <span class="text-yellow-300 font-medium">⚠️ This event is full please join the waitlist.</span>}
       </div>
@@ -118,29 +164,134 @@ const eventTypeLabels: Record<string, string> = {
             )}
           </div>
 
-          <!-- RSVP Form (only for non-ended events) -->
+          <!-- Event Registration Form (only for non-ended events) -->
           {!isEnded && (
             <div class="card p-6" id="rsvp-section">
-              <h2 class="text-xl font-semibold mb-4">Register for this Event</h2>
+              <h2 class="text-xl font-semibold mb-1">Event Registration Form</h2>
+              <p class="text-sm text-gray-500 mb-4">
+                Last Registration Day — {new Date(event.startTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
+
               {isFull && (
-                <p class="text-amber-600 mb-3 font-medium">⚠️ This event is full — you'll be added to the waitlist.</p>
+                <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded p-3 mb-4 text-sm font-medium">
+                  ⚠️ This event is full — submitting will add you to the waitlist.
+                </div>
               )}
+
               <div id="rsvp-msg" class="hidden mb-4 p-3 rounded text-sm"></div>
-              <form id="rsvp-form" class="space-y-4">
+
+              <form id="rsvp-form" class="space-y-6">
                 <input type="hidden" id="event-id" value={event._id} />
+
+                <!-- SECTION: Attendee Information -->
                 <div>
-                  <label class="block text-sm font-medium mb-1" for="rsvp-name">Your Name</label>
-                  <input id="rsvp-name" type="text" class="input w-full" placeholder="Enter your name" />
+                  <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">Attendee Information</h3>
+                  <p class="text-xs text-gray-500 mb-4">Please fill in your name and contact information.</p>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                      <label class="block text-sm font-medium mb-1" for="rsvp-name">Full Name <span class="text-red-500">*</span></label>
+                      <input id="rsvp-name" name="userName" type="text" class="input w-full" placeholder="Enter your full name" value={alumniProfile?.name || ''} required />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-1" for="rsvp-email">Email Address <span class="text-red-500">*</span></label>
+                      <input id="rsvp-email" name="userEmail" type="email" class="input w-full" placeholder="example@example.com" value={alumniProfile?.email || ''} required />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-1" for="rsvp-mobile">Contact Number <span class="text-red-500">*</span></label>
+                      <input id="rsvp-mobile" name="mobile" type="tel" class="input w-full" placeholder="(000) 000-0000" value={alumniProfile?.mobile || ''} required />
+                      <p class="text-xs text-gray-400 mt-1">Please enter a valid phone number.</p>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-1" for="rsvp-faculty">Faculty / Department</label>
+                      <input id="rsvp-faculty" name="faculty" type="text" class="input w-full" placeholder="e.g. Computer Science" value={alumniProfile?.faculty || ''} />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-1" for="rsvp-year">Graduation Year</label>
+                      <input id="rsvp-year" name="graduationYear" type="number" class="input w-full" placeholder="e.g. 2022" min="1950" max="2100" value={alumniProfile?.year || ''} />
+                    </div>
+                  </div>
                 </div>
+
+                <!-- SECTION: Guest -->
                 <div>
-                  <label class="block text-sm font-medium mb-1" for="rsvp-email">Email <span class="text-red-500">*</span></label>
-                  <input id="rsvp-email" type="email" class="input w-full" placeholder="Enter your email" required />
+                  <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">Will you have a guest with you?</h3>
+                  <div class="flex gap-6 mb-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="hasGuest" value="yes" id="guest-yes" class="w-4 h-4 text-primary-600" />
+                      <span class="text-sm">Yes</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="hasGuest" value="no" id="guest-no" class="w-4 h-4 text-primary-600" checked />
+                      <span class="text-sm">No</span>
+                    </label>
+                  </div>
+
+                  <!-- Guest fields (hidden by default) -->
+                  <div id="guest-fields" class="hidden space-y-4 bg-gray-50 rounded-lg p-4 border border-gray-100">
+                    <p class="text-sm font-medium text-gray-700">Guest Information</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium mb-1" for="guest-count">Number of Guests</label>
+                        <input id="guest-count" name="guestCount" type="number" class="input w-full" placeholder="e.g. 1" min="1" max="5" value="1" />
+                      </div>
+                      <div class="md:col-span-2">
+                        <label class="block text-sm font-medium mb-1" for="guest-name">Guest Full Name</label>
+                        <input id="guest-name" name="guestName" type="text" class="input w-full" placeholder="Guest full name" />
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium mb-1" for="guest-email">Guest Email</label>
+                        <input id="guest-email" name="guestEmail" type="email" class="input w-full" placeholder="guest@example.com" />
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium mb-1" for="guest-mobile">Guest Contact Number</label>
+                        <input id="guest-mobile" name="guestMobile" type="tel" class="input w-full" placeholder="(000) 000-0000" />
+                        <p class="text-xs text-gray-400 mt-1">Please enter a valid phone number.</p>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium mb-1" for="guest-faculty">Guest Faculty / Department</label>
+                        <input id="guest-faculty" name="guestFaculty" type="text" class="input w-full" placeholder="e.g. Business" />
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium mb-1" for="guest-year">Guest Graduation Year</label>
+                        <input id="guest-year" name="guestYear" type="number" class="input w-full" placeholder="e.g. 2023" min="1950" max="2100" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="flex gap-3">
-                  <button type="submit" class="btn btn-primary btn-sm">
-                    {isFull ? 'Join Waitlist' : 'Register'}
+
+                <!-- SECTION: Activities -->
+                <div>
+                  <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">
+                    Which activities would you like to participate in?
+                  </h3>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {activities.map((activity: string) => (
+                      <label class="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-gray-50">
+                        <input type="checkbox" name="activities" value={activity} class="w-4 h-4 text-primary-600 rounded" />
+                        <span class="text-sm text-gray-700">{activity}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <!-- SECTION: Additional Comments -->
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="rsvp-comments">
+                    Additional Comments or Special Requests
+                  </label>
+                  <textarea id="rsvp-comments" name="comments" class="input w-full" rows={3}
+                    placeholder="Any dietary requirements, accessibility needs, or other requests..."></textarea>
+                </div>
+
+                <!-- Submit buttons -->
+                <div class="flex gap-3 pt-2">
+                  <button type="submit" id="rsvp-submit-btn" class="btn btn-primary">
+                    {isFull ? 'Join Waitlist' : 'Confirm Registration'}
                   </button>
-                  <button type="button" id="cancel-rsvp-btn" class="btn btn-outline btn-sm hidden">Cancel Registration</button>
+                  <button type="button" id="cancel-rsvp-btn" class="btn btn-outline hidden">
+                    Cancel Registration
+                  </button>
                 </div>
               </form>
             </div>
@@ -178,7 +329,14 @@ const eventTypeLabels: Record<string, string> = {
             <ul class="text-sm text-gray-700 space-y-2">
               <li><strong>Date:</strong> {new Date(event.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</li>
               <li><strong>Time:</strong> {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</li>
-              <li><strong>Host:</strong> {event.hostEmail}</li>
+              <li><strong>Host:</strong> {hostName}</li>
+              <li>
+                <strong>Venue:</strong>{' '}
+                {event.venue
+                  ? event.venue
+                  : (event.eventType === 'webinar' ? 'Online / Remote' : 'TBD')}
+              </li>
+              {event.location && <li><strong>Location:</strong> {event.location}</li>}
               <li>
                 <strong>No. of Guests:</strong> {event.capacity}
               <li>
@@ -220,6 +378,7 @@ const eventTypeLabels: Record<string, string> = {
       const eventId = (document.getElementById('event-id') as HTMLInputElement).value;
       const msgEl = document.getElementById('rsvp-msg')!;
       const cancelBtn = document.getElementById('cancel-rsvp-btn') as HTMLButtonElement;
+      const submitBtn = document.getElementById('rsvp-submit-btn') as HTMLButtonElement;
 
       function showMsg(text: string, type: 'success' | 'error' | 'info') {
         msgEl.textContent = text;
@@ -231,19 +390,46 @@ const eventTypeLabels: Record<string, string> = {
         msgEl.classList.remove('hidden');
       }
 
+      // Guest toggle
+      document.querySelectorAll('input[name="hasGuest"]').forEach(r => {
+        r.addEventListener('change', () => {
+          const guestFields = document.getElementById('guest-fields');
+          if ((document.getElementById('guest-yes') as HTMLInputElement).checked) {
+            guestFields?.classList.remove('hidden');
+          } else {
+            guestFields?.classList.add('hidden');
+          }
+        });
+      });
+
       rsvpForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = (document.getElementById('rsvp-email') as HTMLInputElement).value.trim();
         const name  = (document.getElementById('rsvp-name')  as HTMLInputElement).value.trim();
         if (!email) return;
 
-        const submitBtn = rsvpForm.querySelector('[type="submit"]') as HTMLButtonElement;
+        const formData = {
+          userEmail: email,
+          userName: name || undefined,
+          mobile: (document.getElementById('rsvp-mobile') as HTMLInputElement).value.trim(),
+          faculty: (document.getElementById('rsvp-faculty') as HTMLInputElement).value.trim(),
+          graduationYear: (document.getElementById('rsvp-year') as HTMLInputElement).value,
+          hasGuest: (document.querySelector('input[name="hasGuest"]:checked') as HTMLInputElement)?.value === 'yes',
+          guestName: (document.getElementById('guest-name') as HTMLInputElement).value.trim(),
+          guestEmail: (document.getElementById('guest-email') as HTMLInputElement).value.trim(),
+          guestMobile: (document.getElementById('guest-mobile') as HTMLInputElement).value.trim(),
+          guestFaculty: (document.getElementById('guest-faculty') as HTMLInputElement).value.trim(),
+          guestYear: (document.getElementById('guest-year') as HTMLInputElement).value,
+          guestCount: (document.getElementById('guest-count') as HTMLInputElement).value,
+          activities: [...document.querySelectorAll('input[name="activities"]:checked')].map(cb => (cb as HTMLInputElement).value),
+          comments: (document.getElementById('rsvp-comments') as HTMLTextAreaElement).value.trim(),
+        };
 
         try {
           const res = await fetch(`/api/events/${eventId}/rsvp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userEmail: email, userName: name || undefined }),
+            body: JSON.stringify(formData),
           });
           const data = await res.json();
           if (res.ok && data.success) {
