@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ params }) => {
       });
     }
 
-    if (!event.meetingUrlActive) {
+    if (event.meetingUrlActive !== true) {
       return new Response(JSON.stringify({ success: false, error: 'Join link is not yet active' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
@@ -47,6 +47,10 @@ export const GET: APIRoute = async ({ params }) => {
     // Validate that the stored URL uses http/https before redirecting
     let safeUrl: string;
     try {
+      // Explicit protocol allowlist check before constructing URL object
+      if (!/^https?:\/\//i.test(event.meetingUrl)) {
+        throw new Error('Invalid protocol');
+      }
       const u = new URL(event.meetingUrl);
       if (u.protocol !== 'https:' && u.protocol !== 'http:') {
         throw new Error('Invalid protocol');

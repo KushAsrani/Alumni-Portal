@@ -191,26 +191,26 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
                       <label class="block text-sm font-medium mb-1" for="rsvp-name">Full Name <span class="text-red-500">*</span></label>
-                      <input id="rsvp-name" name="userName" type="text" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.name || ''} disabled readonly />
+                      <input id="rsvp-name" name="userName" type="text" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.name || ''} readonly />
                       <p id="rsvp-name-error" class="text-red-500 text-xs mt-1 hidden">Full Name is required.</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium mb-1" for="rsvp-email">Email Address <span class="text-red-500">*</span></label>
-                      <input id="rsvp-email" name="userEmail" type="email" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.email || ''} disabled readonly />
+                      <input id="rsvp-email" name="userEmail" type="email" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.email || ''} readonly />
                       <p id="rsvp-email-error" class="text-red-500 text-xs mt-1 hidden">Email Address is required.</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium mb-1" for="rsvp-mobile">Contact Number <span class="text-red-500">*</span></label>
-                      <input id="rsvp-mobile" name="mobile" type="tel" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.mobile || ''} disabled readonly />
+                      <input id="rsvp-mobile" name="mobile" type="tel" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.mobile || ''} readonly />
                       <p id="rsvp-mobile-error" class="text-red-500 text-xs mt-1 hidden">A valid contact number (min 10 digits) is required.</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium mb-1" for="rsvp-faculty">Faculty / Department</label>
-                      <input id="rsvp-faculty" name="faculty" type="text" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.faculty || ''} disabled readonly />
+                      <input id="rsvp-faculty" name="faculty" type="text" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.faculty || ''} readonly />
                     </div>
                     <div>
                       <label class="block text-sm font-medium mb-1" for="rsvp-year">Graduation Year</label>
-                      <input id="rsvp-year" name="graduationYear" type="number" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" min="1950" max="2100" value={alumniProfile?.year || ''} disabled readonly />
+                      <input id="rsvp-year" name="graduationYear" type="number" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" min="1950" max="2100" value={alumniProfile?.year || ''} readonly />
                     </div>
                   </div>
                 </div>
@@ -436,21 +436,21 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       }
     }
 
-    // Initialise with 1 guest entry on load
-    buildGuestEntries(1);
-
     const guestCountInput = document.getElementById('guest-count') as HTMLInputElement | null;
     guestCountInput?.addEventListener('input', () => {
       const count = Math.min(5, Math.max(1, parseInt(guestCountInput.value) || 1));
       buildGuestEntries(count);
     });
 
-    // Guest toggle
+    // Guest toggle — build per-guest entries only when "Yes" is selected
     document.querySelectorAll('input[name="hasGuest"]').forEach(r => {
       r.addEventListener('change', () => {
         const guestFields = document.getElementById('guest-fields');
         if ((document.getElementById('guest-yes') as HTMLInputElement).checked) {
           guestFields?.classList.remove('hidden');
+          // Build guest entries on first reveal
+          const count = Math.min(5, Math.max(1, parseInt((document.getElementById('guest-count') as HTMLInputElement)?.value) || 1));
+          buildGuestEntries(count);
         } else {
           guestFields?.classList.add('hidden');
         }
