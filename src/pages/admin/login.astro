@@ -11,7 +11,7 @@ try {
   const alreadyAuthenticated = isAuthenticated(Astro.cookies);
   
   if (alreadyAuthenticated) {
-    return Astro.redirect('/admin/scraper-dashboard');
+    return Astro.redirect('/admin/dashboard');
   }
 } catch (error) {
   console.error('Auth check error:', error);
@@ -49,7 +49,7 @@ if (Astro.request.method === 'POST') {
       setAuthCookie(Astro.cookies, username);
       
       // Redirect to dashboard
-      return Astro.redirect('/admin/scraper-dashboard');
+      return Astro.redirect('/admin/dashboard');
     } else {
       console.log('Authentication failed for:', username);
       errorMessage = 'Invalid username or password';
