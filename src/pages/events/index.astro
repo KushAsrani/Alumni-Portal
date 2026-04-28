@@ -41,7 +41,7 @@ const breadcrumbItems = [
             placeholder="Search events by title or description..."
             class="input w-full pl-10"
           />
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true">🔍</span>
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true"></span>
         </div>
 
         <!-- Filter row -->
@@ -134,7 +134,7 @@ const breadcrumbItems = [
                 <span class="text-sm text-gray-500">${date}</span>
               </div>
               <h3 class="text-xl font-semibold mb-2">${e.title}</h3>
-              ${e.description ? `<p class="text-gray-600 mb-3 text-sm line-clamp-2">${e.description}</p>` : ''}
+              ${e.description ? `<p class="text-gray-600 mb-3 text-sm line-clamp-2">${e.description}</p>` : ''} ${e.venue ? `<p class="text-gray-500 mb-3 text-sm"> <svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>${e.venue}, ${e.location}</p>` : ''}
               ${e.tags && e.tags.length ? `<div class="flex flex-wrap gap-1 mb-3">${e.tags.map((t: string) => `<span class="badge badge-secondary text-xs">${t}</span>`).join('')}</div>` : ''}
               <div class="mt-2">
                 <div class="flex items-center justify-between text-sm mb-1">

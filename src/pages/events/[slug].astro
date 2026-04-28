@@ -133,8 +133,8 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
         <span><b>Date:</b> {new Date(event.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
         <span><b>Time:</b> {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
         <span><b>Hosted by:</b> {hostName}</span>
-        <span>📍 {event.venue || (event.eventType === 'webinar' ? 'Online / Remote' : 'TBD')}</span>
-        {!isFull && !isEnded && <span class="text-green-600 font-medium">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span>}
+        <span><b>Venue/Location:</b> {event.venue || (event.eventType === 'webinar' ? 'Online' : 'TBD')}, {event.location || (event.eventType === 'webinar' ? 'Online' : 'TBD')}</span>
+        {!isFull && !isEnded && <span><b>Spots Left:</b> <span class="text-green-600 font-medium">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span></span>}
         {isFull && !isEnded && <span class="text-yellow-300 font-medium">⚠️ This event is full please join the waitlist.</span>}
       </div>
     </div>
@@ -169,7 +169,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
             <div class="card p-6" id="rsvp-section">
               <h2 class="text-xl font-semibold mb-1">Event Registration Form</h2>
               <p class="text-sm text-gray-500 mb-4">
-                Last Registration Day — {new Date(event.startTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                Last Date to Register — {new Date(event.startTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
 
               {isFull && (
@@ -177,8 +177,6 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                   ⚠️ This event is full — submitting will add you to the waitlist.
                 </div>
               )}
-
-              <div id="rsvp-msg" class="hidden mb-4 p-3 rounded text-sm"></div>
 
               <form id="rsvp-form" class="space-y-6">
                 <input type="hidden" id="event-id" value={event._id} />
@@ -192,32 +190,37 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                     <div class="md:col-span-2">
                       <label class="block text-sm font-medium mb-1" for="rsvp-name">Full Name <span class="text-red-500">*</span></label>
                       <input id="rsvp-name" name="userName" type="text" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.name || ''} readonly />
+                      <span class="text-xs text-gray-500">Enter your full name</span>
                       <p id="rsvp-name-error" class="text-red-500 text-xs mt-1 hidden">Full Name is required.</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium mb-1" for="rsvp-email">Email Address <span class="text-red-500">*</span></label>
                       <input id="rsvp-email" name="userEmail" type="email" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.email || ''} readonly />
+                      <span class="text-xs text-gray-500">Enter your email address</span>
                       <p id="rsvp-email-error" class="text-red-500 text-xs mt-1 hidden">Email Address is required.</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium mb-1" for="rsvp-mobile">Contact Number <span class="text-red-500">*</span></label>
                       <input id="rsvp-mobile" name="mobile" type="tel" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.mobile || ''} readonly />
+                      <span class="text-xs text-gray-500">Enter your contact number</span>
                       <p id="rsvp-mobile-error" class="text-red-500 text-xs mt-1 hidden">A valid contact number (min 10 digits) is required.</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium mb-1" for="rsvp-faculty">Faculty / Department</label>
                       <input id="rsvp-faculty" name="faculty" type="text" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" value={alumniProfile?.faculty || ''} readonly />
+                      <span class="text-xs text-gray-500">Enter your faculty or department e.g. Computer Science, IT, Engineering</span>
                     </div>
                     <div>
                       <label class="block text-sm font-medium mb-1" for="rsvp-year">Graduation Year</label>
                       <input id="rsvp-year" name="graduationYear" type="number" class="input w-full bg-gray-100 cursor-not-allowed opacity-75" min="1950" max="2100" value={alumniProfile?.year || ''} readonly />
+                      <span class="text-xs text-gray-500">Enter your graduation year</span>
                     </div>
                   </div>
                 </div>
 
                 <!-- SECTION: Guest -->
                 <div>
-                  <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">Will you have a guest with you?</h3>
+                  <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">Will you have guests with you?</h3>
                   <div class="flex gap-6 mb-4">
                     <label class="flex items-center gap-2 cursor-pointer">
                       <input type="radio" name="hasGuest" value="yes" id="guest-yes" class="w-4 h-4 text-primary-600" />
@@ -233,7 +236,8 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                   <div id="guest-fields" class="hidden space-y-4 bg-gray-50 rounded-lg p-4 border border-gray-100">
                     <div>
                       <label class="block text-sm font-medium mb-1" for="guest-count">Number of Guests</label>
-                      <input id="guest-count" name="guestCount" type="number" class="input w-full" placeholder="e.g. 1" min="1" max="5" value="1" />
+                      <input id="guest-count" name="guestCount" type="number" class="input w-full" placeholder="" min="1" max="5" value="1" />
+                      <span class="text-xs text-gray-500">You can register up to 5 guests. Please provide their details after entering the number of guests.</span>
                     </div>
                     <!-- Per-guest dynamic sections rendered by JS -->
                     <div id="guest-entries"></div>
@@ -263,6 +267,8 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                   <textarea id="rsvp-comments" name="comments" class="input w-full" rows={3}
                     placeholder="Any dietary requirements, accessibility needs, or other requests..."></textarea>
                 </div>
+
+                <div id="rsvp-msg" class="hidden mb-4 p-3 rounded text-sm"></div>
 
                 <!-- Submit buttons -->
                 <div class="flex gap-3 pt-2">
@@ -311,12 +317,13 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
               <li><strong>Time:</strong> {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</li>
               <li><strong>Host:</strong> {hostName}</li>
               <li>
-                <strong>Venue:</strong>{' '}
+                <strong>Venue/Location:</strong>{' '}
                 {event.venue
                   ? event.venue
-                  : (event.eventType === 'webinar' ? 'Online / Remote' : 'TBD')}
+                  : (event.eventType === 'webinar' ? 'Online / Remote' : 'TBD')},
+                  {event.location}
               </li>
-              {event.location && <li><strong>Location:</strong> {event.location}</li>}
+              
               <li>
                 <strong>No. of Guests:</strong> {event.capacity}
               <li>
@@ -339,16 +346,16 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
             {/* Admin-gated join link — only shown when meetingUrlActive is true */}
             {event.meetingUrl && event.meetingUrlActive === true ? (
               <div class="mt-4 pt-4 border-t border-gray-100">
-                <p class="text-sm font-semibold text-gray-700 mb-2">🎥 Join Link</p>
+                <p class="text-sm font-semibold text-gray-700 mb-2">Join Link</p>
                 <a href={`/api/events/${event._id}/join`} target="_blank" rel="noopener noreferrer"
                    class="btn btn-primary btn-sm w-full text-center">
-                  Join the Event →
+                  Join the webinar
                 </a>
               </div>
             ) : event.meetingUrl ? (
               <div class="mt-4 pt-4 border-t border-gray-100">
                 <div class="bg-gray-50 border border-gray-200 rounded p-3 text-sm text-gray-500">
-                  <span class="font-medium">🔒 Join link not yet available</span>
+                  <span class="font-medium">The event has not started yet. Join link not yet available.</span>
                   <p class="mt-1 text-xs">The host will activate the join link before the event starts. Check back closer to the event time.</p>
                 </div>
               </div>
@@ -364,10 +371,10 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
   <div id="confirm-register-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
     <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
       <h3 class="text-lg font-semibold mb-2">Confirm Registration</h3>
-      <p class="text-sm text-gray-600 mb-6">Are you sure you want to register for <strong>{event.title}</strong>? Your information will be submitted.</p>
+      <p class="text-sm text-gray-600 mb-6">Are you sure you want to register for <strong>{event.title}</strong>? Please confirm your details before submitting. Make sure that the information you provided is correct. You can contact the admin if you need to make any changes after submitting.</p>
       <div class="flex gap-3 justify-end">
-        <button id="modal-register-cancel" class="btn btn-outline">Cancel</button>
-        <button id="modal-register-confirm" class="btn btn-primary">Yes, Register</button>
+        <button id="modal-register-cancel" class="btn btn-primary text-white bg-blue-600">No</button>
+        <button id="modal-register-confirm" class="btn btn-primary">Yes, Confirm</button>
       </div>
     </div>
   </div>
@@ -376,10 +383,10 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
   <div id="confirm-cancel-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
     <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
       <h3 class="text-lg font-semibold mb-2">Cancel Registration</h3>
-      <p class="text-sm text-gray-600 mb-6">Are you sure you want to cancel your registration for <strong>{event.title}</strong>? This cannot be undone.</p>
+      <p class="text-sm text-gray-600 mb-6">Are you sure you want to cancel your registration for <strong>{event.title}</strong>? This action cannot be undone.</p>
       <div class="flex gap-3 justify-end">
-        <button id="modal-keep-registration" class="btn btn-outline">Keep Registration</button>
-        <button id="modal-cancel-confirm" class="btn btn-primary bg-red-600 hover:bg-red-700 border-red-600">Yes, Cancel</button>
+        <button id="modal-keep-registration" class="btn btn-primary text-white bg-blue-600">No</button>
+        <button id="modal-cancel-confirm" class="btn btn-danger text-white bg-red-600 hover:bg-red-700 border-red-600">Yes</button>
       </div>
     </div>
   </div>
@@ -411,24 +418,24 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="md:col-span-2">
                 <label class="block text-sm font-medium mb-1" for="guestName_${i}">Guest Full Name <span class="text-red-500">*</span></label>
-                <input id="guestName_${i}" name="guestName_${i}" type="text" class="input w-full" placeholder="Guest full name" aria-required="true" />
+                <input id="guestName_${i}" name="guestName_${i}" type="text" class="input w-full" placeholder="Enter the full name of Guest ${i}" aria-required="true" />
                 <p id="guestName_${i}_error" class="text-red-500 text-xs mt-1 hidden">Guest Full Name is required.</p>
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1" for="guestEmail_${i}">Guest Email</label>
-                <input id="guestEmail_${i}" name="guestEmail_${i}" type="email" class="input w-full" placeholder="guest@example.com" />
+                <input id="guestEmail_${i}" name="guestEmail_${i}" type="email" class="input w-full" placeholder="Enter the email of Guest ${i}" />
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1" for="guestMobile_${i}">Guest Contact Number</label>
-                <input id="guestMobile_${i}" name="guestMobile_${i}" type="tel" class="input w-full" placeholder="(000) 000-0000" />
+                <input id="guestMobile_${i}" name="guestMobile_${i}" type="tel" class="input w-full" placeholder="Enter the contact number of Guest ${i}" />
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1" for="guestFaculty_${i}">Guest Faculty / Department</label>
-                <input id="guestFaculty_${i}" name="guestFaculty_${i}" type="text" class="input w-full" placeholder="e.g. Business" />
+                <input id="guestFaculty_${i}" name="guestFaculty_${i}" type="text" class="input w-full" placeholder="Enter the faculty or department of Guest ${i}" />
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1" for="guestYear_${i}">Guest Graduation Year</label>
-                <input id="guestYear_${i}" name="guestYear_${i}" type="number" class="input w-full" placeholder="e.g. 2023" min="1950" max="2100" />
+                <input id="guestYear_${i}" name="guestYear_${i}" type="number" class="input w-full" placeholder="Enter the graduation year of Guest ${i}" min="1950" max="2100" />
               </div>
             </div>
           </div>
@@ -549,17 +556,17 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
           const data = await res.json();
           if (res.ok && data.success) {
             if (data.status === 'waitlisted') {
-              showMsg(`⏳ You've been added to the waitlist. We'll notify you if a spot opens up.`, 'success');
-              if (submitBtn) { submitBtn.textContent = "You're on the waitlist ✓"; }
+              showMsg(`You've been added to the waitlist. We'll notify you if a spot opens up.`, 'success');
+              if (submitBtn) { submitBtn.textContent = "You're on the waitlist"; }
             } else {
-              showMsg(`✅ You're confirmed! The join link will be available once the host activates it.`, 'success');
-              if (submitBtn) { submitBtn.textContent = 'Registered ✓'; }
+              showMsg(`Your registration is confirmed. The join link will be available once the host activates it.`, 'success');
+              if (submitBtn) { submitBtn.textContent = 'Registered'; }
             }
             cancelBtn.classList.remove('hidden');
           } else if (res.status === 409) {
             showMsg('You are already registered for this event.', 'info');
             cancelBtn.classList.remove('hidden');
-            if (submitBtn) { submitBtn.textContent = 'Registered ✓'; }
+            if (submitBtn) { submitBtn.textContent = 'Registered'; }
           } else {
             showMsg(data.message || 'Something went wrong.', 'error');
           }

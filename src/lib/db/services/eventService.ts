@@ -175,11 +175,6 @@ export class EventService {
       faculty?: string;
       graduationYear?: number;
       hasGuest?: boolean;
-      guestName?: string;
-      guestEmail?: string;
-      guestMobile?: string;
-      guestFaculty?: string;
-      guestYear?: number;
       guestCount?: number;
       guests?: Array<{ name?: string; email?: string; mobile?: string; faculty?: string; year?: number }>;
       activities?: string[];
@@ -213,11 +208,6 @@ export class EventService {
       faculty: extraFields?.faculty,
       graduationYear: extraFields?.graduationYear,
       hasGuest: extraFields?.hasGuest,
-      guestName: extraFields?.guestName,
-      guestEmail: extraFields?.guestEmail,
-      guestMobile: extraFields?.guestMobile,
-      guestFaculty: extraFields?.guestFaculty,
-      guestYear: extraFields?.guestYear,
       guestCount: extraFields?.guestCount,
       guests: extraFields?.guests,
       activities: extraFields?.activities,
