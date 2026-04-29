@@ -1,0 +1,644 @@
+---
+export const prerender = false;
+import { isAuthenticated, getCurrentUser } from '../../lib/auth';
+import { connectToDatabase } from '../../lib/mongodb';
+
+if (!isAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/admin/login');
+}
+const currentUser = getCurrentUser(Astro.cookies);
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Events Management | Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Top Bar -->
+  <div class="bg-white shadow-sm mb-0">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
+      <div class="flex items-center gap-2 text-sm text-gray-600">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        Logged in as <strong class="ml-1">{currentUser}</strong>
+      </div>
+      <form action="/api/auth/logout" method="POST">
+        <button type="submit" class="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Logout
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="max-w-7xl mx-auto px-6 py-8">
+
+    <!-- Header + Nav -->
+    <div class="flex flex-wrap justify-between items-start gap-4 mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          Events Management
+        </h1>
+        <p class="text-gray-500 mt-1">Create, manage, and monitor events</p>
+      </div>
+      <nav class="flex gap-2 flex-wrap">
+        <a href="/admin/dashboard" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors">Dashboard</a>
+        <a href="/admin/registrations" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors">Registrations</a>
+        <a href="/admin/scraper-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors">Job Scraper</a>
+        <a href="/admin/events" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white">Events</a>
+      </nav>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="flex flex-wrap gap-3 mb-6 items-center justify-between">
+      <div class="flex gap-3 flex-wrap items-center">
+        <!-- Search -->
+        <input id="searchInput" type="text" placeholder="Search events..." class="px-4 py-2 border border-gray-200 rounded-xl text-sm w-56 focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+        <!-- Status filter tabs -->
+        <div class="flex gap-1 bg-gray-100 rounded-xl p-1">
+          <button data-filter="all" class="filter-tab active-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">All</button>
+          <button data-filter="upcoming" class="filter-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-gray-600 hover:bg-white">Upcoming</button>
+          <button data-filter="live" class="filter-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-gray-600 hover:bg-white">Live</button>
+          <button data-filter="ended" class="filter-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-gray-600 hover:bg-white">Ended</button>
+        </div>
+        <!-- Type filter -->
+        <select id="typeFilter" class="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          <option value="">All Types</option>
+          <option value="webinar">Webinar</option>
+          <option value="ama">AMA</option>
+          <option value="networking">Networking</option>
+          <option value="workshop">Workshop</option>
+        </select>
+      </div>
+      <div class="flex gap-3">
+        <button id="exportEventsBtn" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export CSV
+        </button>
+        <button id="createEventBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          + Create Event
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading / Error / Events List -->
+    <div id="loadingState" class="text-center py-12 text-gray-400">Loading events…</div>
+    <div id="errorState" class="hidden text-center py-12 text-red-500"></div>
+    <div id="eventsContainer" class="hidden space-y-4"></div>
+    <div id="emptyState" class="hidden text-center py-12 text-gray-400">No events found.</div>
+
+  </div>
+
+  <!-- ─────────────────── Create / Edit Modal ─────────────────── -->
+  <div id="eventModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-start justify-center p-6 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-8">
+      <div class="flex justify-between items-center p-6 border-b">
+        <h2 id="modalTitle" class="text-xl font-bold text-gray-900">Create Event</h2>
+        <button id="closeModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form id="eventForm" class="p-6 space-y-4">
+        <input type="hidden" id="editEventId" value="" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title <span class="text-red-500">*</span></label>
+            <input id="fTitle" type="text" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Event title" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea id="fDescription" rows="3" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Event description"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Event Type</label>
+            <select id="fEventType" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              <option value="webinar">Webinar</option>
+              <option value="ama">AMA</option>
+              <option value="networking">Networking</option>
+              <option value="workshop">Workshop</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
+            <input id="fCapacity" type="number" min="1" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="50" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Start Time <span class="text-red-500">*</span></label>
+            <input id="fStartTime" type="datetime-local" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">End Time <span class="text-red-500">*</span></label>
+            <input id="fEndTime" type="datetime-local" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Meeting URL</label>
+            <input id="fMeetingUrl" type="url" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="https://meet.example.com/..." />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Host Email</label>
+            <input id="fHostEmail" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="host@example.com" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tags <span class="text-gray-400 text-xs">(comma-separated)</span></label>
+            <input id="fTags" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="career, tech, networking" />
+          </div>
+        </div>
+        <div id="formError" class="hidden text-red-600 text-sm bg-red-50 px-4 py-2 rounded-xl"></div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="cancelModal" class="px-5 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
+          <button type="submit" id="submitEventBtn" class="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">Save Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─────────────────── RSVP Panel Modal ─────────────────── -->
+  <div id="rsvpModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-start justify-center p-6 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl my-8">
+      <div class="flex justify-between items-center p-6 border-b">
+        <h2 id="rsvpModalTitle" class="text-xl font-bold text-gray-900">RSVPs</h2>
+        <button id="closeRsvpModal" class="text-gray-400 hover:text-gray-600">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div id="rsvpContent" class="p-6">
+        <div class="mb-4 flex gap-3 items-center">
+          <input id="checkinEmailInput" type="email" placeholder="Email for check-in" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+          <button id="checkinBtn" class="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">Check In</button>
+        </div>
+        <div id="rsvpTableWrapper" class="overflow-x-auto">
+          <p class="text-gray-400 text-sm">Loading RSVPs…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────── Rooms Panel Modal ─────────────────── -->
+  <div id="roomsModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-start justify-center p-6 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-8">
+      <div class="flex justify-between items-center p-6 border-b">
+        <h2 id="roomsModalTitle" class="text-xl font-bold text-gray-900">Networking Rooms</h2>
+        <button id="closeRoomsModal" class="text-gray-400 hover:text-gray-600">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div id="roomsContent" class="p-6">
+        <div class="mb-4 flex gap-3">
+          <input id="newRoomName" type="text" placeholder="Room name" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+          <input id="newRoomTopic" type="text" placeholder="Topic" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+          <button id="createRoomBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">Add Room</button>
+        </div>
+        <div id="roomsList"><p class="text-gray-400 text-sm">Loading rooms…</p></div>
+      </div>
+    </div>
+  </div>
+
+<script define:vars={{}}>
+  // ── State ──────────────────────────────────────────────────────
+  let allEvents = [];
+  let filteredEvents = [];
+  let currentStatusFilter = 'all';
+  let currentTypeFilter = '';
+  let currentSearch = '';
+  let activeRsvpEventId = null;
+  let activeRoomsEventId = null;
+
+  // ── Helpers ────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+
+  function fmtDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  function escHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function toLocalDT(d) {
+    if (!d) return '';
+    const dt = new Date(d);
+    const pad = n => String(n).padStart(2, '0');
+    return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  }
+
+  const typeBadgeClass = {
+    webinar: 'bg-purple-100 text-purple-700',
+    ama: 'bg-amber-100 text-amber-700',
+    networking: 'bg-teal-100 text-teal-700',
+    workshop: 'bg-indigo-100 text-indigo-700',
+  };
+
+  const statusBadgeClass = {
+    upcoming: 'bg-green-100 text-green-700',
+    live: 'bg-blue-100 text-blue-700',
+    ended: 'bg-gray-100 text-gray-600',
+  };
+
+  // ── Load events ────────────────────────────────────────────────
+  async function loadEvents() {
+    $('loadingState').classList.remove('hidden');
+    $('errorState').classList.add('hidden');
+    $('eventsContainer').classList.add('hidden');
+    $('emptyState').classList.add('hidden');
+
+    try {
+      const res = await fetch('/api/events');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      allEvents = Array.isArray(data) ? data : (data.events || data.data || []);
+      applyFilters();
+    } catch (e) {
+      $('loadingState').classList.add('hidden');
+      $('errorState').textContent = 'Failed to load events: ' + e.message;
+      $('errorState').classList.remove('hidden');
+    }
+  }
+
+  function applyFilters() {
+    filteredEvents = allEvents.filter(ev => {
+      if (currentStatusFilter !== 'all' && ev.status !== currentStatusFilter) return false;
+      if (currentTypeFilter && ev.eventType !== currentTypeFilter) return false;
+      if (currentSearch) {
+        const q = currentSearch.toLowerCase();
+        if (!(ev.title || '').toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+    renderEvents();
+  }
+
+  function renderEvents() {
+    $('loadingState').classList.add('hidden');
+    const container = $('eventsContainer');
+
+    if (filteredEvents.length === 0) {
+      container.classList.add('hidden');
+      $('emptyState').classList.remove('hidden');
+      return;
+    }
+
+    $('emptyState').classList.add('hidden');
+    container.innerHTML = filteredEvents.map(ev => {
+      const typeClass = typeBadgeClass[ev.eventType] || 'bg-gray-100 text-gray-600';
+      const statusClass = statusBadgeClass[ev.status] || 'bg-gray-100 text-gray-600';
+      const confirmedCount = ev.confirmedCount ?? ev.rsvpCount ?? '—';
+      return `
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5" data-event-id="${ev._id}">
+        <div class="flex flex-wrap justify-between items-start gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap gap-2 mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${typeClass}">${ev.eventType || 'event'}</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${ev.status || 'upcoming'}</span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 truncate">${escHtml(ev.title || 'Untitled')}</h3>
+            <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+              <span>📅 ${fmtDate(ev.startTime)}</span>
+              <span>👥 Capacity: ${ev.capacity ?? '—'}</span>
+              <span>✅ RSVPs: ${confirmedCount}</span>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 shrink-0">
+            <button class="btn-rsvps px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors" data-id="${escHtml(ev._id)}" data-title="${escHtml(ev.title)}">View RSVPs</button>
+            <button class="btn-rooms px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium hover:bg-teal-100 transition-colors" data-id="${escHtml(ev._id)}" data-title="${escHtml(ev.title)}">Rooms</button>
+            <button class="btn-edit px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium hover:bg-indigo-100 transition-colors" data-id="${escHtml(ev._id)}">Edit</button>
+            <button class="btn-delete px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors" data-id="${escHtml(ev._id)}">Delete</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    container.classList.remove('hidden');
+
+    // Attach button handlers
+    container.querySelectorAll('.btn-edit').forEach(btn => {
+      btn.addEventListener('click', () => openEditModal(btn.dataset.id));
+    });
+    container.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => deleteEvent(btn.dataset.id));
+    });
+    container.querySelectorAll('.btn-rsvps').forEach(btn => {
+      btn.addEventListener('click', () => openRsvpModal(btn.dataset.id, btn.dataset.title));
+    });
+    container.querySelectorAll('.btn-rooms').forEach(btn => {
+      btn.addEventListener('click', () => openRoomsModal(btn.dataset.id, btn.dataset.title));
+    });
+  }
+
+  // ── Filter handlers ────────────────────────────────────────────
+  document.querySelectorAll('.filter-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-tab').forEach(b => {
+        b.classList.remove('active-tab', 'bg-white', 'text-indigo-700', 'shadow-sm');
+        b.classList.add('text-gray-600');
+      });
+      btn.classList.add('active-tab', 'bg-white', 'text-indigo-700', 'shadow-sm');
+      btn.classList.remove('text-gray-600');
+      currentStatusFilter = btn.dataset.filter;
+      applyFilters();
+    });
+  });
+
+  $('typeFilter').addEventListener('change', e => {
+    currentTypeFilter = e.target.value;
+    applyFilters();
+  });
+
+  $('searchInput').addEventListener('input', e => {
+    currentSearch = e.target.value.trim();
+    applyFilters();
+  });
+
+  // ── Create / Edit Modal ────────────────────────────────────────
+  function openCreateModal() {
+    $('modalTitle').textContent = 'Create Event';
+    $('editEventId').value = '';
+    $('eventForm').reset();
+    $('formError').classList.add('hidden');
+    $('eventModal').classList.remove('hidden');
+  }
+
+  function openEditModal(eventId) {
+    const ev = allEvents.find(e => e._id === eventId || String(e._id) === String(eventId));
+    if (!ev) return;
+    $('modalTitle').textContent = 'Edit Event';
+    $('editEventId').value = ev._id;
+    $('fTitle').value = ev.title || '';
+    $('fDescription').value = ev.description || '';
+    $('fEventType').value = ev.eventType || 'webinar';
+    $('fCapacity').value = ev.capacity || '';
+    $('fStartTime').value = toLocalDT(ev.startTime);
+    $('fEndTime').value = toLocalDT(ev.endTime);
+    $('fMeetingUrl').value = ev.meetingUrl || '';
+    $('fHostEmail').value = ev.hostEmail || '';
+    $('fTags').value = Array.isArray(ev.tags) ? ev.tags.join(', ') : (ev.tags || '');
+    $('formError').classList.add('hidden');
+    $('eventModal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    $('eventModal').classList.add('hidden');
+  }
+
+  $('createEventBtn').addEventListener('click', openCreateModal);
+  $('closeModal').addEventListener('click', closeModal);
+  $('cancelModal').addEventListener('click', closeModal);
+  $('eventModal').addEventListener('click', e => { if (e.target === $('eventModal')) closeModal(); });
+
+  $('eventForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = $('editEventId').value;
+    const isEdit = !!id;
+
+    const tags = $('fTags').value.split(',').map(t => t.trim()).filter(Boolean);
+    const payload = {
+      title: $('fTitle').value.trim(),
+      description: $('fDescription').value.trim(),
+      eventType: $('fEventType').value,
+      capacity: parseInt($('fCapacity').value) || undefined,
+      startTime: new Date($('fStartTime').value).toISOString(),
+      endTime: new Date($('fEndTime').value).toISOString(),
+      meetingUrl: $('fMeetingUrl').value.trim(),
+      hostEmail: $('fHostEmail').value.trim(),
+      tags,
+    };
+
+    const url = isEdit ? `/api/events/${id}` : '/api/events';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+      $('submitEventBtn').disabled = true;
+      $('submitEventBtn').textContent = 'Saving…';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
+      closeModal();
+      await loadEvents();
+    } catch (err) {
+      $('formError').textContent = err.message;
+      $('formError').classList.remove('hidden');
+    } finally {
+      $('submitEventBtn').disabled = false;
+      $('submitEventBtn').textContent = 'Save Event';
+    }
+  });
+
+  // ── Delete ─────────────────────────────────────────────────────
+  async function deleteEvent(eventId) {
+    if (!confirm('Are you sure you want to delete this event? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || `HTTP ${res.status}`);
+      }
+      await loadEvents();
+    } catch (err) {
+      alert('Failed to delete event: ' + err.message);
+    }
+  }
+
+  // ── RSVP Modal ─────────────────────────────────────────────────
+  async function openRsvpModal(eventId, title) {
+    activeRsvpEventId = eventId;
+    $('rsvpModalTitle').textContent = `RSVPs — ${title}`;
+    $('rsvpTableWrapper').innerHTML = '<p class="text-gray-400 text-sm">Loading RSVPs…</p>';
+    $('rsvpModal').classList.remove('hidden');
+    await loadRsvps(eventId);
+  }
+
+  async function loadRsvps(eventId) {
+    try {
+      const res = await fetch(`/api/events/${eventId}/rsvps`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const rsvps = Array.isArray(data) ? data : (data.rsvps || data.data || []);
+      if (rsvps.length === 0) {
+        $('rsvpTableWrapper').innerHTML = '<p class="text-gray-400 text-sm">No RSVPs yet.</p>';
+        return;
+      }
+      $('rsvpTableWrapper').innerHTML = `
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b text-left text-gray-500">
+              <th class="pb-2 pr-4 font-medium">Name</th>
+              <th class="pb-2 pr-4 font-medium">Email</th>
+              <th class="pb-2 pr-4 font-medium">Status</th>
+              <th class="pb-2 font-medium">RSVP Time</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            ${rsvps.map(r => `
+              <tr>
+                <td class="py-2 pr-4">${r.userName || r.name || '—'}</td>
+                <td class="py-2 pr-4 text-gray-500">${r.userEmail || r.email || '—'}</td>
+                <td class="py-2 pr-4">
+                  <span class="px-2 py-0.5 rounded-full text-xs font-medium ${r.rsvpStatus === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${r.rsvpStatus || 'confirmed'}</span>
+                </td>
+                <td class="py-2 text-gray-500">${fmtDate(r.createdAt || r.rsvpTime)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`;
+    } catch (e) {
+      $('rsvpTableWrapper').innerHTML = `<p class="text-red-500 text-sm">Failed to load RSVPs: ${e.message}</p>`;
+    }
+  }
+
+  $('checkinBtn').addEventListener('click', async () => {
+    const email = $('checkinEmailInput').value.trim();
+    if (!email || !activeRsvpEventId) return;
+    try {
+      const res = await fetch(`/api/events/${activeRsvpEventId}/checkin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
+      alert('Check-in successful!');
+      $('checkinEmailInput').value = '';
+      await loadRsvps(activeRsvpEventId);
+    } catch (e) {
+      alert('Check-in failed: ' + e.message);
+    }
+  });
+
+  $('closeRsvpModal').addEventListener('click', () => { $('rsvpModal').classList.add('hidden'); activeRsvpEventId = null; });
+  $('rsvpModal').addEventListener('click', e => { if (e.target === $('rsvpModal')) { $('rsvpModal').classList.add('hidden'); activeRsvpEventId = null; } });
+
+  // ── Rooms Modal ────────────────────────────────────────────────
+  async function openRoomsModal(eventId, title) {
+    activeRoomsEventId = eventId;
+    $('roomsModalTitle').textContent = `Networking Rooms — ${title}`;
+    $('roomsList').innerHTML = '<p class="text-gray-400 text-sm">Loading rooms…</p>';
+    $('roomsModal').classList.remove('hidden');
+    await loadRooms(eventId);
+  }
+
+  async function loadRooms(eventId) {
+    try {
+      const res = await fetch(`/api/events/${eventId}/rooms`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const rooms = Array.isArray(data) ? data : (data.rooms || data.data || []);
+      if (rooms.length === 0) {
+        $('roomsList').innerHTML = '<p class="text-gray-400 text-sm">No rooms yet.</p>';
+        return;
+      }
+      $('roomsList').innerHTML = `<div class="space-y-2">${rooms.map(r => `
+        <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+          <div>
+            <p class="font-medium text-sm text-gray-800">${r.name || 'Room'}</p>
+            <p class="text-xs text-gray-500">${r.topic || ''}</p>
+          </div>
+          <span class="text-xs text-gray-400">${r.messageCount ?? 0} messages</span>
+        </div>`).join('')}</div>`;
+    } catch (e) {
+      $('roomsList').innerHTML = `<p class="text-red-500 text-sm">Failed to load rooms: ${e.message}</p>`;
+    }
+  }
+
+  $('createRoomBtn').addEventListener('click', async () => {
+    if (!activeRoomsEventId) return;
+    const name = $('newRoomName').value.trim();
+    const topic = $('newRoomTopic').value.trim();
+    if (!name) { alert('Room name is required.'); return; }
+    try {
+      const res = await fetch(`/api/events/${activeRoomsEventId}/rooms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, topic }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
+      $('newRoomName').value = '';
+      $('newRoomTopic').value = '';
+      await loadRooms(activeRoomsEventId);
+    } catch (e) {
+      alert('Failed to create room: ' + e.message);
+    }
+  });
+
+  $('closeRoomsModal').addEventListener('click', () => { $('roomsModal').classList.add('hidden'); activeRoomsEventId = null; });
+  $('roomsModal').addEventListener('click', e => { if (e.target === $('roomsModal')) { $('roomsModal').classList.add('hidden'); activeRoomsEventId = null; } });
+
+  // ── Export CSV ─────────────────────────────────────────────────
+  $('exportEventsBtn').addEventListener('click', () => {
+    if (filteredEvents.length === 0) { alert('No events to export.'); return; }
+    const headers = ['Title', 'Type', 'Status', 'Start Time', 'End Time', 'Capacity', 'Host Email', 'Tags'];
+    const rows = filteredEvents.map(ev => [
+      `"${(ev.title || '').replace(/"/g, '""')}"`,
+      ev.eventType || '',
+      ev.status || '',
+      ev.startTime ? new Date(ev.startTime).toISOString() : '',
+      ev.endTime ? new Date(ev.endTime).toISOString() : '',
+      ev.capacity ?? '',
+      ev.hostEmail || '',
+      `"${(Array.isArray(ev.tags) ? ev.tags.join(', ') : (ev.tags || '')).replace(/"/g, '""')}"`,
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `events-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  });
+
+  // ── Init ───────────────────────────────────────────────────────
+  // Style the active tab on load
+  document.querySelector('.filter-tab[data-filter="all"]').classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
+
+  loadEvents();
+</script>
+
+</body>
+</html>
