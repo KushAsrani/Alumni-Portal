@@ -1,0 +1,16 @@
+name: Send Event Reminders
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminder endpoint
+        run: |
+          curl -f -X GET "${{ secrets.APP_URL }}/api/events/send-reminders?secret=${{ secrets.CRON_SECRET }}" \
+            -H "User-Agent: GitHub-Actions-Cron" \
+            || echo "Reminder endpoint returned an error (non-fatal)"

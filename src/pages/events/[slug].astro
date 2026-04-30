@@ -67,6 +67,18 @@ const spotsLeft = Math.max(0, event.capacity - (event.confirmedCount || 0));
 const isFull = spotsLeft === 0;
 const isEnded = event.status === 'ended';
 
+// Check if user is already subscribed to notify-me
+let isNotifyMeSubscribed = false;
+try {
+  if (currentAlumni?.username) {
+    const notifyRes = await fetch(`${base}/api/events/${event._id}/notify-me?userEmail=${encodeURIComponent(alumniProfile?.email || currentAlumni.username)}`);
+    if (notifyRes.ok) {
+      const notifyData = await notifyRes.json();
+      isNotifyMeSubscribed = notifyData.subscribed;
+    }
+  }
+} catch {}
+
 // Sanitize bannerUrl to only allow http/https URLs
 const safeBannerUrl = (() => {
   if (!event.bannerUrl) return '';
@@ -181,6 +193,17 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
 
         <!-- Main content -->
         <div class="lg:col-span-2 space-y-6">
+
+          {event.meetingUrlActive === true && !isEnded && (
+            <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+              <span class="flex-shrink-0 w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+              <div>
+                <p class="font-semibold text-red-700 text-sm">🔴 The join link is now live!</p>
+                <p class="text-red-600 text-xs mt-0.5">The host has activated the join link. You can join the event now from the sidebar.</p>
+              </div>
+            </div>
+          )}
+
           <div class="card p-6">
             <div class="flex items-center gap-3 mb-3">
               <span class="badge badge-primary">{eventTypeLabels[event.eventType] || event.eventType}</span>
@@ -446,6 +469,30 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                   <span class="ml-auto text-xs text-gray-400">Apple / Outlook</span>
                 </a>
               </div>
+            </div>
+          )}
+
+          {event.meetingUrl && event.meetingUrlActive !== true && !isEnded && event.status !== 'cancelled' && (
+            <div class="card p-6" id="notify-me-card">
+              <h2 class="font-semibold mb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                Get Notified
+              </h2>
+              <p class="text-sm text-gray-500 mb-4">The join link isn't active yet. Get an email the moment the host activates it.</p>
+
+              <button
+                id="notify-me-btn"
+                data-event-id={event._id}
+                data-user-email={alumniProfile?.email || ''}
+                data-user-name={alumniProfile?.name || ''}
+                data-subscribed={isNotifyMeSubscribed ? 'true' : 'false'}
+                class={`btn w-full text-sm ${isNotifyMeSubscribed ? 'btn-outline' : 'btn-primary'}`}
+              >
+                {isNotifyMeSubscribed ? '🔔 Subscribed — Click to Unsubscribe' : '🔔 Notify Me When Live'}
+              </button>
+              <p id="notify-me-msg" class="text-xs text-gray-500 mt-2 hidden"></p>
             </div>
           )}
         </div>
@@ -796,6 +843,60 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       });
 
       loadRooms();
+    }
+
+    // -----------------------------------------------------------------------
+    // Notify Me Toggle
+    // -----------------------------------------------------------------------
+    const notifyMeBtn = document.getElementById('notify-me-btn') as HTMLButtonElement | null;
+    if (notifyMeBtn) {
+      const eventId = notifyMeBtn.getAttribute('data-event-id')!;
+      const userEmail = notifyMeBtn.getAttribute('data-user-email')!;
+      const userName = notifyMeBtn.getAttribute('data-user-name') || undefined;
+      let subscribed = notifyMeBtn.getAttribute('data-subscribed') === 'true';
+      const msgEl = document.getElementById('notify-me-msg')!;
+
+      notifyMeBtn.addEventListener('click', async () => {
+        notifyMeBtn.disabled = true;
+        try {
+          if (subscribed) {
+            const res = await fetch(`/api/events/${eventId}/notify-me`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userEmail }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              subscribed = false;
+              notifyMeBtn.textContent = '🔔 Notify Me When Live';
+              notifyMeBtn.classList.remove('btn-outline');
+              notifyMeBtn.classList.add('btn-primary');
+              msgEl.textContent = 'You have been unsubscribed.';
+              msgEl.classList.remove('hidden');
+            }
+          } else {
+            const res = await fetch(`/api/events/${eventId}/notify-me`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userEmail, userName }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              subscribed = true;
+              notifyMeBtn.textContent = '🔔 Subscribed — Click to Unsubscribe';
+              notifyMeBtn.classList.remove('btn-primary');
+              notifyMeBtn.classList.add('btn-outline');
+              msgEl.textContent = "You'll receive an email when the join link goes live.";
+              msgEl.classList.remove('hidden');
+            }
+          }
+        } catch {
+          msgEl.textContent = 'Something went wrong. Please try again.';
+          msgEl.classList.remove('hidden');
+        } finally {
+          notifyMeBtn.disabled = false;
+        }
+      });
     }
   </script>
 </Layout>
