@@ -71,7 +71,7 @@ export const POST: APIRoute = async ({ request }) => {
       capacity: parseInt(capacity),
       description,
       meetingUrl,
-      meetingUrlActive: meetingUrlActive === true || meetingUrlActive === 'true',
+      meetingUrlActive: meetingUrlActive === true || String(meetingUrlActive) === 'true',
       bannerUrl,
       tags,
       venue,
