@@ -1,10 +1,11 @@
 import nodemailer from 'nodemailer';
 
 function getTransporter() {
+  const port = parseInt(process.env.SMTP_PORT || import.meta.env.SMTP_PORT || '587');
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || import.meta.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || import.meta.env.SMTP_PORT || '587'),
-    secure: (process.env.SMTP_PORT || import.meta.env.SMTP_PORT) === '465',
+    port,
+    secure: port === 465,
     auth: {
       user: process.env.SMTP_USER || import.meta.env.SMTP_USER,
       pass: process.env.SMTP_PASS || import.meta.env.SMTP_PASS,

@@ -857,6 +857,11 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       const msgEl = document.getElementById('notify-me-msg')!;
 
       notifyMeBtn.addEventListener('click', async () => {
+        if (!userEmail) {
+          msgEl.textContent = 'Please log in with a valid email to use this feature.';
+          msgEl.classList.remove('hidden');
+          return;
+        }
         notifyMeBtn.disabled = true;
         try {
           if (subscribed) {

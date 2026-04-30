@@ -102,6 +102,8 @@ export class ReminderService {
     const rsvpsCol = await getCollection<EventRSVPDocument>(this.RSVPS_COLLECTION);
     const reminderField = hoursThreshold === 24 ? 'reminder24Sent' : 'reminder1Sent';
     await rsvpsCol.updateOne({ _id: rsvpId }, { $set: { [reminderField]: true, reminderSent: true } });
+    // reminderSent is the generic field from EventRSVPDocument, kept for backward compatibility
+    // with any queries that check whether any reminder has been sent for this RSVP.
   }
 
   /**
