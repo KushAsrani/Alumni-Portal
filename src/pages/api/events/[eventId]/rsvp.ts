@@ -67,6 +67,56 @@ export const POST: APIRoute = async ({ request, params }) => {
   }
 };
 
+export const PATCH: APIRoute = async ({ request, params }) => {
+  try {
+    const { eventId } = params;
+    if (!eventId) {
+      return new Response(JSON.stringify({ success: false, message: 'Missing eventId' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const body = await request.json();
+    const { userEmail, rsvpStatus } = body;
+
+    if (!userEmail || !rsvpStatus) {
+      return new Response(JSON.stringify({ success: false, message: 'Missing userEmail or rsvpStatus' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const validStatuses = ['confirmed', 'waitlisted', 'cancelled'];
+    if (!validStatuses.includes(rsvpStatus)) {
+      return new Response(JSON.stringify({ success: false, message: 'Invalid rsvpStatus' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const success = await EventService.updateRsvpStatus(eventId, userEmail, rsvpStatus as 'confirmed' | 'waitlisted' | 'cancelled');
+
+    if (!success) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'RSVP not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, message: 'RSVP status updated' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(
+      JSON.stringify({ success: false, message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+};
+
 export const DELETE: APIRoute = async ({ request, params }) => {
   try {
     const { eventId } = params;

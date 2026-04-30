@@ -52,7 +52,7 @@ export const GET: APIRoute = async ({ url }) => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { title, hostEmail, hostName, eventType, startTime, endTime, capacity, description, meetingUrl, tags, venue, location } = body;
+    const { title, hostEmail, hostName, eventType, startTime, endTime, capacity, description, meetingUrl, meetingUrlActive, bannerUrl, tags, venue, location, status } = body;
 
     if (!title || !hostEmail || !eventType || !startTime || !endTime || !capacity) {
       return new Response(
@@ -71,10 +71,12 @@ export const POST: APIRoute = async ({ request }) => {
       capacity: parseInt(capacity),
       description,
       meetingUrl,
+      meetingUrlActive: meetingUrlActive === true || meetingUrlActive === 'true',
+      bannerUrl,
       tags,
       venue,
       location,
-      status: 'upcoming',
+      status: status || 'upcoming',
     });
 
     return new Response(

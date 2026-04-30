@@ -343,6 +343,75 @@ export class EventService {
   }
 
   /**
+   * Update RSVP status (admin use)
+   */
+  static async updateRsvpStatus(
+    eventId: string,
+    userEmail: string,
+    rsvpStatus: 'confirmed' | 'waitlisted' | 'cancelled'
+  ): Promise<boolean> {
+    const rsvpsCollection = await getCollection<EventRSVPDocument>(this.RSVPS_COLLECTION);
+    const result = await rsvpsCollection.updateOne(
+      { eventId: new ObjectId(eventId), userEmail },
+      { $set: { rsvpStatus } }
+    );
+    return result.matchedCount > 0;
+  }
+
+  /**
+   * Get all networking rooms (including inactive) — for admin use
+   */
+  static async getAllRooms(eventId: string): Promise<any[]> {
+    const collection = await getCollection<NetworkingRoomDocument>(this.ROOMS_COLLECTION);
+    const eventObjId = new ObjectId(eventId);
+
+    const pipeline: any[] = [
+      { $match: { eventId: eventObjId } },
+      { $sort: { createdAt: 1 } },
+      {
+        $lookup: {
+          from: this.MESSAGES_COLLECTION,
+          localField: '_id',
+          foreignField: 'roomId',
+          as: 'messages',
+        },
+      },
+      {
+        $addFields: {
+          messageCount: { $size: '$messages' },
+        },
+      },
+      { $project: { messages: 0 } },
+    ];
+
+    return collection.aggregate(pipeline).toArray();
+  }
+
+  /**
+   * Update a networking room (name, topic, isActive)
+   */
+  static async updateRoom(
+    roomId: string,
+    updates: { name?: string; topic?: string; isActive?: boolean }
+  ): Promise<boolean> {
+    const collection = await getCollection<NetworkingRoomDocument>(this.ROOMS_COLLECTION);
+    const result = await collection.updateOne(
+      { _id: new ObjectId(roomId) },
+      { $set: updates }
+    );
+    return result.matchedCount > 0;
+  }
+
+  /**
+   * Delete a networking room
+   */
+  static async deleteRoom(roomId: string): Promise<boolean> {
+    const collection = await getCollection<NetworkingRoomDocument>(this.ROOMS_COLLECTION);
+    const result = await collection.deleteOne({ _id: new ObjectId(roomId) });
+    return result.deletedCount > 0;
+  }
+
+  /**
    * Post a message to a room
    */
   static async postMessage(
