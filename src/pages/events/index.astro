@@ -46,6 +46,25 @@ const breadcrumbItems = [
 
         <!-- Filter row -->
         <div class="flex flex-wrap gap-3 items-center">
+          <!-- View Toggle -->
+          <div class="flex gap-1 border border-gray-200 rounded-lg p-1 bg-gray-50">
+            <button id="view-grid" class="view-toggle-btn btn btn-sm btn-primary" data-view="grid" title="Grid View">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </button>
+            <button id="view-month" class="view-toggle-btn btn btn-sm btn-outline" data-view="month" title="Month View">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button id="view-week" class="view-toggle-btn btn btn-sm btn-outline" data-view="week" title="Week View">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </button>
+          </div>
+
           <!-- Status filter (All / Upcoming / Past) -->
           <div class="flex gap-2">
             <button class="filter-status-btn btn btn-sm btn-primary" data-status="all">All</button>
@@ -75,6 +94,31 @@ const breadcrumbItems = [
       </div>
       <div id="events-empty" class="hidden text-center py-12 text-gray-500">
         No events match your filters.
+      </div>
+
+      <!-- Monthly Calendar View -->
+      <div id="calendar-month-view" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <button id="cal-prev-month" class="btn btn-outline btn-sm">&#8249; Prev</button>
+          <h2 id="cal-month-label" class="text-lg font-semibold"></h2>
+          <button id="cal-next-month" class="btn btn-outline btn-sm">Next &#8250;</button>
+        </div>
+        <div class="grid grid-cols-7 gap-px mb-1 text-center">
+          {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+            <div class="text-xs font-semibold text-gray-500 uppercase py-1">{d}</div>
+          ))}
+        </div>
+        <div id="cal-month-grid" class="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200 rounded-lg overflow-hidden"></div>
+      </div>
+
+      <!-- Weekly Calendar View -->
+      <div id="calendar-week-view" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <button id="cal-prev-week" class="btn btn-outline btn-sm">&#8249; Prev</button>
+          <h2 id="cal-week-label" class="text-lg font-semibold"></h2>
+          <button id="cal-next-week" class="btn btn-outline btn-sm">Next &#8250;</button>
+        </div>
+        <div id="cal-week-grid" class="grid grid-cols-7 gap-2"></div>
       </div>
     </div>
   </section>
@@ -161,22 +205,216 @@ const breadcrumbItems = [
         btn.classList.remove('btn-outline');
         btn.classList.add('btn-primary');
         renderEvents();
+        if (activeView === 'month') renderMonthCalendar();
+        if (activeView === 'week') renderWeekCalendar();
       });
     });
 
     (document.getElementById('filter-type') as HTMLSelectElement).addEventListener('change', (e) => {
       activeType = (e.target as HTMLSelectElement).value;
       renderEvents();
+      if (activeView === 'month') renderMonthCalendar();
+      if (activeView === 'week') renderWeekCalendar();
     });
     (document.getElementById('filter-tag') as HTMLSelectElement).addEventListener('change', (e) => {
       activeTag = (e.target as HTMLSelectElement).value;
       renderEvents();
+      if (activeView === 'month') renderMonthCalendar();
+      if (activeView === 'week') renderWeekCalendar();
     });
     (document.getElementById('event-search') as HTMLInputElement).addEventListener('input', (e) => {
       searchQuery = (e.target as HTMLInputElement).value;
       renderEvents();
+      if (activeView === 'month') renderMonthCalendar();
+      if (activeView === 'week') renderWeekCalendar();
     });
 
     renderEvents();
+
+    // -----------------------------------------------------------------------
+    // Calendar views
+    // -----------------------------------------------------------------------
+    let activeView: 'grid' | 'month' | 'week' = 'grid';
+    let calMonthDate = new Date();
+    let calWeekDate = new Date();
+
+    function switchView(view: 'grid' | 'month' | 'week') {
+      activeView = view;
+      document.getElementById('events-grid')!.classList.toggle('hidden', view !== 'grid');
+      document.getElementById('events-empty')!.classList.add('hidden');
+      document.getElementById('calendar-month-view')!.classList.toggle('hidden', view !== 'month');
+      document.getElementById('calendar-week-view')!.classList.toggle('hidden', view !== 'week');
+      document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+        const isActive = btn.getAttribute('data-view') === view;
+        btn.classList.toggle('btn-primary', isActive);
+        btn.classList.toggle('btn-outline', !isActive);
+      });
+      if (view === 'month') renderMonthCalendar();
+      if (view === 'week') renderWeekCalendar();
+      if (view === 'grid') renderEvents();
+    }
+
+    document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchView(btn.getAttribute('data-view') as 'grid' | 'month' | 'week');
+      });
+    });
+
+    function getFilteredEvents() {
+      const now = new Date();
+      return raw.filter((e: any) => {
+        if (activeStatus === 'upcoming' && new Date(e.startTime) < now) return false;
+        if (activeStatus === 'ended' && new Date(e.startTime) >= now) return false;
+        if (activeType && e.eventType !== activeType) return false;
+        if (activeTag && !(e.tags || []).includes(activeTag)) return false;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const haystack = `${e.title} ${e.description || ''}`.toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderMonthCalendar() {
+      const year = calMonthDate.getFullYear();
+      const month = calMonthDate.getMonth();
+
+      document.getElementById('cal-month-label')!.textContent = calMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      const events = getFilteredEvents();
+
+      const eventsByDay: Record<string, any[]> = {};
+      events.forEach((e: any) => {
+        const d = new Date(e.startTime);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        if (!eventsByDay[key]) eventsByDay[key] = [];
+        eventsByDay[key].push(e);
+      });
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date();
+
+      const grid = document.getElementById('cal-month-grid')!;
+      let html = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        html += `<div class="bg-gray-50 min-h-[100px] p-1"></div>`;
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const key = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const dayEvents = eventsByDay[key] || [];
+        const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+
+        html += `
+          <div class="bg-white min-h-[100px] p-1 ${isToday ? 'ring-2 ring-primary-500 ring-inset' : ''}">
+            <span class="text-xs font-medium ${isToday ? 'bg-primary-600 text-white rounded-full w-5 h-5 flex items-center justify-center' : 'text-gray-600'} mb-1 block w-fit">
+              ${day}
+            </span>
+            ${dayEvents.slice(0, 3).map((e: any) => `
+              <a href="/events/${e.slug}" title="${e.title}" class="block truncate text-xs px-1 py-0.5 rounded mb-0.5 ${
+                e.status === 'live' ? 'bg-red-100 text-red-700' :
+                e.status === 'ended' ? 'bg-gray-100 text-gray-600' :
+                'bg-primary-100 text-primary-700'
+              } hover:opacity-80">
+                ${e.title}
+              </a>
+            `).join('')}
+            ${dayEvents.length > 3 ? `<span class="text-xs text-gray-400">+${dayEvents.length - 3} more</span>` : ''}
+          </div>
+        `;
+      }
+
+      const totalCells = firstDay + daysInMonth;
+      const remainder = totalCells % 7;
+      if (remainder !== 0) {
+        for (let i = 0; i < 7 - remainder; i++) {
+          html += `<div class="bg-gray-50 min-h-[100px] p-1"></div>`;
+        }
+      }
+
+      grid.innerHTML = html;
+    }
+
+    document.getElementById('cal-prev-month')?.addEventListener('click', () => {
+      calMonthDate = new Date(calMonthDate.getFullYear(), calMonthDate.getMonth() - 1, 1);
+      renderMonthCalendar();
+    });
+    document.getElementById('cal-next-month')?.addEventListener('click', () => {
+      calMonthDate = new Date(calMonthDate.getFullYear(), calMonthDate.getMonth() + 1, 1);
+      renderMonthCalendar();
+    });
+
+    function renderWeekCalendar() {
+      const startOfWeek = new Date(calWeekDate);
+      const day = startOfWeek.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      startOfWeek.setDate(startOfWeek.getDate() + diff);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+      document.getElementById('cal-week-label')!.textContent =
+        `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} \u2013 ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+      const events = getFilteredEvents();
+      const today = new Date();
+
+      const grid = document.getElementById('cal-week-grid')!;
+      let html = '';
+
+      for (let i = 0; i < 7; i++) {
+        const cellDate = new Date(startOfWeek);
+        cellDate.setDate(startOfWeek.getDate() + i);
+
+        const key = `${cellDate.getFullYear()}-${String(cellDate.getMonth()+1).padStart(2,'0')}-${String(cellDate.getDate()).padStart(2,'0')}`;
+        const dayEvents = events.filter((e: any) => {
+          const d = new Date(e.startTime);
+          const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          return k === key;
+        });
+
+        const isToday = today.toDateString() === cellDate.toDateString();
+        const dayName = cellDate.toLocaleDateString('en-US', { weekday: 'short' });
+        const dayNum = cellDate.getDate();
+
+        html += `
+          <div class="border rounded-lg p-2 ${isToday ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-white'} min-h-[120px]">
+            <div class="text-center mb-2">
+              <div class="text-xs text-gray-500 uppercase font-medium">${dayName}</div>
+              <div class="text-sm font-bold ${isToday ? 'text-primary-700' : 'text-gray-700'}">${dayNum}</div>
+            </div>
+            ${dayEvents.length === 0
+              ? `<div class="text-xs text-gray-400 text-center mt-4">No events</div>`
+              : dayEvents.map((e: any) => `
+                  <a href="/events/${e.slug}" title="${e.title}" class="block text-xs px-1.5 py-1 rounded mb-1 truncate ${
+                    e.status === 'live' ? 'bg-red-100 text-red-700' :
+                    e.status === 'ended' ? 'bg-gray-100 text-gray-600' :
+                    'bg-primary-100 text-primary-700'
+                  } hover:opacity-80">
+                    <span class="font-medium">${new Date(e.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span class="block truncate">${e.title}</span>
+                  </a>
+                `).join('')
+            }
+          </div>
+        `;
+      }
+
+      grid.innerHTML = html;
+    }
+
+    document.getElementById('cal-prev-week')?.addEventListener('click', () => {
+      calWeekDate = new Date(calWeekDate);
+      calWeekDate.setDate(calWeekDate.getDate() - 7);
+      renderWeekCalendar();
+    });
+    document.getElementById('cal-next-week')?.addEventListener('click', () => {
+      calWeekDate = new Date(calWeekDate);
+      calWeekDate.setDate(calWeekDate.getDate() + 7);
+      renderWeekCalendar();
+    });
   </script>
 </Layout>
