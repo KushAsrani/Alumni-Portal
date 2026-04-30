@@ -78,6 +78,41 @@ const safeBannerUrl = (() => {
   }
 })();
 
+// Build "Add to Calendar" URLs
+function toGCalDate(d: Date) {
+  return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+}
+
+const gcalUrl = (() => {
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: event.title,
+    dates: `${toGCalDate(new Date(event.startTime))}/${toGCalDate(new Date(event.endTime))}`,
+    details: event.description || '',
+    location: event.venue
+      ? `${event.venue}${event.location ? ', ' + event.location : ''}`
+      : event.eventType === 'webinar' ? 'Online' : '',
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+})();
+
+const outlookUrl = (() => {
+  const params = new URLSearchParams({
+    path: '/calendar/action/compose',
+    rru: 'addevent',
+    subject: event.title,
+    startdt: new Date(event.startTime).toISOString(),
+    enddt: new Date(event.endTime).toISOString(),
+    body: event.description || '',
+    location: event.venue
+      ? `${event.venue}${event.location ? ', ' + event.location : ''}`
+      : event.eventType === 'webinar' ? 'Online' : '',
+  });
+  return `https://outlook.live.com/calendar/0/action/compose?${params.toString()}`;
+})();
+
+const icalDownloadUrl = `/api/events/${event._id}/ical`;
+
 const breadcrumbItems = [
   { label: 'Home', href: '/' },
   { label: 'Events', href: '/events' },
@@ -361,6 +396,58 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
               </div>
             ) : null}
           </div>
+
+          {!isEnded && event.status !== 'cancelled' && (
+            <div class="card p-6">
+              <h2 class="font-semibold mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Add to Calendar
+              </h2>
+              <div class="space-y-2">
+                <!-- Google Calendar -->
+                <a
+                  href={gcalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-all duration-200 text-sm font-medium text-gray-700 hover:text-primary-700"
+                >
+                  <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21.5 9.5h-1V6a2 2 0 00-2-2h-3.5V2.5h-2V4H11V2.5H9V4H5.5a2 2 0 00-2 2v3.5h-1v2h1V21a2 2 0 002 2h13a2 2 0 002-2V11.5h1v-2zm-3 11.5h-13V11.5h13V21zm0-11.5h-13V6h13v3.5z" fill="#4285F4"/>
+                  </svg>
+                  Google Calendar
+                </a>
+
+                <!-- Outlook Calendar -->
+                <a
+                  href={outlookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-sm font-medium text-gray-700 hover:text-blue-700"
+                >
+                  <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#0078D4">
+                    <path d="M22 6.5V17a2 2 0 01-2 2H9a2 2 0 01-2-2V6.5l7 4.5 8-4.5zM20 5H9l5.5 3.5L20 5zM7 8.5V17a2 2 0 002 2H7a2 2 0 01-2-2V9l2-0.5z"/>
+                    <rect x="2" y="7" width="7" height="10" rx="1" fill="#0078D4" opacity="0.3"/>
+                  </svg>
+                  Outlook Calendar
+                </a>
+
+                <!-- Download .ics -->
+                <a
+                  href={icalDownloadUrl}
+                  download
+                  class="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 text-sm font-medium text-gray-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download .ics
+                  <span class="ml-auto text-xs text-gray-400">Apple / Outlook</span>
+                </a>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
