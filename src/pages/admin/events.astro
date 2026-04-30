@@ -127,7 +127,7 @@ const currentUser = getCurrentUser(Astro.cookies);
           </svg>
         </button>
       </div>
-      <form id="eventForm" class="p-6 space-y-4">
+      <form id="eventForm" class="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
         <input type="hidden" id="editEventId" value="" />
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="md:col-span-2">
@@ -148,8 +148,25 @@ const currentUser = getCurrentUser(Astro.cookies);
             </select>
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select id="fStatus" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              <option value="upcoming">Upcoming</option>
+              <option value="live">Live</option>
+              <option value="ended">Ended</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
             <input id="fCapacity" type="number" min="1" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="50" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Host Email</label>
+            <input id="fHostEmail" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="host@example.com" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Host Name</label>
+            <input id="fHostName" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Dr. Jane Smith" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Start Time <span class="text-red-500">*</span></label>
@@ -159,17 +176,36 @@ const currentUser = getCurrentUser(Astro.cookies);
             <label class="block text-sm font-medium text-gray-700 mb-1">End Time <span class="text-red-500">*</span></label>
             <input id="fEndTime" type="datetime-local" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Venue</label>
+            <input id="fVenue" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Main Auditorium or Online" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <input id="fLocation" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Address or Remote/Online" />
+          </div>
           <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">Meeting URL</label>
             <input id="fMeetingUrl" type="url" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="https://meet.example.com/..." />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Host Email</label>
-            <input id="fHostEmail" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="host@example.com" />
+          <div class="md:col-span-2 flex items-center gap-3">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="fMeetingUrlActive" class="sr-only peer" />
+              <div class="w-10 h-5 bg-gray-200 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+            <span class="text-sm font-medium text-gray-700">Activate meeting URL (show join link to attendees)</span>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Banner URL</label>
+            <input id="fBannerUrl" type="url" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="https://example.com/banner.jpg" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tags <span class="text-gray-400 text-xs">(comma-separated)</span></label>
             <input id="fTags" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="career, tech, networking" />
+          </div>
+          <div id="fCreatedAtRow" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Created At <span class="text-gray-400 text-xs">(read-only)</span></label>
+            <input id="fCreatedAt" type="text" disabled class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
           </div>
         </div>
         <div id="formError" class="hidden text-red-600 text-sm bg-red-50 px-4 py-2 rounded-xl"></div>
@@ -194,10 +230,15 @@ const currentUser = getCurrentUser(Astro.cookies);
         </button>
       </div>
       <div id="rsvpContent" class="p-6">
-        <div class="mb-4 flex gap-3 items-center">
-          <input id="checkinEmailInput" type="email" placeholder="Email for check-in" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-          <button id="checkinBtn" class="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">Check In</button>
+        <!-- Check-in section -->
+        <div class="mb-4 p-3 bg-green-50 rounded-xl border border-green-100">
+          <p class="text-xs font-semibold text-green-700 mb-2 uppercase tracking-wide">Check In by Email</p>
+          <div class="flex gap-2">
+            <input id="checkinEmailInput" type="email" placeholder="attendee@example.com" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+            <button id="checkinBtn" class="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors whitespace-nowrap">Check In</button>
+          </div>
         </div>
+        <!-- RSVP table -->
         <div id="rsvpTableWrapper" class="overflow-x-auto">
           <p class="text-gray-400 text-sm">Loading RSVPs…</p>
         </div>
@@ -207,7 +248,7 @@ const currentUser = getCurrentUser(Astro.cookies);
 
   <!-- ─────────────────── Rooms Panel Modal ─────────────────── -->
   <div id="roomsModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-start justify-center p-6 overflow-y-auto">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-8">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl my-8">
       <div class="flex justify-between items-center p-6 border-b">
         <h2 id="roomsModalTitle" class="text-xl font-bold text-gray-900">Networking Rooms</h2>
         <button id="closeRoomsModal" class="text-gray-400 hover:text-gray-600">
@@ -217,13 +258,27 @@ const currentUser = getCurrentUser(Astro.cookies);
           </svg>
         </button>
       </div>
-      <div id="roomsContent" class="p-6">
+      <div class="p-6">
+        <!-- Add Room -->
         <div class="mb-4 flex gap-3">
           <input id="newRoomName" type="text" placeholder="Room name" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-          <input id="newRoomTopic" type="text" placeholder="Topic" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-          <button id="createRoomBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">Add Room</button>
+          <input id="newRoomTopic" type="text" placeholder="Topic (optional)" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+          <button id="createRoomBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors whitespace-nowrap">+ Add Room</button>
         </div>
-        <div id="roomsList"><p class="text-gray-400 text-sm">Loading rooms…</p></div>
+        <!-- Two-column layout: rooms list + messages -->
+        <div class="flex gap-4">
+          <div id="roomsList" class="flex-1 min-w-0"><p class="text-gray-400 text-sm">Loading rooms…</p></div>
+          <!-- Messages panel (hidden until a room is selected) -->
+          <div id="roomMessagesPanel" class="hidden w-72 flex-shrink-0 border-l pl-4">
+            <div class="flex justify-between items-center mb-3">
+              <h3 id="roomMessagesPanelTitle" class="text-sm font-semibold text-gray-800">Messages</h3>
+              <button id="closeMessagesPanel" class="text-xs text-gray-400 hover:text-gray-600">✕ Close</button>
+            </div>
+            <div id="roomMessagesContent" class="space-y-2 max-h-80 overflow-y-auto text-sm">
+              <p class="text-gray-400 text-xs">Loading messages…</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -394,6 +449,8 @@ const currentUser = getCurrentUser(Astro.cookies);
     $('modalTitle').textContent = 'Create Event';
     $('editEventId').value = '';
     $('eventForm').reset();
+    $('fMeetingUrlActive').checked = false;
+    $('fCreatedAtRow').classList.add('hidden');
     $('formError').classList.add('hidden');
     $('eventModal').classList.remove('hidden');
   }
@@ -406,12 +463,24 @@ const currentUser = getCurrentUser(Astro.cookies);
     $('fTitle').value = ev.title || '';
     $('fDescription').value = ev.description || '';
     $('fEventType').value = ev.eventType || 'webinar';
+    $('fStatus').value = ev.status || 'upcoming';
     $('fCapacity').value = ev.capacity || '';
     $('fStartTime').value = toLocalDT(ev.startTime);
     $('fEndTime').value = toLocalDT(ev.endTime);
+    $('fVenue').value = ev.venue || '';
+    $('fLocation').value = ev.location || '';
     $('fMeetingUrl').value = ev.meetingUrl || '';
+    $('fMeetingUrlActive').checked = !!ev.meetingUrlActive;
+    $('fBannerUrl').value = ev.bannerUrl || '';
     $('fHostEmail').value = ev.hostEmail || '';
+    $('fHostName').value = ev.hostName || '';
     $('fTags').value = Array.isArray(ev.tags) ? ev.tags.join(', ') : (ev.tags || '');
+    if (ev.createdAt) {
+      $('fCreatedAt').value = fmtDate(ev.createdAt);
+      $('fCreatedAtRow').classList.remove('hidden');
+    } else {
+      $('fCreatedAtRow').classList.add('hidden');
+    }
     $('formError').classList.add('hidden');
     $('eventModal').classList.remove('hidden');
   }
@@ -435,16 +504,22 @@ const currentUser = getCurrentUser(Astro.cookies);
       title: $('fTitle').value.trim(),
       description: $('fDescription').value.trim(),
       eventType: $('fEventType').value,
+      status: $('fStatus').value,
       capacity: parseInt($('fCapacity').value) || undefined,
       startTime: new Date($('fStartTime').value).toISOString(),
       endTime: new Date($('fEndTime').value).toISOString(),
+      venue: $('fVenue').value.trim(),
+      location: $('fLocation').value.trim(),
       meetingUrl: $('fMeetingUrl').value.trim(),
+      meetingUrlActive: $('fMeetingUrlActive').checked,
+      bannerUrl: $('fBannerUrl').value.trim(),
       hostEmail: $('fHostEmail').value.trim(),
+      hostName: $('fHostName').value.trim(),
       tags,
     };
 
     const url = isEdit ? `/api/events/${id}` : '/api/events';
-    const method = isEdit ? 'PUT' : 'POST';
+    const method = isEdit ? 'PATCH' : 'POST';
 
     try {
       $('submitEventBtn').disabled = true;
@@ -505,25 +580,86 @@ const currentUser = getCurrentUser(Astro.cookies);
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b text-left text-gray-500">
-              <th class="pb-2 pr-4 font-medium">Name</th>
-              <th class="pb-2 pr-4 font-medium">Email</th>
-              <th class="pb-2 pr-4 font-medium">Status</th>
-              <th class="pb-2 font-medium">RSVP Time</th>
+              <th class="pb-2 pr-3 font-medium">Name</th>
+              <th class="pb-2 pr-3 font-medium">Email</th>
+              <th class="pb-2 pr-3 font-medium">Status</th>
+              <th class="pb-2 pr-3 font-medium">Checked In</th>
+              <th class="pb-2 pr-3 font-medium">RSVP Time</th>
+              <th class="pb-2 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
             ${rsvps.map(r => `
-              <tr>
-                <td class="py-2 pr-4">${r.userName || r.name || '—'}</td>
-                <td class="py-2 pr-4 text-gray-500">${r.userEmail || r.email || '—'}</td>
-                <td class="py-2 pr-4">
-                  <span class="px-2 py-0.5 rounded-full text-xs font-medium ${r.rsvpStatus === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${r.rsvpStatus || 'confirmed'}</span>
+              <tr data-email="${escHtml(r.userEmail || r.email || '')}">
+                <td class="py-2 pr-3">${escHtml(r.userName || r.name || '—')}</td>
+                <td class="py-2 pr-3 text-gray-500 text-xs">${escHtml(r.userEmail || r.email || '—')}</td>
+                <td class="py-2 pr-3">
+                  <select class="rsvp-status-select text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-300" data-email="${escHtml(r.userEmail || r.email || '')}">
+                    <option value="confirmed" ${(r.rsvpStatus === 'confirmed') ? 'selected' : ''}>Confirmed</option>
+                    <option value="waitlisted" ${(r.rsvpStatus === 'waitlisted') ? 'selected' : ''}>Waitlisted</option>
+                    <option value="cancelled" ${(r.rsvpStatus === 'cancelled') ? 'selected' : ''}>Cancelled</option>
+                  </select>
                 </td>
-                <td class="py-2 text-gray-500">${fmtDate(r.createdAt || r.rsvpTime)}</td>
+                <td class="py-2 pr-3">
+                  <span class="px-2 py-0.5 rounded-full text-xs font-medium ${r.checkedIn ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}">${r.checkedIn ? '✓ Yes' : 'No'}</span>
+                </td>
+                <td class="py-2 pr-3 text-gray-500 text-xs">${fmtDate(r.createdAt || r.rsvpTime)}</td>
+                <td class="py-2">
+                  <div class="flex gap-1">
+                    <button class="rsvp-save-status px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium hover:bg-indigo-100 transition-colors" data-email="${escHtml(r.userEmail || r.email || '')}">Save</button>
+                    <button class="rsvp-delete px-2 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors" data-email="${escHtml(r.userEmail || r.email || '')}">Remove</button>
+                  </div>
+                </td>
               </tr>
             `).join('')}
           </tbody>
         </table>`;
+
+      // Attach RSVP action handlers
+      $('rsvpTableWrapper').querySelectorAll('.rsvp-save-status').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const email = btn.dataset.email;
+          const row = btn.closest('tr');
+          const select = row.querySelector('.rsvp-status-select');
+          const newStatus = select.value;
+          try {
+            btn.disabled = true;
+            btn.textContent = '…';
+            const res = await fetch(`/api/events/${activeRsvpEventId}/rsvp`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userEmail: email, rsvpStatus: newStatus }),
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
+            btn.textContent = '✓';
+            setTimeout(() => { btn.textContent = 'Save'; btn.disabled = false; }, 1200);
+          } catch (err) {
+            alert('Failed to update status: ' + err.message);
+            btn.textContent = 'Save';
+            btn.disabled = false;
+          }
+        });
+      });
+
+      $('rsvpTableWrapper').querySelectorAll('.rsvp-delete').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const email = btn.dataset.email;
+          if (!confirm(`Remove RSVP for ${email}?`)) return;
+          try {
+            const res = await fetch(`/api/events/${activeRsvpEventId}/rsvp`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userEmail: email }),
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
+            await loadRsvps(activeRsvpEventId);
+          } catch (err) {
+            alert('Failed to remove RSVP: ' + err.message);
+          }
+        });
+      });
     } catch (e) {
       $('rsvpTableWrapper').innerHTML = `<p class="text-red-500 text-sm">Failed to load RSVPs: ${e.message}</p>`;
     }
@@ -536,7 +672,7 @@ const currentUser = getCurrentUser(Astro.cookies);
       const res = await fetch(`/api/events/${activeRsvpEventId}/checkin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ userEmail: email }),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
@@ -562,26 +698,114 @@ const currentUser = getCurrentUser(Astro.cookies);
 
   async function loadRooms(eventId) {
     try {
-      const res = await fetch(`/api/events/${eventId}/rooms`);
+      const res = await fetch(`/api/events/${eventId}/rooms?all=true`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const rooms = Array.isArray(data) ? data : (data.rooms || data.data || []);
       if (rooms.length === 0) {
-        $('roomsList').innerHTML = '<p class="text-gray-400 text-sm">No rooms yet.</p>';
+        $('roomsList').innerHTML = '<p class="text-gray-400 text-sm">No rooms yet. Add one above.</p>';
         return;
       }
       $('roomsList').innerHTML = `<div class="space-y-2">${rooms.map(r => `
-        <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
-          <div>
-            <p class="font-medium text-sm text-gray-800">${r.name || 'Room'}</p>
-            <p class="text-xs text-gray-500">${r.topic || ''}</p>
+        <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border ${r.isActive ? 'border-teal-100' : 'border-gray-200 opacity-60'}">
+          <div class="flex-1 min-w-0 mr-3">
+            <p class="font-medium text-sm text-gray-800 truncate">${escHtml(r.name || 'Room')}</p>
+            <p class="text-xs text-gray-500 truncate">${escHtml(r.topic || '')}</p>
           </div>
-          <span class="text-xs text-gray-400">${r.messageCount ?? 0} messages</span>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-xs text-gray-400">${r.messageCount ?? 0} msgs</span>
+            <label class="relative inline-flex items-center cursor-pointer" title="${r.isActive ? 'Active — click to deactivate' : 'Inactive — click to activate'}">
+              <input type="checkbox" class="sr-only room-active-toggle peer" data-room-id="${escHtml(r._id)}" ${r.isActive ? 'checked' : ''} />
+              <div class="w-8 h-4 bg-gray-200 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border after:border-gray-300 after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-teal-500"></div>
+            </label>
+            <button class="room-view-msgs px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors" data-room-id="${escHtml(r._id)}" data-room-name="${escHtml(r.name || 'Room')}">💬 Msgs</button>
+            <button class="room-delete px-2 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors" data-room-id="${escHtml(r._id)}" data-room-name="${escHtml(r.name || 'Room')}">🗑</button>
+          </div>
         </div>`).join('')}</div>`;
+
+      // isActive toggle
+      $('roomsList').querySelectorAll('.room-active-toggle').forEach(chk => {
+        chk.addEventListener('change', async () => {
+          const roomId = chk.dataset.roomId;
+          try {
+            const res = await fetch(`/api/events/${activeRoomsEventId}/rooms/${roomId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ isActive: chk.checked }),
+            });
+            const d = await res.json();
+            if (!res.ok) { chk.checked = !chk.checked; throw new Error(d.message || `HTTP ${res.status}`); }
+            await loadRooms(activeRoomsEventId);
+          } catch (err) {
+            alert('Failed to update room: ' + err.message);
+          }
+        });
+      });
+
+      // Delete room
+      $('roomsList').querySelectorAll('.room-delete').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const roomId = btn.dataset.roomId;
+          const roomName = btn.dataset.roomName;
+          if (!confirm(`Delete room "${roomName}"? This cannot be undone.`)) return;
+          try {
+            const res = await fetch(`/api/events/${activeRoomsEventId}/rooms/${roomId}`, {
+              method: 'DELETE',
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
+            // Hide messages panel if it was showing this room
+            if ($('roomMessagesPanel').dataset.roomId === roomId) {
+              $('roomMessagesPanel').classList.add('hidden');
+            }
+            await loadRooms(activeRoomsEventId);
+          } catch (err) {
+            alert('Failed to delete room: ' + err.message);
+          }
+        });
+      });
+
+      // View messages
+      $('roomsList').querySelectorAll('.room-view-msgs').forEach(btn => {
+        btn.addEventListener('click', () => loadRoomMessages(btn.dataset.roomId, btn.dataset.roomName));
+      });
+
     } catch (e) {
       $('roomsList').innerHTML = `<p class="text-red-500 text-sm">Failed to load rooms: ${e.message}</p>`;
     }
   }
+
+  async function loadRoomMessages(roomId, roomName) {
+    $('roomMessagesPanelTitle').textContent = `💬 ${roomName}`;
+    $('roomMessagesPanel').dataset.roomId = roomId;
+    $('roomMessagesPanel').classList.remove('hidden');
+    $('roomMessagesContent').innerHTML = '<p class="text-gray-400 text-xs">Loading…</p>';
+    try {
+      const res = await fetch(`/api/events/${activeRoomsEventId}/rooms/${roomId}/messages?limit=100`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const messages = data.messages || [];
+      if (messages.length === 0) {
+        $('roomMessagesContent').innerHTML = '<p class="text-gray-400 text-xs">No messages yet.</p>';
+        return;
+      }
+      $('roomMessagesContent').innerHTML = messages.map(m => `
+        <div class="bg-gray-50 rounded-lg p-2 border border-gray-100">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-medium text-gray-700">${escHtml(m.userName || m.userEmail || 'Unknown')}</span>
+            <span class="text-xs text-gray-400">${fmtDate(m.createdAt)}</span>
+          </div>
+          <p class="text-xs text-gray-600">${escHtml(m.message)}</p>
+        </div>
+      `).join('');
+    } catch (err) {
+      $('roomMessagesContent').innerHTML = `<p class="text-red-500 text-xs">Error: ${err.message}</p>`;
+    }
+  }
+
+  $('closeMessagesPanel').addEventListener('click', () => {
+    $('roomMessagesPanel').classList.add('hidden');
+  });
 
   $('createRoomBtn').addEventListener('click', async () => {
     if (!activeRoomsEventId) return;

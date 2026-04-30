@@ -14,7 +14,7 @@ export const PATCH: APIRoute = async ({ params, request }) => {
       });
     }
     const body = await request.json();
-    const allowedFields = ['bannerUrl', 'status', 'meetingUrl', 'meetingUrlActive', 'venue', 'location', 'hostName', 'description', 'tags', 'capacity'];
+    const allowedFields = ['title', 'hostEmail', 'hostName', 'eventType', 'startTime', 'endTime', 'capacity', 'bannerUrl', 'status', 'meetingUrl', 'meetingUrlActive', 'venue', 'location', 'description', 'tags'];
     const updates: Record<string, any> = { updatedAt: new Date() };
     for (const field of allowedFields) {
       if (field in body) updates[field] = body[field];

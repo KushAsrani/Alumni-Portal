@@ -3,7 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { EventService } from '../../../../lib/db/services/eventService';
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, url }) => {
   try {
     const { eventId } = params;
     if (!eventId) {
@@ -13,7 +13,10 @@ export const GET: APIRoute = async ({ params }) => {
       });
     }
 
-    const rooms = await EventService.getRooms(eventId);
+    const showAll = url.searchParams.get('all') === 'true';
+    const rooms = showAll
+      ? await EventService.getAllRooms(eventId)
+      : await EventService.getRooms(eventId);
 
     return new Response(
       JSON.stringify({
