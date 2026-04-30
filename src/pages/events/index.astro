@@ -169,14 +169,23 @@ const breadcrumbItems = [
         const isFull = spots === 0;
         const date = new Date(e.startTime).toDateString();
         const pct = Math.min(100, Math.round(((e.confirmedCount || 0) / e.capacity) * 100));
+        const isLive = e.meetingUrlActive === true && e.status !== 'ended';
         return `
-          <a href="/events/${e.slug}" class="card card-hover block">
+          <a href="/events/${e.slug}" class="card card-hover block${isLive ? ' ring-2 ring-red-400' : ''}">
             <div class="p-6">
               <div class="flex items-center justify-between mb-3">
                 <span class="badge ${badgeClass(e.status)} text-xs">${e.status.charAt(0).toUpperCase() + e.status.slice(1)}</span>
                 ${e.eventType ? `<span class="badge badge-secondary text-xs uppercase">${e.eventType}</span>` : ''}
                 <span class="text-sm text-gray-500">${date}</span>
               </div>
+              ${isLive ? `
+              <div class="mb-2">
+                <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full animate-pulse">
+                  <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+                  Join Link Live
+                </span>
+              </div>
+              ` : ''}
               <h3 class="text-xl font-semibold mb-2">${e.title}</h3>
               ${e.description ? `<p class="text-gray-600 mb-3 text-sm line-clamp-2">${e.description}</p>` : ''} ${e.venue ? `<p class="text-gray-500 mb-3 text-sm"> <svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>${e.venue}, ${e.location}</p>` : ''}
               ${e.tags && e.tags.length ? `<div class="flex flex-wrap gap-1 mb-3">${e.tags.map((t: string) => `<span class="badge badge-secondary text-xs">${t}</span>`).join('')}</div>` : ''}

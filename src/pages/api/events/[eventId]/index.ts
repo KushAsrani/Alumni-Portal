@@ -3,8 +3,10 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { getCollection } from '../../../../lib/db/mongodb.ts';
 import { ObjectId } from 'mongodb';
+import { ReminderService } from '../../../../lib/db/services/reminderService';
+import { EventService } from '../../../../lib/db/services/eventService';
 
-export const PATCH: APIRoute = async ({ params, request }) => {
+export const PATCH: APIRoute = async ({ params, request, url }) => {
   try {
     const { eventId } = params;
     if (!eventId) {
@@ -27,6 +29,35 @@ export const PATCH: APIRoute = async ({ params, request }) => {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    // After successfully updating meetingUrlActive to true, notify subscribers
+    if (body.meetingUrlActive === true) {
+      try {
+        const subscribers = await ReminderService.getNotifyMeSubscribers(eventId);
+        const event = await EventService.getEventById(eventId);
+        if (event && subscribers.length > 0) {
+          const { buildNotifyMeEmail, sendEmail } = await import('../../../../lib/email');
+          const eventUrl = `${url.origin}/events/${event.slug}`;
+          const joinLinkUrl = `${url.origin}/api/events/${eventId}/join`;
+          for (const sub of subscribers) {
+            try {
+              const { subject, html, text } = buildNotifyMeEmail({
+                userName: sub.userName || sub.userEmail,
+                eventTitle: event.title,
+                eventUrl,
+                joinLinkUrl,
+              });
+              await sendEmail({ to: sub.userEmail, subject, html, text });
+            } catch (e) {
+              console.error('Failed to send notify-me email to', sub.userEmail, e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to send join link notifications:', e);
+      }
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
