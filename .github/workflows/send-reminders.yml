@@ -11,6 +11,12 @@ jobs:
     steps:
       - name: Trigger reminder endpoint
         run: |
-          curl -f -X GET "${{ secrets.APP_URL }}/api/events/send-reminders?secret=${{ secrets.CRON_SECRET }}" \
-            -H "User-Agent: GitHub-Actions-Cron" \
-            || echo "Reminder endpoint returned an error (non-fatal)"
+          RESPONSE=$(curl -s -o /tmp/reminder_response.txt -w "%{http_code}" \
+            -X GET "${{ secrets.APP_URL }}/api/events/send-reminders?secret=${{ secrets.CRON_SECRET }}" \
+            -H "User-Agent: GitHub-Actions-Cron")
+          cat /tmp/reminder_response.txt
+          if [ "$RESPONSE" -lt 200 ] || [ "$RESPONSE" -ge 300 ]; then
+            echo "Reminder endpoint returned HTTP $RESPONSE"
+            exit 1
+          fi
+          echo "Reminder endpoint succeeded with HTTP $RESPONSE"

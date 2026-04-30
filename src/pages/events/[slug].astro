@@ -70,8 +70,8 @@ const isEnded = event.status === 'ended';
 // Check if user is already subscribed to notify-me
 let isNotifyMeSubscribed = false;
 try {
-  if (currentAlumni?.username) {
-    const notifyRes = await fetch(`${base}/api/events/${event._id}/notify-me?userEmail=${encodeURIComponent(alumniProfile?.email || currentAlumni.username)}`);
+  if (currentAlumni?.username && alumniProfile?.email) {
+    const notifyRes = await fetch(`${base}/api/events/${event._id}/notify-me?userEmail=${encodeURIComponent(alumniProfile.email)}`);
     if (notifyRes.ok) {
       const notifyData = await notifyRes.json();
       isNotifyMeSubscribed = notifyData.subscribed;

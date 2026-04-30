@@ -24,7 +24,10 @@ export class ReminderService {
     const eventObjId = new ObjectId(eventId);
     await col.updateOne(
       { eventId: eventObjId, userEmail },
-      { $set: { eventId: eventObjId, userEmail, userName, createdAt: new Date() } },
+      {
+        $set: { eventId: eventObjId, userEmail, userName },
+        $setOnInsert: { createdAt: new Date() },
+      },
       { upsert: true }
     );
   }

@@ -16,7 +16,7 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   const origin = url.origin;
-  let sent24 = 0, sent1 = 0, errors = 0;
+  let sent24hReminders = 0, sent1hReminders = 0, errors = 0;
 
   for (const hoursThreshold of [24, 1]) {
     try {
@@ -39,8 +39,8 @@ export const GET: APIRoute = async ({ url }) => {
           await sendEmail({ to: rsvp.userEmail, subject, html, text });
           await ReminderService.markReminderSent(rsvp._id!, hoursThreshold);
 
-          if (hoursThreshold === 24) sent24++;
-          else sent1++;
+          if (hoursThreshold === 24) sent24hReminders++;
+          else sent1hReminders++;
         } catch (err) {
           console.error(`Failed to send ${hoursThreshold}h reminder to ${rsvp.userEmail}:`, err);
           errors++;
@@ -53,7 +53,7 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   return new Response(
-    JSON.stringify({ success: true, sent24hReminders: sent24, sent1hReminders: sent1, errors }),
+    JSON.stringify({ success: true, sent24hReminders, sent1hReminders, errors }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
 };
