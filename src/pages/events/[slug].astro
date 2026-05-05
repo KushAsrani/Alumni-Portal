@@ -67,6 +67,20 @@ const spotsLeft = Math.max(0, event.capacity - (event.confirmedCount || 0));
 const isFull = spotsLeft === 0;
 const isEnded = event.status === 'ended';
 
+// Registration deadline = event start time
+const registrationDeadline = new Date(event.startTime);
+const now = new Date();
+const isRegistrationClosed = now >= registrationDeadline;
+const msUntilDeadline = registrationDeadline.getTime() - now.getTime();
+const isRegistrationEndingSoon = !isRegistrationClosed && msUntilDeadline <= 2 * 60 * 60 * 1000; // within 2 hours
+
+// Formatted deadline string with time: e.g. "May 6, 2026 09:30 PM"
+const registrationDeadlineStr = registrationDeadline.toLocaleDateString('en-US', {
+  month: 'long', day: 'numeric', year: 'numeric'
+}) + ' ' + registrationDeadline.toLocaleTimeString('en-US', {
+  hour: '2-digit', minute: '2-digit'
+});
+
 // Check if user is already subscribed to notify-me
 let isNotifyMeSubscribed = false;
 try {
@@ -227,16 +241,31 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
             <div class="card p-6" id="rsvp-section">
               <h2 class="text-xl font-semibold mb-1">Event Registration Form</h2>
               <p class="text-sm text-gray-500 mb-4">
-                Last Date to Register — {new Date(event.startTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                Last Date to Register — {registrationDeadlineStr}
               </p>
 
-              {isFull && (
-                <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded p-3 mb-4 text-sm font-medium">
-                  ⚠️ This event is full — submitting will add you to the waitlist.
+              {isRegistrationClosed ? (
+                <div class="bg-red-50 border border-red-200 rounded-xl p-5 text-center">
+                  <div class="text-3xl mb-2">🚫</div>
+                  <h3 class="font-semibold text-red-700 text-base mb-1">Registration Has Ended</h3>
+                  <p class="text-red-600 text-sm">The registration deadline for this event was <strong>{registrationDeadlineStr}</strong>. Registration is now closed and no new sign-ups are being accepted.</p>
                 </div>
-              )}
+              ) : (
+                <>
+                  {isRegistrationEndingSoon && (
+                    <div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 mb-4 text-sm font-medium flex items-center gap-2">
+                      <span class="text-lg">⏰</span>
+                      <span><strong>Registration closing soon!</strong> The deadline is {registrationDeadlineStr}. Register now before it's too late.</span>
+                    </div>
+                  )}
 
-              <form id="rsvp-form" class="space-y-6">
+                  {isFull && (
+                    <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded p-3 mb-4 text-sm font-medium">
+                      ⚠️ This event is full — submitting will add you to the waitlist.
+                    </div>
+                  )}
+
+                  <form id="rsvp-form" class="space-y-6">
                 <input type="hidden" id="event-id" value={event._id} />
 
                 <!-- SECTION: Attendee Information -->
@@ -338,6 +367,8 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                   </button>
                 </div>
               </form>
+                </>
+              )}
             </div>
           )}
 
@@ -521,6 +552,18 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       <div class="flex gap-3 justify-end">
         <button id="modal-keep-registration" class="btn btn-primary text-white bg-blue-600">No</button>
         <button id="modal-cancel-confirm" class="btn btn-danger text-white bg-red-600 hover:bg-red-700 border-red-600">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal: Notify Me -->
+  <div id="confirm-notify-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
+    <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+      <h3 class="text-lg font-semibold mb-2" id="notify-modal-title">Subscribe to Notifications</h3>
+      <p class="text-sm text-gray-600 mb-6" id="notify-modal-body">You'll receive an email the moment the host activates the join link for this event. Do you want to subscribe?</p>
+      <div class="flex gap-3 justify-end">
+        <button id="notify-modal-cancel" class="btn btn-outline text-sm">No, Cancel</button>
+        <button id="notify-modal-confirm" class="btn btn-primary text-sm">Yes, Confirm</button>
       </div>
     </div>
   </div>
@@ -846,7 +889,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
     }
 
     // -----------------------------------------------------------------------
-    // Notify Me Toggle
+    // Notify Me Toggle with confirmation modal
     // -----------------------------------------------------------------------
     const notifyMeBtn = document.getElementById('notify-me-btn') as HTMLButtonElement | null;
     if (notifyMeBtn) {
@@ -856,12 +899,49 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       let subscribed = notifyMeBtn.getAttribute('data-subscribed') === 'true';
       const msgEl = document.getElementById('notify-me-msg')!;
 
-      notifyMeBtn.addEventListener('click', async () => {
+      const notifyModal = document.getElementById('confirm-notify-modal')!;
+      const notifyModalTitle = document.getElementById('notify-modal-title')!;
+      const notifyModalBody = document.getElementById('notify-modal-body')!;
+      const notifyModalCancel = document.getElementById('notify-modal-cancel')!;
+      const notifyModalConfirm = document.getElementById('notify-modal-confirm')!;
+
+      function showNotifyModal() {
+        if (subscribed) {
+          notifyModalTitle.textContent = 'Unsubscribe from Notifications';
+          notifyModalBody.textContent = 'You will no longer receive an email when the join link for this event goes live. Are you sure you want to unsubscribe?';
+          notifyModalConfirm.textContent = 'Yes, Unsubscribe';
+          notifyModalConfirm.className = 'btn btn-outline border-red-400 text-red-600 hover:bg-red-50 text-sm';
+        } else {
+          notifyModalTitle.textContent = 'Subscribe to Notifications';
+          notifyModalBody.textContent = "You'll receive an email the moment the host activates the join link for this event. Do you want to subscribe?";
+          notifyModalConfirm.textContent = 'Yes, Notify Me';
+          notifyModalConfirm.className = 'btn btn-primary text-sm';
+        }
+        notifyModal.classList.remove('hidden');
+        notifyModal.classList.add('flex');
+      }
+
+      function hideNotifyModal() {
+        notifyModal.classList.add('hidden');
+        notifyModal.classList.remove('flex');
+      }
+
+      notifyMeBtn.addEventListener('click', () => {
         if (!userEmail) {
           msgEl.textContent = 'Please log in with a valid email to use this feature.';
           msgEl.classList.remove('hidden');
           return;
         }
+        showNotifyModal();
+      });
+
+      notifyModalCancel.addEventListener('click', hideNotifyModal);
+      notifyModal.addEventListener('click', (e) => {
+        if (e.target === notifyModal) hideNotifyModal();
+      });
+
+      notifyModalConfirm.addEventListener('click', async () => {
+        hideNotifyModal();
         notifyMeBtn.disabled = true;
         try {
           if (subscribed) {
@@ -876,7 +956,8 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
               notifyMeBtn.textContent = '🔔 Notify Me When Live';
               notifyMeBtn.classList.remove('btn-outline');
               notifyMeBtn.classList.add('btn-primary');
-              msgEl.textContent = 'You have been unsubscribed.';
+              msgEl.textContent = 'You have been unsubscribed from notifications.';
+              msgEl.className = 'text-xs text-gray-500 mt-2';
               msgEl.classList.remove('hidden');
             }
           } else {
@@ -891,12 +972,14 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
               notifyMeBtn.textContent = '🔔 Subscribed — Click to Unsubscribe';
               notifyMeBtn.classList.remove('btn-primary');
               notifyMeBtn.classList.add('btn-outline');
-              msgEl.textContent = "You'll receive an email when the join link goes live.";
+              msgEl.textContent = "✅ You'll receive an email when the join link goes live.";
+              msgEl.className = 'text-xs text-green-600 mt-2';
               msgEl.classList.remove('hidden');
             }
           }
         } catch {
           msgEl.textContent = 'Something went wrong. Please try again.';
+          msgEl.className = 'text-xs text-red-500 mt-2';
           msgEl.classList.remove('hidden');
         } finally {
           notifyMeBtn.disabled = false;
