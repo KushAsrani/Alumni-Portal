@@ -42,6 +42,7 @@ export class EventService {
       slug,
       startTime: new Date(data.startTime),
       endTime: new Date(data.endTime),
+      registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline) : undefined,
       createdAt: now,
       updatedAt: now,
     };

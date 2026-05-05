@@ -16,13 +16,22 @@ export const PATCH: APIRoute = async ({ params, request, url }) => {
       });
     }
     const body = await request.json();
-    const allowedFields = ['title', 'hostEmail', 'hostName', 'eventType', 'startTime', 'endTime', 'capacity', 'bannerUrl', 'status', 'meetingUrl', 'meetingUrlActive', 'venue', 'location', 'description', 'tags'];
+    const allowedFields = ['title', 'hostEmail', 'hostName', 'eventType', 'startTime', 'endTime', 'registrationDeadline', 'capacity', 'bannerUrl', 'status', 'meetingUrl', 'meetingUrlActive', 'venue', 'location', 'description', 'tags'];
     const updates: Record<string, any> = { updatedAt: new Date() };
+    const unsetFields: Record<string, ''> = {};
     for (const field of allowedFields) {
-      if (field in body) updates[field] = body[field];
+      if (field in body) {
+        if (body[field] === null && field === 'registrationDeadline') {
+          unsetFields[field] = '';
+        } else {
+          updates[field] = body[field];
+        }
+      }
     }
+    const updateOp: Record<string, any> = { $set: updates };
+    if (Object.keys(unsetFields).length > 0) updateOp.$unset = unsetFields;
     const collection = await getCollection('events');
-    const result = await collection.updateOne({ _id: new ObjectId(eventId as string) }, { $set: updates });
+    const result = await collection.updateOne({ _id: new ObjectId(eventId as string) }, updateOp);
     if (result.matchedCount === 0) {
       return new Response(JSON.stringify({ success: false, error: 'Event not found' }), {
         status: 404,
