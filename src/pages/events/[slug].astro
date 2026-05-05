@@ -67,8 +67,10 @@ const spotsLeft = Math.max(0, event.capacity - (event.confirmedCount || 0));
 const isFull = spotsLeft === 0;
 const isEnded = event.status === 'ended';
 
-// Registration deadline = event start time
-const registrationDeadline = new Date(event.startTime);
+// Use registrationDeadline if set, otherwise fall back to startTime
+const registrationDeadline = event.registrationDeadline
+  ? new Date(event.registrationDeadline)
+  : new Date(event.startTime);
 const now = new Date();
 const isRegistrationClosed = now >= registrationDeadline;
 const msUntilDeadline = registrationDeadline.getTime() - now.getTime();

@@ -10,6 +10,7 @@ export interface EventDocument {
   eventType: 'webinar' | 'ama' | 'workshop';
   startTime: Date;
   endTime: Date;
+  registrationDeadline?: Date;   // optional deadline for RSVP/registration; falls back to startTime if not set
   capacity: number;
   meetingUrl?: string;
   meetingUrlActive?: boolean;  // default false — admin must activate before it's shown to attendees
