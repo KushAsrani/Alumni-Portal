@@ -22,13 +22,24 @@ function computeResults(poll: PollDocument) {
   });
 }
 
-function serializePoll(poll: PollDocument & { _id?: ObjectId }) {
+function getVoterOptionIndex(poll: PollDocument, voterEmail?: string | null) {
+  if (!voterEmail) return null;
+
+  const vote = poll.votes[encodeURIComponent(voterEmail)];
+  if (vote === undefined) return null;
+
+  const optionIndex = Number(vote);
+  return Number.isInteger(optionIndex) ? optionIndex : null;
+}
+
+function serializePoll(poll: PollDocument & { _id?: ObjectId }, voterEmail?: string | null) {
   const { votes: _votes, ...rest } = poll as any;
   return {
     ...rest,
     _id: poll._id?.toString(),
     eventId: poll.eventId.toString(),
     results: computeResults(poll),
+    selectedOptionIndex: getVoterOptionIndex(poll, voterEmail),
   };
 }
 
@@ -45,6 +56,7 @@ export const GET: APIRoute = async ({ params, url }) => {
     await ensureIndexes();
 
     const showAll = url.searchParams.get('all') === 'true';
+    const voterEmail = url.searchParams.get('voterEmail');
     const pollsCol = await getCollection<PollDocument>('event_polls');
 
     const query: any = { eventId: new ObjectId(eventId) };
@@ -58,7 +70,7 @@ export const GET: APIRoute = async ({ params, url }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        polls: polls.map(serializePoll),
+        polls: polls.map((poll) => serializePoll(poll, voterEmail)),
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
