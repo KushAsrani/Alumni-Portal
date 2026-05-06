@@ -1194,15 +1194,20 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
             if (hasVoted) {
               const isSelected = selectedOptionIndex === i;
               return `
-                <div class="space-y-1 rounded-xl border ${isSelected ? 'border-indigo-200 bg-indigo-50/60 p-3' : 'border-transparent'}">
-                  <div class="flex justify-between gap-3 text-sm">
+                <button
+                  data-poll-id="${escLive(poll._id)}"
+                  data-option-index="${i}"
+                  aria-pressed="${isSelected}"
+                  class="cast-vote-btn w-full text-left space-y-1 rounded-xl border p-3 transition-colors ${isSelected ? 'border-indigo-200 bg-indigo-50/60' : 'border-transparent hover:border-indigo-200 hover:bg-indigo-50/40'}">
+                  <span class="flex justify-between gap-3 text-sm">
                     <span class="${isSelected ? 'font-semibold text-indigo-900' : 'text-gray-700'}">${escLive(opt)}${isSelected ? ' ✓' : ''}</span>
                     <span class="text-gray-500 whitespace-nowrap">${result.count} vote${result.count !== 1 ? 's' : ''} (${pct}%)</span>
-                  </div>
-                  <div class="w-full bg-gray-100 rounded-full h-2">
-                    <div class="${isSelected ? 'bg-indigo-600' : 'bg-indigo-500'} h-2 rounded-full transition-all" style="width:${pct}%"></div>
-                  </div>
-                </div>`;
+                  </span>
+                  <span class="block w-full bg-gray-100 rounded-full h-2">
+                    <span class="block ${isSelected ? 'bg-indigo-600' : 'bg-indigo-500'} h-2 rounded-full transition-all" style="width:${pct}%"></span>
+                  </span>
+                  <span class="sr-only">${isSelected ? 'Current selection' : `Change your vote to ${escLive(opt)}`}</span>
+                </button>`;
             }
             return `<button
               data-poll-id="${escLive(poll._id)}"
@@ -1216,7 +1221,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
               <p class="font-medium text-gray-900">${escLive(poll.question)}</p>
               ${hasVoted && selectedOptionLabel ? `
                 <div class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900" role="status" aria-live="polite">
-                  You have chosen <span class="font-semibold">${escLive(selectedOptionLabel)}</span>. Audience votes are shown below.
+                  You have chosen <span class="font-semibold">${escLive(selectedOptionLabel)}</span>. Audience votes are shown below. To change your answer, select another option.
                 </div>` : ''}
               <div class="space-y-2">${optionsHtml}</div>
               ${hasVoted ? `<p class="text-xs text-gray-400">${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}</p>` : ''}
