@@ -374,6 +374,53 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
             </div>
           )}
 
+          {event.status === 'live' && (
+            <div class="space-y-6" id="live-panel"
+                 data-event-id={String(event._id)}
+                 data-user-email={alumniProfile?.email || ''}
+                 data-user-name={alumniProfile?.name || ''}>
+
+              <!-- Live Q&A Card -->
+              <div class="card p-6">
+                <div class="flex items-center gap-2 mb-4">
+                  <h2 class="text-xl font-semibold">🎤 Live Q&A</h2>
+                  <span class="flex items-center gap-1 text-xs text-red-600 font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> LIVE
+                  </span>
+                </div>
+                <div id="qa-list" class="space-y-3 mb-6">
+                  <p class="text-gray-400 text-sm">Loading questions…</p>
+                </div>
+                <form id="qa-form" class="space-y-3">
+                  <div class="relative">
+                    <textarea id="qa-text" maxlength="500" rows="3"
+                      placeholder="Ask a question…"
+                      class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"></textarea>
+                    <span id="qa-char" class="absolute bottom-2 right-3 text-xs text-gray-400">0/500</span>
+                  </div>
+                  <label class="flex items-center gap-2 text-sm text-gray-600">
+                    <input type="checkbox" id="qa-anon" /> Ask anonymously
+                  </label>
+                  <button type="submit" class="btn btn-primary text-sm">Ask Question</button>
+                  <p id="qa-msg" class="text-sm hidden"></p>
+                </form>
+              </div>
+
+              <!-- Live Polls Card -->
+              <div class="card p-6">
+                <div class="flex items-center gap-2 mb-4">
+                  <h2 class="text-xl font-semibold">🗳️ Live Polls</h2>
+                  <span class="flex items-center gap-1 text-xs text-red-600 font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> LIVE
+                  </span>
+                </div>
+                <div id="polls-list">
+                  <p class="text-gray-400 text-sm">Loading polls…</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <!-- Networking Rooms (only for ended events) -->
           {isEnded && (
             <div class="card p-6" id="rooms-section">
@@ -986,6 +1033,202 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
         } finally {
           notifyMeBtn.disabled = false;
         }
+      });
+    }
+
+    // ── Live Panel (Q&A + Polls) ──────────────────────────────────
+    const livePanel = document.getElementById('live-panel');
+    if (livePanel) {
+      const eventId   = livePanel.dataset.eventId!;
+      const userEmail = livePanel.dataset.userEmail!;
+      const userName  = livePanel.dataset.userName || '';
+      const votedPolls = new Set<string>(
+        JSON.parse(sessionStorage.getItem(`voted_polls_${eventId}`) || '[]')
+      );
+
+      function escLive(str: string): string {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      // ── Q&A ──
+      const qaList = document.getElementById('qa-list')!;
+
+      // Event delegation for upvote buttons — persists across innerHTML re-renders
+      qaList.addEventListener('click', (e) => {
+        const btn = (e.target as Element).closest('.qa-upvote-btn') as HTMLButtonElement | null;
+        if (btn?.dataset.qid) toggleUpvote(btn.dataset.qid);
+      });
+
+      async function loadQA() {
+        const res  = await fetch(`/api/events/${eventId}/qa`);
+        const data = await res.json();
+        if (!data.questions?.length) {
+          qaList.innerHTML = '<p class="text-gray-400 text-sm">No questions yet. Be the first to ask!</p>';
+          return;
+        }
+        qaList.innerHTML = data.questions.map((q: any) => {
+          const alreadyUpvoted = q.upvotedBy?.includes(userEmail);
+          const authorLabel    = q.isAnonymous ? 'Anonymous' : (q.authorName || q.authorEmail);
+          return `
+            <div class="border border-gray-100 rounded-xl p-4 space-y-2">
+              <div class="flex justify-between items-start gap-2">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-700">${escLive(authorLabel)}</p>
+                  <p class="text-sm text-gray-900 mt-1">${escLive(q.text)}</p>
+                </div>
+                <button
+                  data-qid="${escLive(q._id)}"
+                  class="qa-upvote-btn flex flex-col items-center text-xs px-2 py-1 rounded-lg border ${alreadyUpvoted ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'border-gray-200 text-gray-500'} hover:bg-indigo-50 transition-colors"
+                >
+                  <span>▲</span>
+                  <span id="upvote-count-${q._id}">${q.upvotes}</span>
+                </button>
+              </div>
+              ${q.answered ? `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p class="text-xs font-semibold text-green-700 mb-1">✓ Answered</p>
+                  <p class="text-sm text-green-900">${escLive(q.answer || '')}</p>
+                </div>` : ''}
+            </div>`;
+        }).join('');
+      }
+
+      async function toggleUpvote(questionId: string) {
+        if (!userEmail) return;
+        const res  = await fetch(`/api/events/${eventId}/qa`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questionId, action: 'upvote', authorEmail: userEmail }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          const countEl = document.getElementById(`upvote-count-${questionId}`);
+          if (countEl) countEl.textContent = String(data.upvotes);
+          await loadQA(); // re-render to update button styles
+        }
+      }
+
+      const qaForm = document.getElementById('qa-form') as HTMLFormElement;
+      const qaText = document.getElementById('qa-text') as HTMLTextAreaElement;
+      const qaChar = document.getElementById('qa-char')!;
+      const qaMsg  = document.getElementById('qa-msg')!;
+      const qaAnon = document.getElementById('qa-anon') as HTMLInputElement;
+
+      qaText.addEventListener('input', () => { qaChar.textContent = `${qaText.value.length}/500`; });
+
+      qaForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = qaText.value.trim();
+        if (!text) return;
+        if (!userEmail) {
+          qaMsg.textContent = 'Please log in to ask a question.';
+          qaMsg.className = 'text-sm text-red-600';
+          qaMsg.classList.remove('hidden');
+          return;
+        }
+        const res  = await fetch(`/api/events/${eventId}/qa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, authorEmail: userEmail, authorName: userName, isAnonymous: qaAnon.checked }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          qaText.value = '';
+          qaChar.textContent = '0/500';
+          qaMsg.textContent = 'Question submitted!';
+          qaMsg.className = 'text-sm text-green-700';
+          qaMsg.classList.remove('hidden');
+          setTimeout(() => qaMsg.classList.add('hidden'), 3000);
+          await loadQA();
+        } else {
+          qaMsg.textContent = data.message || 'Failed to submit.';
+          qaMsg.className = 'text-sm text-red-600';
+          qaMsg.classList.remove('hidden');
+        }
+      });
+
+      // ── Polls ──
+      const pollsList = document.getElementById('polls-list')!;
+
+      // Event delegation for vote buttons — persists across innerHTML re-renders
+      pollsList.addEventListener('click', (e) => {
+        const btn = (e.target as Element).closest('.cast-vote-btn') as HTMLButtonElement | null;
+        if (btn?.dataset.pollId && btn.dataset.optionIndex !== undefined) {
+          castVote(btn.dataset.pollId, parseInt(btn.dataset.optionIndex));
+        }
+      });
+
+      async function loadPolls() {
+        const res  = await fetch(`/api/events/${eventId}/polls`);
+        const data = await res.json();
+        if (!data.polls?.length) {
+          pollsList.innerHTML = '<p class="text-gray-400 text-sm">No active polls right now.</p>';
+          return;
+        }
+        pollsList.innerHTML = data.polls.map((poll: any) => {
+          const hasVoted   = votedPolls.has(poll._id);
+          const totalVotes = poll.results.reduce((s: number, r: any) => s + r.count, 0);
+          const optionsHtml = poll.options.map((opt: string, i: number) => {
+            const result = poll.results[i];
+            const pct    = totalVotes > 0 ? Math.round((result.count / totalVotes) * 100) : 0;
+            if (hasVoted) {
+              return `
+                <div class="space-y-1">
+                  <div class="flex justify-between text-sm">
+                    <span>${escLive(opt)}</span>
+                    <span class="text-gray-500">${result.count} vote${result.count !== 1 ? 's' : ''} (${pct}%)</span>
+                  </div>
+                  <div class="w-full bg-gray-100 rounded-full h-2">
+                    <div class="bg-indigo-500 h-2 rounded-full transition-all" style="width:${pct}%"></div>
+                  </div>
+                </div>`;
+            }
+            return `<button
+              data-poll-id="${escLive(poll._id)}"
+              data-option-index="${i}"
+              class="cast-vote-btn w-full text-left px-4 py-2 border border-gray-200 rounded-xl text-sm hover:bg-indigo-50 hover:border-indigo-300 transition-colors">
+              ${escLive(opt)}
+            </button>`;
+          }).join('');
+          return `
+            <div class="border border-gray-100 rounded-xl p-4 mb-4 space-y-3">
+              <p class="font-medium text-gray-900">${escLive(poll.question)}</p>
+              <div class="space-y-2">${optionsHtml}</div>
+              ${hasVoted ? `<p class="text-xs text-gray-400">${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}</p>` : ''}
+            </div>`;
+        }).join('');
+      }
+
+      async function castVote(pollId: string, optionIndex: number) {
+        if (!userEmail) return;
+        const res  = await fetch(`/api/events/${eventId}/polls`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pollId, action: 'vote', optionIndex, voterEmail: userEmail }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          votedPolls.add(pollId);
+          sessionStorage.setItem(`voted_polls_${eventId}`, JSON.stringify([...votedPolls]));
+          await loadPolls();
+        }
+      }
+
+      // Initial load + auto-refresh every 10s
+      // Store interval IDs so they can be cleaned up on page unload
+      loadQA();
+      loadPolls();
+      const qaInterval    = setInterval(loadQA,    10_000);
+      const pollsInterval = setInterval(loadPolls, 10_000);
+
+      window.addEventListener('pagehide', () => {
+        clearInterval(qaInterval);
+        clearInterval(pollsInterval);
       });
     }
   </script>

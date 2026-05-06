@@ -290,6 +290,64 @@ const currentUser = getCurrentUser(Astro.cookies);
     </div>
   </div>
 
+  <!-- ─────────────────── Live Panel Modal ─────────────────── -->
+  <div id="livePanelModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-start justify-center p-6 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl my-8">
+      <div class="flex justify-between items-center p-6 border-b">
+        <h2 id="livePanelModalTitle" class="text-xl font-bold text-gray-900">Live Panel</h2>
+        <button id="closeLivePanelModal" class="text-gray-400 hover:text-gray-600">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="p-6">
+        <!-- Tabs -->
+        <div class="flex border-b mb-6">
+          <button class="live-tab px-4 py-2 text-sm font-medium text-indigo-600 border-b-2 border-indigo-600 -mb-px" data-tab="qa">🎤 Q&amp;A</button>
+          <button class="live-tab px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700" data-tab="polls">🗳️ Polls</button>
+        </div>
+
+        <!-- Q&A Panel -->
+        <div id="qaPanel">
+          <div class="flex justify-between items-center mb-4">
+            <p class="text-sm text-gray-500">Questions sorted by upvotes</p>
+            <button id="refreshQABtn" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium hover:bg-indigo-100 transition-colors">↻ Refresh</button>
+          </div>
+          <div id="adminQAList" class="space-y-3">
+            <p class="text-gray-400 text-sm">Loading questions…</p>
+          </div>
+        </div>
+
+        <!-- Polls Panel (hidden by default) -->
+        <div id="pollsPanel" class="hidden">
+          <!-- Create Poll Form -->
+          <div class="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Create Poll</h3>
+            <div class="space-y-3">
+              <input id="pollQuestion" type="text" placeholder="Poll question" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              <div id="pollOptionsContainer" class="space-y-2">
+                <input type="text" class="poll-option w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Option 1" />
+                <input type="text" class="poll-option w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Option 2" />
+              </div>
+              <div class="flex gap-2">
+                <button id="addPollOptionBtn" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors">+ Add Option</button>
+                <button id="removePollOptionBtn" class="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors">− Remove Option</button>
+              </div>
+              <button id="createPollBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">Create Poll</button>
+              <p id="createPollMsg" class="text-xs hidden"></p>
+            </div>
+          </div>
+          <!-- Polls List -->
+          <div id="adminPollsList" class="space-y-4">
+            <p class="text-gray-400 text-sm">Loading polls…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script define:vars={{}}>
   // ── State ──────────────────────────────────────────────────────
   let allEvents = [];
@@ -299,6 +357,8 @@ const currentUser = getCurrentUser(Astro.cookies);
   let currentSearch = '';
   let activeRsvpEventId = null;
   let activeRoomsEventId = null;
+  let activeLivePanelEventId = null;
+  let activeLivePanelHostEmail = null;
 
   // ── Helpers ────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -403,6 +463,7 @@ const currentUser = getCurrentUser(Astro.cookies);
           <div class="flex flex-wrap gap-2 shrink-0">
             <button class="btn-rsvps px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors" data-id="${escHtml(ev._id)}" data-title="${escHtml(ev.title)}">View RSVPs</button>
             <button class="btn-rooms px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium hover:bg-teal-100 transition-colors" data-id="${escHtml(ev._id)}" data-title="${escHtml(ev.title)}">Rooms</button>
+            ${ev.status === 'live' ? `<button class="btn-live-panel px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors" data-id="${escHtml(ev._id)}" data-title="${escHtml(ev.title)}" data-host-email="${escHtml(ev.hostEmail || '')}">🎤 Live Panel</button>` : ''}
             <button class="btn-edit px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium hover:bg-indigo-100 transition-colors" data-id="${escHtml(ev._id)}">Edit</button>
             <button class="btn-delete px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors" data-id="${escHtml(ev._id)}">Delete</button>
           </div>
@@ -424,6 +485,9 @@ const currentUser = getCurrentUser(Astro.cookies);
     });
     container.querySelectorAll('.btn-rooms').forEach(btn => {
       btn.addEventListener('click', () => openRoomsModal(btn.dataset.id, btn.dataset.title));
+    });
+    container.querySelectorAll('.btn-live-panel').forEach(btn => {
+      btn.addEventListener('click', () => openLivePanelModal(btn.dataset.id, btn.dataset.title, btn.dataset.hostEmail));
     });
   }
 
@@ -843,6 +907,310 @@ const currentUser = getCurrentUser(Astro.cookies);
 
   $('closeRoomsModal').addEventListener('click', () => { $('roomsModal').classList.add('hidden'); activeRoomsEventId = null; });
   $('roomsModal').addEventListener('click', e => { if (e.target === $('roomsModal')) { $('roomsModal').classList.add('hidden'); activeRoomsEventId = null; } });
+
+  // ── Live Panel ─────────────────────────────────────────────────
+  async function openLivePanelModal(eventId, title, hostEmail) {
+    activeLivePanelEventId = eventId;
+    activeLivePanelHostEmail = hostEmail;
+    $('livePanelModalTitle').textContent = `Live Panel — ${title}`;
+    // Reset to Q&A tab
+    showLiveTab('qa');
+    $('livePanelModal').classList.remove('hidden');
+    await loadAdminQA(eventId, hostEmail);
+  }
+
+  function showLiveTab(tab) {
+    document.querySelectorAll('.live-tab').forEach(btn => {
+      if (btn.dataset.tab === tab) {
+        btn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
+        btn.classList.remove('text-gray-500');
+      } else {
+        btn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
+        btn.classList.add('text-gray-500');
+      }
+    });
+    $('qaPanel').classList.toggle('hidden', tab !== 'qa');
+    $('pollsPanel').classList.toggle('hidden', tab !== 'polls');
+    if (tab === 'polls' && activeLivePanelEventId) {
+      loadAdminPolls(activeLivePanelEventId, activeLivePanelHostEmail);
+    }
+  }
+
+  async function loadAdminQA(eventId, hostEmail) {
+    $('adminQAList').innerHTML = '<p class="text-gray-400 text-sm">Loading questions…</p>';
+    try {
+      const res = await fetch(`/api/events/${eventId}/qa`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const questions = data.questions || [];
+
+      if (questions.length === 0) {
+        $('adminQAList').innerHTML = '<p class="text-gray-400 text-sm">No questions yet.</p>';
+        return;
+      }
+
+      $('adminQAList').innerHTML = questions.map(q => `
+        <div class="border border-gray-100 rounded-xl p-4 space-y-2" id="qa-item-${escHtml(q._id)}">
+          <div class="flex justify-between items-start gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-medium px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">▲ ${q.upvotes}</span>
+                <span class="text-xs text-gray-500">${escHtml(q.isAnonymous ? 'Anonymous' : (q.authorName || q.authorEmail))}</span>
+                ${q.answered ? '<span class="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">✓ Answered</span>' : ''}
+              </div>
+              <p class="text-sm text-gray-900">${escHtml(q.text)}</p>
+              ${q.answered && q.answer ? `<div class="mt-2 p-2 bg-green-50 rounded-lg border border-green-100"><p class="text-xs text-gray-500 font-medium mb-0.5">Answer:</p><p class="text-sm text-green-800">${escHtml(q.answer)}</p></div>` : ''}
+            </div>
+            <div class="flex gap-2 shrink-0">
+              ${!q.answered ? `<button class="qa-answer-btn px-2 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors" data-id="${escHtml(q._id)}">Answer</button>` : ''}
+              <button class="qa-delete-btn px-2 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors" data-id="${escHtml(q._id)}">🗑</button>
+            </div>
+          </div>
+          <div class="answer-input-area hidden">
+            <textarea class="qa-answer-text w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-2" rows="2" placeholder="Type your answer…"></textarea>
+            <div class="flex gap-2 mt-2">
+              <button class="qa-submit-answer px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors" data-id="${escHtml(q._id)}">Submit Answer</button>
+              <button class="qa-cancel-answer px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors">Cancel</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Reveal answer input
+      $('adminQAList').querySelectorAll('.qa-answer-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = document.getElementById(`qa-item-${btn.dataset.id}`);
+          if (item) { item.querySelector('.answer-input-area').classList.remove('hidden'); btn.classList.add('hidden'); }
+        });
+      });
+
+      // Cancel answer input
+      $('adminQAList').querySelectorAll('.qa-cancel-answer').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const area = btn.closest('.answer-input-area');
+          area.classList.add('hidden');
+          const item = area.closest('[id^="qa-item-"]');
+          const answerBtn = item && item.querySelector('.qa-answer-btn');
+          if (answerBtn) answerBtn.classList.remove('hidden');
+        });
+      });
+
+      // Submit answer
+      $('adminQAList').querySelectorAll('.qa-submit-answer').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const questionId = btn.dataset.id;
+          const area = btn.closest('.answer-input-area');
+          const answer = area.querySelector('.qa-answer-text').value.trim();
+          if (!answer) { alert('Please enter an answer.'); return; }
+          try {
+            btn.disabled = true;
+            btn.textContent = '…';
+            const res = await fetch(`/api/events/${activeLivePanelEventId}/qa`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ questionId, action: 'answer', answer, hostEmail: activeLivePanelHostEmail }),
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
+            await loadAdminQA(activeLivePanelEventId, activeLivePanelHostEmail);
+          } catch (err) {
+            alert('Failed to submit answer: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = 'Submit Answer';
+          }
+        });
+      });
+
+      // Delete question
+      $('adminQAList').querySelectorAll('.qa-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this question?')) return;
+          try {
+            const res = await fetch(`/api/events/${activeLivePanelEventId}/qa`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ questionId: btn.dataset.id, hostEmail: activeLivePanelHostEmail }),
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
+            await loadAdminQA(activeLivePanelEventId, activeLivePanelHostEmail);
+          } catch (err) {
+            alert('Failed to delete question: ' + err.message);
+          }
+        });
+      });
+
+    } catch (e) {
+      $('adminQAList').innerHTML = `<p class="text-red-500 text-sm">Failed to load questions: ${e.message}</p>`;
+    }
+  }
+
+  async function loadAdminPolls(eventId, hostEmail) {
+    $('adminPollsList').innerHTML = '<p class="text-gray-400 text-sm">Loading polls…</p>';
+    try {
+      const res = await fetch(`/api/events/${eventId}/polls?all=true`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const polls = data.polls || [];
+
+      if (polls.length === 0) {
+        $('adminPollsList').innerHTML = '<p class="text-gray-400 text-sm">No polls yet. Create one above.</p>';
+        return;
+      }
+
+      $('adminPollsList').innerHTML = polls.map(poll => {
+        const totalVotes = poll.results.reduce((s, r) => s + r.count, 0);
+        const optionsHtml = poll.options.map((opt, i) => {
+          const count = poll.results[i] ? poll.results[i].count : 0;
+          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+          return `
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span>${escHtml(opt)}</span>
+                <span class="text-gray-500">${count} vote${count !== 1 ? 's' : ''} (${pct}%)</span>
+              </div>
+              <div class="w-full bg-gray-100 rounded-full h-1.5">
+                <div class="bg-indigo-500 h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
+              </div>
+            </div>`;
+        }).join('');
+
+        return `
+          <div class="border border-gray-100 rounded-xl p-4 space-y-3">
+            <div class="flex justify-between items-start gap-3">
+              <p class="font-medium text-sm text-gray-900 flex-1">${escHtml(poll.question)}</p>
+              <div class="flex items-center gap-2 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer" title="${poll.isActive ? 'Active — click to deactivate' : 'Inactive — click to activate'}">
+                  <input type="checkbox" class="sr-only poll-active-toggle peer" data-poll-id="${escHtml(poll._id)}" ${poll.isActive ? 'checked' : ''} />
+                  <div class="w-8 h-4 bg-gray-200 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border after:border-gray-300 after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-500"></div>
+                </label>
+                <span class="text-xs text-gray-400">${poll.isActive ? 'Active' : 'Inactive'}</span>
+                <button class="poll-delete-btn px-2 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors" data-poll-id="${escHtml(poll._id)}">🗑</button>
+              </div>
+            </div>
+            <div class="space-y-2">${optionsHtml}</div>
+            <p class="text-xs text-gray-400">${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}</p>
+          </div>`;
+      }).join('');
+
+      // Toggle active status
+      $('adminPollsList').querySelectorAll('.poll-active-toggle').forEach(chk => {
+        chk.addEventListener('change', async () => {
+          const pollId = chk.dataset.pollId;
+          try {
+            const res = await fetch(`/api/events/${activeLivePanelEventId}/polls`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ pollId, action: 'toggle', hostEmail: activeLivePanelHostEmail }),
+            });
+            const d = await res.json();
+            if (!res.ok) { chk.checked = !chk.checked; throw new Error(d.message || `HTTP ${res.status}`); }
+            await loadAdminPolls(activeLivePanelEventId, activeLivePanelHostEmail);
+          } catch (err) {
+            alert('Failed to toggle poll: ' + err.message);
+          }
+        });
+      });
+
+      // Delete poll
+      $('adminPollsList').querySelectorAll('.poll-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const pollId = btn.dataset.pollId;
+          if (!confirm('Delete this poll?')) return;
+          try {
+            const res = await fetch(`/api/events/${activeLivePanelEventId}/polls`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ pollId, hostEmail: activeLivePanelHostEmail }),
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
+            await loadAdminPolls(activeLivePanelEventId, activeLivePanelHostEmail);
+          } catch (err) {
+            alert('Failed to delete poll: ' + err.message);
+          }
+        });
+      });
+
+    } catch (e) {
+      $('adminPollsList').innerHTML = `<p class="text-red-500 text-sm">Failed to load polls: ${e.message}</p>`;
+    }
+  }
+
+  // Live tab switching
+  document.querySelectorAll('.live-tab').forEach(btn => {
+    btn.addEventListener('click', () => showLiveTab(btn.dataset.tab));
+  });
+
+  // Refresh Q&A button
+  $('refreshQABtn').addEventListener('click', () => {
+    if (activeLivePanelEventId) loadAdminQA(activeLivePanelEventId, activeLivePanelHostEmail);
+  });
+
+  // Add poll option
+  $('addPollOptionBtn').addEventListener('click', () => {
+    const container = $('pollOptionsContainer');
+    const count = container.querySelectorAll('.poll-option').length;
+    if (count >= 6) { alert('Maximum 6 options allowed.'); return; }
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'poll-option w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300';
+    input.placeholder = `Option ${count + 1}`;
+    container.appendChild(input);
+  });
+
+  // Remove poll option
+  $('removePollOptionBtn').addEventListener('click', () => {
+    const container = $('pollOptionsContainer');
+    const options = container.querySelectorAll('.poll-option');
+    if (options.length <= 2) { alert('Minimum 2 options required.'); return; }
+    options[options.length - 1].remove();
+  });
+
+  // Create poll
+  $('createPollBtn').addEventListener('click', async () => {
+    if (!activeLivePanelEventId) return;
+    const question = $('pollQuestion').value.trim();
+    const options = [...$('pollOptionsContainer').querySelectorAll('.poll-option')]
+      .map(i => i.value.trim())
+      .filter(Boolean);
+    const msgEl = $('createPollMsg');
+
+    if (!question) { msgEl.textContent = 'Question is required.'; msgEl.className = 'text-xs text-red-600'; msgEl.classList.remove('hidden'); return; }
+    if (options.length < 2) { msgEl.textContent = 'At least 2 options are required.'; msgEl.className = 'text-xs text-red-600'; msgEl.classList.remove('hidden'); return; }
+
+    try {
+      $('createPollBtn').disabled = true;
+      const res = await fetch(`/api/events/${activeLivePanelEventId}/polls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, options, hostEmail: activeLivePanelHostEmail }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
+      // Reset form
+      $('pollQuestion').value = '';
+      $('pollOptionsContainer').innerHTML = `
+        <input type="text" class="poll-option w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Option 1" />
+        <input type="text" class="poll-option w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Option 2" />
+      `;
+      msgEl.textContent = 'Poll created!';
+      msgEl.className = 'text-xs text-green-600';
+      msgEl.classList.remove('hidden');
+      setTimeout(() => msgEl.classList.add('hidden'), 3000);
+      await loadAdminPolls(activeLivePanelEventId, activeLivePanelHostEmail);
+    } catch (err) {
+      msgEl.textContent = 'Failed to create poll: ' + err.message;
+      msgEl.className = 'text-xs text-red-600';
+      msgEl.classList.remove('hidden');
+    } finally {
+      $('createPollBtn').disabled = false;
+    }
+  });
+
+  // Close live panel modal
+  $('closeLivePanelModal').addEventListener('click', () => { $('livePanelModal').classList.add('hidden'); activeLivePanelEventId = null; activeLivePanelHostEmail = null; });
+  $('livePanelModal').addEventListener('click', e => { if (e.target === $('livePanelModal')) { $('livePanelModal').classList.add('hidden'); activeLivePanelEventId = null; activeLivePanelHostEmail = null; } });
 
   // ── Export CSV ─────────────────────────────────────────────────
   $('exportEventsBtn').addEventListener('click', () => {

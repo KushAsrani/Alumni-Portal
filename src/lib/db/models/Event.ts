@@ -65,3 +65,28 @@ export interface RoomMessageDocument {
   message: string;
   createdAt: Date;
 }
+
+export interface QAQuestionDocument {
+  _id?: ObjectId;
+  eventId: ObjectId;
+  authorEmail: string;
+  authorName?: string;
+  text: string;
+  upvotes: number;
+  upvotedBy: string[];   // emails that have upvoted
+  answered: boolean;
+  answer?: string;
+  answeredAt?: Date;
+  isAnonymous?: boolean;
+  createdAt: Date;
+}
+
+export interface PollDocument {
+  _id?: ObjectId;
+  eventId: ObjectId;
+  question: string;
+  options: string[];
+  votes: Record<string, string>;  // voterEmail → optionIndex (as string)
+  isActive: boolean;
+  createdAt: Date;
+}
