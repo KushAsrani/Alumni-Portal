@@ -1045,6 +1045,11 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       const votedPolls = new Set<string>(
         JSON.parse(sessionStorage.getItem(`voted_polls_${eventId}`) || '[]')
       );
+      const selectedPollOptions = new Map<string, number>(
+        Object.entries(JSON.parse(sessionStorage.getItem(`selected_poll_options_${eventId}`) || '{}'))
+          .map(([pollId, optionIndex]) => [pollId, Number(optionIndex)])
+          .filter(([, optionIndex]) => Number.isInteger(optionIndex)) as [string, number][]
+      );
 
       function escLive(str: string): string {
         return String(str || '')
@@ -1164,27 +1169,38 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       });
 
       async function loadPolls() {
-        const res  = await fetch(`/api/events/${eventId}/polls`);
+        const pollsUrl = new URL(`/api/events/${eventId}/polls`, window.location.origin);
+        if (userEmail) pollsUrl.searchParams.set('voterEmail', userEmail);
+
+        const res  = await fetch(pollsUrl.toString());
         const data = await res.json();
         if (!data.polls?.length) {
           pollsList.innerHTML = '<p class="text-gray-400 text-sm">No active polls right now.</p>';
           return;
         }
         pollsList.innerHTML = data.polls.map((poll: any) => {
-          const hasVoted   = votedPolls.has(poll._id);
+          if (poll.selectedOptionIndex !== null && poll.selectedOptionIndex !== undefined) {
+            selectedPollOptions.set(poll._id, Number(poll.selectedOptionIndex));
+            votedPolls.add(poll._id);
+          }
+
+          const selectedOptionIndex = selectedPollOptions.get(poll._id);
+          const hasVoted = selectedOptionIndex !== undefined || votedPolls.has(poll._id);
+          const selectedOptionLabel = selectedOptionIndex !== undefined ? poll.options[selectedOptionIndex] : '';
           const totalVotes = poll.results.reduce((s: number, r: any) => s + r.count, 0);
           const optionsHtml = poll.options.map((opt: string, i: number) => {
             const result = poll.results[i];
             const pct    = totalVotes > 0 ? Math.round((result.count / totalVotes) * 100) : 0;
             if (hasVoted) {
+              const isSelected = selectedOptionIndex === i;
               return `
-                <div class="space-y-1">
-                  <div class="flex justify-between text-sm">
-                    <span>${escLive(opt)}</span>
-                    <span class="text-gray-500">${result.count} vote${result.count !== 1 ? 's' : ''} (${pct}%)</span>
+                <div class="space-y-1 rounded-xl border ${isSelected ? 'border-indigo-200 bg-indigo-50/60 p-3' : 'border-transparent'}">
+                  <div class="flex justify-between gap-3 text-sm">
+                    <span class="${isSelected ? 'font-semibold text-indigo-900' : 'text-gray-700'}">${escLive(opt)}${isSelected ? ' ✓' : ''}</span>
+                    <span class="text-gray-500 whitespace-nowrap">${result.count} vote${result.count !== 1 ? 's' : ''} (${pct}%)</span>
                   </div>
                   <div class="w-full bg-gray-100 rounded-full h-2">
-                    <div class="bg-indigo-500 h-2 rounded-full transition-all" style="width:${pct}%"></div>
+                    <div class="${isSelected ? 'bg-indigo-600' : 'bg-indigo-500'} h-2 rounded-full transition-all" style="width:${pct}%"></div>
                   </div>
                 </div>`;
             }
@@ -1198,6 +1214,10 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
           return `
             <div class="border border-gray-100 rounded-xl p-4 mb-4 space-y-3">
               <p class="font-medium text-gray-900">${escLive(poll.question)}</p>
+              ${hasVoted && selectedOptionLabel ? `
+                <div class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900" role="status" aria-live="polite">
+                  You have chosen <span class="font-semibold">${escLive(selectedOptionLabel)}</span>. Audience votes are shown below.
+                </div>` : ''}
               <div class="space-y-2">${optionsHtml}</div>
               ${hasVoted ? `<p class="text-xs text-gray-400">${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}</p>` : ''}
             </div>`;
@@ -1214,7 +1234,12 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
         const data = await res.json();
         if (data.success) {
           votedPolls.add(pollId);
+          selectedPollOptions.set(pollId, optionIndex);
           sessionStorage.setItem(`voted_polls_${eventId}`, JSON.stringify([...votedPolls]));
+          sessionStorage.setItem(
+            `selected_poll_options_${eventId}`,
+            JSON.stringify(Object.fromEntries(selectedPollOptions))
+          );
           await loadPolls();
         }
       }
