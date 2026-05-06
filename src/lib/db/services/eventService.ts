@@ -452,6 +452,18 @@ export class EventService {
   }
 
   /**
+   * Set up MongoDB indexes for Q&A and Polls collections
+   */
+  static async setupQAAndPollIndexes(): Promise<void> {
+    const qaCol = await getCollection('event_qa');
+    await qaCol.createIndex({ eventId: 1, upvotes: -1, createdAt: 1 });
+
+    const pollsCol = await getCollection('event_polls');
+    await pollsCol.createIndex({ eventId: 1, isActive: 1 });
+    await pollsCol.createIndex({ eventId: 1, createdAt: -1 });
+  }
+
+  /**
    * Set up all MongoDB indexes
    */
   static async setupIndexes(): Promise<void> {
