@@ -19,12 +19,20 @@ export const PATCH: APIRoute = async ({ params, request, url }) => {
     const allowedFields = ['title', 'hostEmail', 'hostName', 'eventType', 'startTime', 'endTime', 'registrationDeadline', 'capacity', 'bannerUrl', 'status', 'meetingUrl', 'meetingUrlActive', 'venue', 'location', 'description', 'tags'];
     const updates: Record<string, any> = { updatedAt: new Date() };
     const unsetFields: Record<string, ''> = {};
+    // Fields that must be stored as BSON Date
+    const dateFields = new Set(['startTime', 'endTime', 'registrationDeadline']);
+
     for (const field of allowedFields) {
       if (field in body) {
-        if (body[field] === null && field === 'registrationDeadline') {
+        const value = body[field];
+        if (value === null && field === 'registrationDeadline') {
+          // Explicitly cleared → remove the field from the document
           unsetFields[field] = '';
+        } else if (dateFields.has(field) && value) {
+          // Convert ISO string → proper BSON Date
+          updates[field] = new Date(value);
         } else {
-          updates[field] = body[field];
+          updates[field] = value;
         }
       }
     }
