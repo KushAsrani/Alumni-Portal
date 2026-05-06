@@ -11,7 +11,7 @@ let indexesSetup = false;
 async function ensureIndexes() {
   if (!indexesSetup) {
     indexesSetup = true;
-    await EventService.setupQAAndPollIndexes().catch(() => {});
+    await EventService.setupQAAndPollIndexes().catch(err => console.error('[qa] Index setup failed:', err));
   }
 }
 
@@ -45,6 +45,7 @@ export const GET: APIRoute = async ({ params }) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    console.error('[qa] Unhandled error:', error);
     return new Response(JSON.stringify({ success: false, message: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -113,6 +114,7 @@ export const POST: APIRoute = async ({ params, request }) => {
       { status: 201, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    console.error('[qa] Unhandled error:', error);
     return new Response(JSON.stringify({ success: false, message: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -220,6 +222,7 @@ export const PATCH: APIRoute = async ({ params, request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    console.error('[qa] Unhandled error:', error);
     return new Response(JSON.stringify({ success: false, message: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -277,6 +280,7 @@ export const DELETE: APIRoute = async ({ params, request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    console.error('[qa] Unhandled error:', error);
     return new Response(JSON.stringify({ success: false, message: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

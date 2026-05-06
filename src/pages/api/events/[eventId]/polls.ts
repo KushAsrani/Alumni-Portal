@@ -11,7 +11,7 @@ let indexesSetup = false;
 async function ensureIndexes() {
   if (!indexesSetup) {
     indexesSetup = true;
-    await EventService.setupQAAndPollIndexes().catch(() => {});
+    await EventService.setupQAAndPollIndexes().catch(err => console.error('[polls] Index setup failed:', err));
   }
 }
 
@@ -63,6 +63,7 @@ export const GET: APIRoute = async ({ params, url }) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    console.error('[polls] Unhandled error:', error);
     return new Response(JSON.stringify({ success: false, message: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -139,6 +140,7 @@ export const POST: APIRoute = async ({ params, request }) => {
       { status: 201, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    console.error('[polls] Unhandled error:', error);
     return new Response(JSON.stringify({ success: false, message: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -198,10 +200,12 @@ export const PATCH: APIRoute = async ({ params, request }) => {
         });
       }
 
-      // Overwrite previous vote (allow vote change)
+      // Overwrite previous vote (allow vote change).
+      // encodeURIComponent avoids MongoDB dot-path issues with email addresses.
+      const safeKey = encodeURIComponent(voterEmail);
       await pollsCol.updateOne(
         { _id: new ObjectId(pollId) },
-        { $set: { [`votes.${voterEmail.replace(/\./g, '_dot_')}`]: String(optionIndex) } }
+        { $set: { [`votes.${safeKey}`]: String(optionIndex) } }
       );
 
       const updated = await pollsCol.findOne({ _id: new ObjectId(pollId) });
@@ -262,6 +266,7 @@ export const PATCH: APIRoute = async ({ params, request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    console.error('[polls] Unhandled error:', error);
     return new Response(JSON.stringify({ success: false, message: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -319,6 +324,7 @@ export const DELETE: APIRoute = async ({ params, request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    console.error('[polls] Unhandled error:', error);
     return new Response(JSON.stringify({ success: false, message: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

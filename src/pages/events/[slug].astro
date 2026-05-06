@@ -1056,15 +1056,22 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       }
 
       // ── Q&A ──
+      const qaList = document.getElementById('qa-list')!;
+
+      // Event delegation for upvote buttons — persists across innerHTML re-renders
+      qaList.addEventListener('click', (e) => {
+        const btn = (e.target as Element).closest('.qa-upvote-btn') as HTMLButtonElement | null;
+        if (btn?.dataset.qid) toggleUpvote(btn.dataset.qid);
+      });
+
       async function loadQA() {
         const res  = await fetch(`/api/events/${eventId}/qa`);
         const data = await res.json();
-        const list = document.getElementById('qa-list')!;
         if (!data.questions?.length) {
-          list.innerHTML = '<p class="text-gray-400 text-sm">No questions yet. Be the first to ask!</p>';
+          qaList.innerHTML = '<p class="text-gray-400 text-sm">No questions yet. Be the first to ask!</p>';
           return;
         }
-        list.innerHTML = data.questions.map((q: any) => {
+        qaList.innerHTML = data.questions.map((q: any) => {
           const alreadyUpvoted = q.upvotedBy?.includes(userEmail);
           const authorLabel    = q.isAnonymous ? 'Anonymous' : (q.authorName || q.authorEmail);
           return `
@@ -1075,8 +1082,8 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                   <p class="text-sm text-gray-900 mt-1">${escLive(q.text)}</p>
                 </div>
                 <button
-                  onclick="toggleUpvote('${escLive(q._id)}')"
-                  class="flex flex-col items-center text-xs px-2 py-1 rounded-lg border ${alreadyUpvoted ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'border-gray-200 text-gray-500'} hover:bg-indigo-50 transition-colors"
+                  data-qid="${escLive(q._id)}"
+                  class="qa-upvote-btn flex flex-col items-center text-xs px-2 py-1 rounded-lg border ${alreadyUpvoted ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'border-gray-200 text-gray-500'} hover:bg-indigo-50 transition-colors"
                 >
                   <span>▲</span>
                   <span id="upvote-count-${q._id}">${q.upvotes}</span>
@@ -1105,7 +1112,6 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
           await loadQA(); // re-render to update button styles
         }
       }
-      (window as any).toggleUpvote = toggleUpvote;
 
       const qaForm = document.getElementById('qa-form') as HTMLFormElement;
       const qaText = document.getElementById('qa-text') as HTMLTextAreaElement;
@@ -1147,15 +1153,24 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       });
 
       // ── Polls ──
+      const pollsList = document.getElementById('polls-list')!;
+
+      // Event delegation for vote buttons — persists across innerHTML re-renders
+      pollsList.addEventListener('click', (e) => {
+        const btn = (e.target as Element).closest('.cast-vote-btn') as HTMLButtonElement | null;
+        if (btn?.dataset.pollId && btn.dataset.optionIndex !== undefined) {
+          castVote(btn.dataset.pollId, parseInt(btn.dataset.optionIndex));
+        }
+      });
+
       async function loadPolls() {
         const res  = await fetch(`/api/events/${eventId}/polls`);
         const data = await res.json();
-        const list = document.getElementById('polls-list')!;
         if (!data.polls?.length) {
-          list.innerHTML = '<p class="text-gray-400 text-sm">No active polls right now.</p>';
+          pollsList.innerHTML = '<p class="text-gray-400 text-sm">No active polls right now.</p>';
           return;
         }
-        list.innerHTML = data.polls.map((poll: any) => {
+        pollsList.innerHTML = data.polls.map((poll: any) => {
           const hasVoted   = votedPolls.has(poll._id);
           const totalVotes = poll.results.reduce((s: number, r: any) => s + r.count, 0);
           const optionsHtml = poll.options.map((opt: string, i: number) => {
@@ -1173,8 +1188,10 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                   </div>
                 </div>`;
             }
-            return `<button onclick="castVote('${escLive(poll._id)}', ${i})"
-              class="w-full text-left px-4 py-2 border border-gray-200 rounded-xl text-sm hover:bg-indigo-50 hover:border-indigo-300 transition-colors">
+            return `<button
+              data-poll-id="${escLive(poll._id)}"
+              data-option-index="${i}"
+              class="cast-vote-btn w-full text-left px-4 py-2 border border-gray-200 rounded-xl text-sm hover:bg-indigo-50 hover:border-indigo-300 transition-colors">
               ${escLive(opt)}
             </button>`;
           }).join('');
@@ -1201,13 +1218,18 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
           await loadPolls();
         }
       }
-      (window as any).castVote = castVote;
 
       // Initial load + auto-refresh every 10s
+      // Store interval IDs so they can be cleaned up on page unload
       loadQA();
       loadPolls();
-      setInterval(loadQA,    10_000);
-      setInterval(loadPolls, 10_000);
+      const qaInterval    = setInterval(loadQA,    10_000);
+      const pollsInterval = setInterval(loadPolls, 10_000);
+
+      window.addEventListener('pagehide', () => {
+        clearInterval(qaInterval);
+        clearInterval(pollsInterval);
+      });
     }
   </script>
 </Layout>
