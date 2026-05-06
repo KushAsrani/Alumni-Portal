@@ -15,20 +15,62 @@ async function ensureIndexes() {
   }
 }
 
+function getVoteStorageKey(voterEmail: string) {
+  // MongoDB update paths split on literal dots, so encodeURIComponent is not enough:
+  // it leaves dots in email domains (for example example.com). Encode dots too.
+  return encodeURIComponent(voterEmail).replace(/\./g, '%2E');
+}
+
+function collectVoteValues(value: unknown): string[] {
+  if (typeof value === 'string') return [value];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+
+  return Object.values(value as Record<string, unknown>).flatMap(collectVoteValues);
+}
+
 function computeResults(poll: PollDocument) {
+  const voteValues = collectVoteValues(poll.votes);
+
   return poll.options.map((_: string, i: number) => {
-    const count = Object.values(poll.votes).filter(v => v === String(i)).length;
+    const count = voteValues.filter(v => v === String(i)).length;
     return { count };
   });
 }
 
-function serializePoll(poll: PollDocument & { _id?: ObjectId }) {
+function readLegacyDottedVote(votes: Record<string, unknown>, voterEmail: string) {
+  // Votes written before dots were encoded were stored as nested objects, e.g.
+  // votes["audience1%40example"].com = "0". Read that shape so existing
+  // data counts correctly and the voter's previous selection still appears.
+  const legacyKeyParts = encodeURIComponent(voterEmail).split('.');
+  let current: unknown = votes;
+
+  for (const part of legacyKeyParts) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+
+  return current;
+}
+
+function getVoterOptionIndex(poll: PollDocument, voterEmail?: string | null) {
+  if (!voterEmail) return null;
+
+  const votes = poll.votes as Record<string, unknown>;
+  const vote = votes[getVoteStorageKey(voterEmail)] ?? readLegacyDottedVote(votes, voterEmail);
+  if (vote === undefined) return null;
+
+  const optionIndex = Number(vote);
+  return Number.isInteger(optionIndex) ? optionIndex : null;
+}
+
+function serializePoll(poll: PollDocument & { _id?: ObjectId }, voterEmail?: string | null) {
   const { votes: _votes, ...rest } = poll as any;
   return {
     ...rest,
     _id: poll._id?.toString(),
     eventId: poll.eventId.toString(),
     results: computeResults(poll),
+    selectedOptionIndex: getVoterOptionIndex(poll, voterEmail),
   };
 }
 
@@ -45,6 +87,7 @@ export const GET: APIRoute = async ({ params, url }) => {
     await ensureIndexes();
 
     const showAll = url.searchParams.get('all') === 'true';
+    const voterEmail = url.searchParams.get('voterEmail');
     const pollsCol = await getCollection<PollDocument>('event_polls');
 
     const query: any = { eventId: new ObjectId(eventId) };
@@ -58,7 +101,7 @@ export const GET: APIRoute = async ({ params, url }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        polls: polls.map(serializePoll),
+        polls: polls.map((poll) => serializePoll(poll, voterEmail)),
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -201,18 +244,23 @@ export const PATCH: APIRoute = async ({ params, request }) => {
       }
 
       // Overwrite previous vote (allow vote change).
-      // encodeURIComponent avoids MongoDB dot-path issues with email addresses.
-      const safeKey = encodeURIComponent(voterEmail);
+      const safeKey = getVoteStorageKey(voterEmail);
+      const legacyKey = encodeURIComponent(voterEmail);
+      const voteUpdate: any = { $set: { [`votes.${safeKey}`]: String(optionIndex) } };
+      if (legacyKey !== safeKey) {
+        voteUpdate.$unset = { [`votes.${legacyKey}`]: '' };
+      }
+
       await pollsCol.updateOne(
         { _id: new ObjectId(pollId) },
-        { $set: { [`votes.${safeKey}`]: String(optionIndex) } }
+        voteUpdate
       );
 
       const updated = await pollsCol.findOne({ _id: new ObjectId(pollId) });
       return new Response(
         JSON.stringify({
           success: true,
-          poll: serializePoll(updated!),
+          poll: serializePoll(updated!, voterEmail),
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
