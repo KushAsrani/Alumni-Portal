@@ -7,6 +7,7 @@ if (!isAuthenticated(Astro.cookies)) {
   return Astro.redirect('/admin/login');
 }
 const currentUser = getCurrentUser(Astro.cookies);
+const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY || '';
 ---
 
 <!DOCTYPE html>
@@ -229,12 +230,17 @@ const currentUser = getCurrentUser(Astro.cookies);
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl my-8">
       <div class="flex justify-between items-center p-6 border-b">
         <h2 id="rsvpModalTitle" class="text-xl font-bold text-gray-900">RSVPs</h2>
-        <button id="closeRsvpModal" class="text-gray-400 hover:text-gray-600">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+        <div class="flex items-center gap-2">
+          <button id="exportRsvpsCsvBtn" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors flex items-center gap-1.5">
+            ⬇ Export CSV
+          </button>
+          <button id="closeRsvpModal" class="text-gray-400 hover:text-gray-600">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
       </div>
       <div id="rsvpContent" class="p-6">
         <!-- Check-in section -->
@@ -245,6 +251,7 @@ const currentUser = getCurrentUser(Astro.cookies);
             <button id="checkinBtn" class="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors whitespace-nowrap">Check In</button>
           </div>
         </div>
+        <div id="rsvpStatsSummary" class="mb-4 p-3 bg-indigo-50 rounded-xl border border-indigo-100 hidden"></div>
         <!-- RSVP table -->
         <div id="rsvpTableWrapper" class="overflow-x-auto">
           <p class="text-gray-400 text-sm">Loading RSVPs…</p>
@@ -348,7 +355,20 @@ const currentUser = getCurrentUser(Astro.cookies);
     </div>
   </div>
 
-<script define:vars={{}}>
+  <!-- ─────────────────── Analytics Modal ─────────────────── -->
+  <div id="analyticsModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-start justify-center p-6 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl my-8">
+      <div class="flex justify-between items-center p-6 border-b">
+        <h2 id="analyticsModalTitle" class="text-xl font-bold text-gray-900">Event Analytics</h2>
+        <button id="closeAnalyticsModal" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+      <div id="analyticsContent" class="p-6">
+        <p class="text-gray-400 text-sm">Loading analytics…</p>
+      </div>
+    </div>
+  </div>
+
+<script define:vars={{ adminApiKey }}>
   // ── State ──────────────────────────────────────────────────────
   let allEvents = [];
   let filteredEvents = [];
@@ -359,6 +379,7 @@ const currentUser = getCurrentUser(Astro.cookies);
   let activeRoomsEventId = null;
   let activeLivePanelEventId = null;
   let activeLivePanelHostEmail = null;
+  let activeAnalyticsEventId = null;
 
   // ── Helpers ────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -462,6 +483,7 @@ const currentUser = getCurrentUser(Astro.cookies);
           </div>
           <div class="flex flex-wrap gap-2 shrink-0">
             <button class="btn-rsvps px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors" data-id="${escHtml(ev._id)}" data-title="${escHtml(ev.title)}">View RSVPs</button>
+            <button class="btn-analytics px-3 py-1.5 bg-violet-50 text-violet-700 rounded-lg text-xs font-medium hover:bg-violet-100 transition-colors" data-id="${escHtml(ev._id)}" data-title="${escHtml(ev.title)}">📊 Analytics</button>
             <button class="btn-rooms px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium hover:bg-teal-100 transition-colors" data-id="${escHtml(ev._id)}" data-title="${escHtml(ev.title)}">Rooms</button>
             ${ev.status === 'live' ? `<button class="btn-live-panel px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors" data-id="${escHtml(ev._id)}" data-title="${escHtml(ev.title)}" data-host-email="${escHtml(ev.hostEmail || '')}">🎤 Live Panel</button>` : ''}
             <button class="btn-edit px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium hover:bg-indigo-100 transition-colors" data-id="${escHtml(ev._id)}">Edit</button>
@@ -482,6 +504,9 @@ const currentUser = getCurrentUser(Astro.cookies);
     });
     container.querySelectorAll('.btn-rsvps').forEach(btn => {
       btn.addEventListener('click', () => openRsvpModal(btn.dataset.id, btn.dataset.title));
+    });
+    container.querySelectorAll('.btn-analytics').forEach(btn => {
+      btn.addEventListener('click', () => openAnalyticsModal(btn.dataset.id, btn.dataset.title));
     });
     container.querySelectorAll('.btn-rooms').forEach(btn => {
       btn.addEventListener('click', () => openRoomsModal(btn.dataset.id, btn.dataset.title));
@@ -638,6 +663,7 @@ const currentUser = getCurrentUser(Astro.cookies);
   async function openRsvpModal(eventId, title) {
     activeRsvpEventId = eventId;
     $('rsvpModalTitle').textContent = `RSVPs — ${title}`;
+    $('rsvpStatsSummary').classList.add('hidden');
     $('rsvpTableWrapper').innerHTML = '<p class="text-gray-400 text-sm">Loading RSVPs…</p>';
     $('rsvpModal').classList.remove('hidden');
     await loadRsvps(eventId);
@@ -649,6 +675,19 @@ const currentUser = getCurrentUser(Astro.cookies);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const rsvps = Array.isArray(data) ? data : (data.rsvps || data.data || []);
+      const confirmedCount = rsvps.filter(r => r.rsvpStatus === 'confirmed').length;
+      const checkedInCount = rsvps.filter(r => r.rsvpStatus === 'confirmed' && r.checkedIn).length;
+      const attendanceRate = confirmedCount > 0
+        ? Math.round((checkedInCount / confirmedCount) * 1000) / 10
+        : 0;
+      $('rsvpStatsSummary').innerHTML = `
+        <div class="flex flex-wrap gap-4 text-xs text-indigo-800">
+          <span class="font-semibold">Confirmed: ${confirmedCount}</span>
+          <span class="font-semibold">Checked In: ${checkedInCount}</span>
+          <span class="font-semibold">Attendance Rate: ${attendanceRate.toFixed(1)}%</span>
+        </div>
+      `;
+      $('rsvpStatsSummary').classList.remove('hidden');
       if (rsvps.length === 0) {
         $('rsvpTableWrapper').innerHTML = '<p class="text-gray-400 text-sm">No RSVPs yet.</p>';
         return;
@@ -738,7 +777,36 @@ const currentUser = getCurrentUser(Astro.cookies);
         });
       });
     } catch (e) {
+      $('rsvpStatsSummary').classList.add('hidden');
       $('rsvpTableWrapper').innerHTML = `<p class="text-red-500 text-sm">Failed to load RSVPs: ${e.message}</p>`;
+    }
+  }
+
+  async function exportRsvpsCsv(eventId) {
+    if (!eventId) return;
+    try {
+      const res = await fetch(`/api/events/${eventId}/rsvps/export`, {
+        headers: { 'Authorization': `Bearer ${adminApiKey}` }
+      });
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => '');
+        alert(`Export failed (${res.status})${errorText ? `: ${errorText}` : ''}`);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const contentDisposition = res.headers.get('content-disposition') || '';
+      const filenameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+      const downloadName = filenameMatch?.[1] || `event-attendees-${eventId}-${new Date().toISOString().split('T')[0]}.csv`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = downloadName;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      a.remove();
+    } catch (e) {
+      alert('Export error: ' + e.message);
     }
   }
 
@@ -761,8 +829,95 @@ const currentUser = getCurrentUser(Astro.cookies);
     }
   });
 
+  $('exportRsvpsCsvBtn').addEventListener('click', () => exportRsvpsCsv(activeRsvpEventId));
   $('closeRsvpModal').addEventListener('click', () => { $('rsvpModal').classList.add('hidden'); activeRsvpEventId = null; });
   $('rsvpModal').addEventListener('click', e => { if (e.target === $('rsvpModal')) { $('rsvpModal').classList.add('hidden'); activeRsvpEventId = null; } });
+
+  // ── Analytics Modal ────────────────────────────────────────────
+  async function openAnalyticsModal(eventId, title) {
+    activeAnalyticsEventId = eventId;
+    $('analyticsModalTitle').textContent = `Event Analytics — ${title}`;
+    $('analyticsContent').innerHTML = '<p class="text-gray-400 text-sm">Loading analytics…</p>';
+    $('analyticsModal').classList.remove('hidden');
+    await loadAnalytics(eventId);
+  }
+
+  function renderBreakdownPills(items) {
+    if (!items.length) return '<p class="text-xs text-gray-400">No data available.</p>';
+    return `<div class="flex flex-wrap gap-2">${items.map(([label, count]) => `
+      <span class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-xs">${escHtml(label)}: <strong>${count}</strong></span>
+    `).join('')}</div>`;
+  }
+
+  function renderTimelineBars(timeline) {
+    if (!timeline.length) return '<p class="text-xs text-gray-400">No confirmed RSVPs yet.</p>';
+    const maxCount = Math.max(...timeline.map(item => item.count), 1);
+    return `<div class="space-y-2">${timeline.map(item => {
+      const width = Math.max(3, Math.round((item.count / maxCount) * 100));
+      return `
+        <div class="flex items-center gap-3">
+          <span class="w-28 text-xs text-gray-500">${escHtml(item.date)}</span>
+          <div class="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+            <div class="h-2 bg-indigo-500 rounded-full" style="width:${width}%"></div>
+          </div>
+          <span class="text-xs font-medium text-gray-700 w-8 text-right">${item.count}</span>
+        </div>
+      `;
+    }).join('')}</div>`;
+  }
+
+  async function loadAnalytics(eventId) {
+    try {
+      const res = await fetch(`/api/events/${eventId}/analytics`, {
+        headers: { 'Authorization': `Bearer ${adminApiKey}` }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || `HTTP ${res.status}`);
+
+      const analytics = data.analytics || {};
+      const facultyItems = Object.entries(analytics.facultyBreakdown || {}).sort((a, b) => b[1] - a[1]);
+      const activityItems = Object.entries(analytics.activityBreakdown || {}).sort((a, b) => b[1] - a[1]);
+      const yearItems = Object.entries(analytics.graduationYearBreakdown || {}).sort((a, b) => Number(a[0]) - Number(b[0]));
+      const timeline = Array.isArray(analytics.rsvpTimeline) ? analytics.rsvpTimeline : [];
+
+      $('analyticsContent').innerHTML = `
+        <div class="space-y-6">
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div class="bg-indigo-50 rounded-xl p-4 text-center"><p class="text-xs text-indigo-700">Confirmed</p><p class="text-lg font-bold text-indigo-900">${analytics.confirmedCount ?? 0}</p></div>
+            <div class="bg-indigo-50 rounded-xl p-4 text-center"><p class="text-xs text-indigo-700">Waitlisted</p><p class="text-lg font-bold text-indigo-900">${analytics.waitlistCount ?? 0}</p></div>
+            <div class="bg-indigo-50 rounded-xl p-4 text-center"><p class="text-xs text-indigo-700">Checked-In</p><p class="text-lg font-bold text-indigo-900">${analytics.checkedInCount ?? 0}</p></div>
+            <div class="bg-indigo-50 rounded-xl p-4 text-center"><p class="text-xs text-indigo-700">Attendance Rate</p><p class="text-lg font-bold text-indigo-900">${analytics.attendanceRate ?? 0}%</p></div>
+            <div class="bg-indigo-50 rounded-xl p-4 text-center"><p class="text-xs text-indigo-700">Total Guests</p><p class="text-lg font-bold text-indigo-900">${analytics.totalGuestCount ?? 0}</p></div>
+          </div>
+
+          <div class="border border-gray-100 rounded-xl p-4">
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">RSVP Trend (daily confirmed sign-ups)</h3>
+            ${renderTimelineBars(timeline)}
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="border border-gray-100 rounded-xl p-4">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Faculty Breakdown</h3>
+              ${renderBreakdownPills(facultyItems)}
+            </div>
+            <div class="border border-gray-100 rounded-xl p-4">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Activity Preferences</h3>
+              ${renderBreakdownPills(activityItems)}
+            </div>
+            <div class="border border-gray-100 rounded-xl p-4">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Graduation Year Breakdown</h3>
+              ${renderBreakdownPills(yearItems)}
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (e) {
+      $('analyticsContent').innerHTML = `<p class="text-red-500 text-sm">Failed to load analytics: ${escHtml(e.message)}</p>`;
+    }
+  }
+
+  $('closeAnalyticsModal').addEventListener('click', () => { $('analyticsModal').classList.add('hidden'); activeAnalyticsEventId = null; });
+  $('analyticsModal').addEventListener('click', e => { if (e.target === $('analyticsModal')) { $('analyticsModal').classList.add('hidden'); activeAnalyticsEventId = null; } });
 
   // ── Rooms Modal ────────────────────────────────────────────────
   async function openRoomsModal(eventId, title) {
