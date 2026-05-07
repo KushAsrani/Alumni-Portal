@@ -54,8 +54,8 @@ export const GET: APIRoute = async ({ request, params }) => {
       rsvp.checkedIn ? 'Yes' : 'No',
       rsvp.checkedInAt ? new Date(rsvp.checkedInAt).toISOString() : '',
       escapeCSV(rsvp.faculty || ''),
-      rsvp.graduationYear ?? '',
-      rsvp.guestCount ?? 0,
+      escapeCSV(rsvp.graduationYear ?? ''),
+      escapeCSV(rsvp.guestCount ?? 0),
       escapeCSV(Array.isArray(rsvp.activities) ? rsvp.activities.join(' | ') : ''),
       rsvp.createdAt ? new Date(rsvp.createdAt).toISOString() : '',
     ]);
