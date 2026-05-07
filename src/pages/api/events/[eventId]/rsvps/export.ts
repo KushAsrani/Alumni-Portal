@@ -52,12 +52,12 @@ export const GET: APIRoute = async ({ request, params }) => {
       escapeCSV(rsvp.userEmail || ''),
       escapeCSV(rsvp.rsvpStatus || ''),
       rsvp.checkedIn ? 'Yes' : 'No',
-      rsvp.checkedInAt ? new Date(rsvp.checkedInAt).toISOString() : '',
+      escapeCSV(rsvp.checkedInAt ? new Date(rsvp.checkedInAt).toISOString() : ''),
       escapeCSV(rsvp.faculty || ''),
       escapeCSV(rsvp.graduationYear ?? ''),
       escapeCSV(rsvp.guestCount ?? 0),
       escapeCSV(Array.isArray(rsvp.activities) ? rsvp.activities.join(' | ') : ''),
-      rsvp.createdAt ? new Date(rsvp.createdAt).toISOString() : '',
+      escapeCSV(rsvp.createdAt ? new Date(rsvp.createdAt).toISOString() : ''),
     ]);
 
     const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');

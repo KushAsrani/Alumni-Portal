@@ -677,12 +677,14 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
       const rsvps = Array.isArray(data) ? data : (data.rsvps || data.data || []);
       const confirmedCount = rsvps.filter(r => r.rsvpStatus === 'confirmed').length;
       const checkedInCount = rsvps.filter(r => r.rsvpStatus === 'confirmed' && r.checkedIn).length;
-      const attendanceRate = confirmedCount > 0 ? ((checkedInCount / confirmedCount) * 100).toFixed(1) : '0.0';
+      const attendanceRate = confirmedCount > 0
+        ? Math.round((checkedInCount / confirmedCount) * 1000) / 10
+        : 0;
       $('rsvpStatsSummary').innerHTML = `
         <div class="flex flex-wrap gap-4 text-xs text-indigo-800">
           <span class="font-semibold">Confirmed: ${confirmedCount}</span>
           <span class="font-semibold">Checked In: ${checkedInCount}</span>
-          <span class="font-semibold">Attendance Rate: ${attendanceRate}%</span>
+          <span class="font-semibold">Attendance Rate: ${attendanceRate.toFixed(1)}%</span>
         </div>
       `;
       $('rsvpStatsSummary').classList.remove('hidden');
@@ -851,7 +853,7 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
     if (!timeline.length) return '<p class="text-xs text-gray-400">No confirmed RSVPs yet.</p>';
     const maxCount = Math.max(...timeline.map(item => item.count), 1);
     return `<div class="space-y-2">${timeline.map(item => {
-      const width = Math.max(6, Math.round((item.count / maxCount) * 100));
+      const width = Math.max(3, Math.round((item.count / maxCount) * 100));
       return `
         <div class="flex items-center gap-3">
           <span class="w-28 text-xs text-gray-500">${escHtml(item.date)}</span>
