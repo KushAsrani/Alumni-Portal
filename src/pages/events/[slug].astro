@@ -509,7 +509,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                   : (event.eventType === 'webinar' ? 'Online / Remote' : 'TBD')},
                   {event.location}
               </li>
-              
+
               <li>
                 <strong>No. of Guests:</strong> {event.capacity}
               <li>
@@ -665,7 +665,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
     </div>
   </div>
 
-  <script define:vars={{ userRsvpStatus: userRsvp?.rsvpStatus ?? null, userRsvpExists: !!userRsvp }}>
+  <script>
     // -----------------------------------------------------------------------
     // Utility: show/hide modal
     // -----------------------------------------------------------------------
@@ -677,87 +677,6 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       const el = document.getElementById(id);
       if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
     }
-
-    function escapeHtml(text: string | null | undefined) {
-      if (!text) return '';
-      return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    let activePopupInterval: ReturnType<typeof setInterval> | null = null;
-
-    function sanitizePopupHtml(html: string) {
-      return html
-        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-        .replace(/\son\w+="[^"]*"/gi, '')
-        .replace(/\son\w+='[^']*'/gi, '')
-        .replace(/javascript:/gi, '');
-    }
-
-    function showPopup(title: string, bodyHtml: string, autocloseMs = 0, onClose: null | (() => void) = null) {
-      if (activePopupInterval) {
-        clearInterval(activePopupInterval);
-        activePopupInterval = null;
-      }
-      document.getElementById('rsvp-popup-overlay')?.remove();
-
-      const overlay = document.createElement('div');
-      overlay.id = 'rsvp-popup-overlay';
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1.5rem;';
-
-      const card = document.createElement('div');
-      card.style.cssText = 'background:white;border-radius:1rem;padding:2rem;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2);border:2px solid #e0e7ff;position:relative;';
-      card.innerHTML = `
-        <button id="rsvp-popup-close-btn" aria-label="Close dialog" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#6b7280;">✕</button>
-        <h3 style="font-size:1.25rem;font-weight:700;color:#1f2937;margin-bottom:1rem;"></h3>
-        <div style="font-size:0.9rem;color:#374151;line-height:1.6;">${sanitizePopupHtml(bodyHtml)}</div>
-        ${autocloseMs > 0 ? `<p style="margin-top:1rem;font-size:0.75rem;color:#9ca3af;" id="popup-countdown"></p>` : ''}
-      `;
-
-      const heading = card.querySelector('h3');
-      if (heading) heading.textContent = title;
-
-      overlay.appendChild(card);
-      document.body.appendChild(overlay);
-
-      let interval: ReturnType<typeof setInterval> | null = null;
-      const clearPopupTimer = () => {
-        if (interval) {
-          clearInterval(interval);
-          interval = null;
-        }
-        activePopupInterval = null;
-      };
-      const closeBtn = card.querySelector('#rsvp-popup-close-btn') as HTMLButtonElement | null;
-      closeBtn?.addEventListener('click', () => {
-        clearPopupTimer();
-        overlay.remove();
-      });
-
-      if (autocloseMs > 0) {
-        const secs = Math.round(autocloseMs / 1000);
-        let remaining = secs;
-        const cd = card.querySelector('#popup-countdown');
-        if (cd) cd.textContent = `This dialog will close in ${remaining}s…`;
-        interval = setInterval(() => {
-          remaining--;
-          if (cd) cd.textContent = remaining > 0 ? `This dialog will close in ${remaining}s…` : 'Refreshing…';
-          if (remaining <= 0) {
-            clearPopupTimer();
-            overlay.remove();
-            if (onClose) onClose();
-          }
-        }, 1000);
-        activePopupInterval = interval;
-      }
-    }
-
-    const RSVP_POPUP_AUTOCLOSE_MS = 3000;
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     // -----------------------------------------------------------------------
     // Dynamic per-guest sections
@@ -829,59 +748,6 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       const msgEl = document.getElementById('rsvp-msg')!;
       const cancelBtn = document.getElementById('cancel-rsvp-btn') as HTMLButtonElement;
       const submitBtn = document.getElementById('rsvp-submit-btn') as HTMLButtonElement;
-      const buttonsWrap = submitBtn?.parentElement;
-
-      function ensureRsvpBanner(text: string, className = 'mb-3 p-3 rounded text-sm bg-green-50 text-green-700 border border-green-200') {
-        if (!buttonsWrap) return;
-        let banner = document.getElementById('rsvp-status-banner') as HTMLDivElement | null;
-        if (!banner) {
-          banner = document.createElement('div');
-          banner.id = 'rsvp-status-banner';
-          buttonsWrap.insertAdjacentElement('beforebegin', banner);
-        }
-        banner.className = className;
-        banner.textContent = text;
-      }
-
-      function markSubmitDisabled(label: string, extraClass: string, bgColor = '#d1d5db') {
-        if (!submitBtn) return;
-        submitBtn.disabled = true;
-        submitBtn.textContent = label;
-        submitBtn.classList.remove('btn-primary');
-        submitBtn.classList.add(extraClass);
-        submitBtn.style.cursor = 'not-allowed';
-        submitBtn.style.background = bgColor;
-        submitBtn.style.borderColor = bgColor;
-        submitBtn.style.color = '#374151';
-      }
-
-      function addQrTicketLink() {
-        if (!buttonsWrap || !submitBtn || document.getElementById('view-qr-ticket-link')) return;
-        if (!document.getElementById('qr-ticket')) return;
-        const link = document.createElement('a');
-        link.id = 'view-qr-ticket-link';
-        link.href = '#qr-ticket';
-        link.className = 'self-center text-sm font-medium text-indigo-600 hover:text-indigo-700';
-        link.textContent = 'View QR Ticket ↓';
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          document.getElementById('qr-ticket')?.scrollIntoView({ behavior: prefersReducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
-        });
-        buttonsWrap.appendChild(link);
-      }
-
-      function applyInitialRsvpUiState() {
-        if (!userRsvpExists) return;
-        cancelBtn?.classList.remove('hidden');
-
-        if (userRsvpStatus === 'confirmed') {
-          markSubmitDisabled('✅ Registered', 'bg-gray-300');
-          ensureRsvpBanner('Your registration is confirmed. Scroll down to view your QR ticket.');
-          addQrTicketLink();
-        } else if (userRsvpStatus === 'waitlisted') {
-          markSubmitDisabled('⏳ On Waitlist', 'bg-amber-300', '#fcd34d');
-        }
-      }
 
       function showMsg(text: string, type: 'success' | 'error' | 'info') {
         msgEl.textContent = text;
@@ -965,38 +831,17 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
           if (res.ok && data.success) {
             if (data.status === 'waitlisted') {
               showMsg(`You've been added to the waitlist. We'll notify you if a spot opens up.`, 'success');
-              markSubmitDisabled('⏳ On Waitlist', 'bg-amber-300', '#fcd34d');
+              if (submitBtn) { submitBtn.textContent = "You're on the waitlist"; }
             } else {
-              markSubmitDisabled('✅ Registered', 'bg-gray-300');
-              cancelBtn.classList.remove('hidden');
-              ensureRsvpBanner('Your registration is confirmed. Scroll down to view your QR ticket.');
-              const popupEventTitle = (document.getElementById('event-title') as HTMLInputElement | null)?.value || 'this event';
-              showPopup(
-                '✅ Registration Confirmed!',
-                `<p>Thank you for registering for <strong>${escapeHtml(popupEventTitle)}</strong>.</p>
-                 <br>
-                 <p>📧 <strong>A confirmation email</strong> will be sent to your registered email address.</p>
-                 <br>
-                 <p>🎫 <strong>Your personalized QR Code Ticket has been generated!</strong> Scroll down below the registration form to find your entry ticket. You'll need to show this QR code to the host at the event entrance for check-in.</p>`,
-                RSVP_POPUP_AUTOCLOSE_MS,
-                () => window.location.reload()
-              );
-              return;
+              showMsg(`Your registration is confirmed. The join link will be available once the host activates it.`, 'success');
+              if (submitBtn) { submitBtn.textContent = 'Registered'; }
             }
             cancelBtn.classList.remove('hidden');
-          } else if (res.status === 409 || String(data?.message || '').toLowerCase().includes('already')) {
-            showPopup(
-              'ℹ️ Already Registered',
-              `<p>You have already registered for this event.</p>
-               <br>
-               <p>🎫 Your <strong>QR Code Ticket</strong> is available below — scroll down to find it.</p>`,
-              RSVP_POPUP_AUTOCLOSE_MS,
-              null
-            );
-            ensureRsvpBanner('Your registration is confirmed. Scroll down to view your QR ticket.');
+          }
+           else if (res.status === 409) {
+            showMsg('You are already registered for this event.', 'info');
             cancelBtn.classList.remove('hidden');
-            markSubmitDisabled('✅ Registered', 'bg-gray-300');
-            addQrTicketLink();
+            if (submitBtn) { submitBtn.textContent = 'Registered'; }
           } else {
             showMsg(data.message || 'Something went wrong.', 'error');
           }
@@ -1051,12 +896,6 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
           showMsg('Network error. Please try again.', 'error');
         }
       });
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', applyInitialRsvpUiState, { once: true });
-      } else {
-        applyInitialRsvpUiState();
-      }
     }
 
     // -----------------------------------------------------------------------
