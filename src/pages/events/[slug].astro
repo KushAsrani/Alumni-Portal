@@ -87,6 +87,7 @@ if (userRsvp?.rsvpStatus === 'confirmed' && userRsvp?.qrToken) {
 }
 const ticketHolderName =
   userRsvp?.userName || alumniProfile?.name || userRsvp?.userEmail || alumniProfile?.email || '';
+const isUserRegistrationConfirmed = userRsvp?.rsvpStatus === 'confirmed';
 
 const spotsLeft = Math.max(0, event.capacity - (event.confirmedCount || 0));
 const isFull = spotsLeft === 0;
@@ -292,7 +293,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                     </div>
                   )}
 
-                  <form id="rsvp-form" class="space-y-6">
+                  <form id="rsvp-form" class="space-y-6" data-initial-rsvp-status={userRsvp?.rsvpStatus || ''}>
                 <input type="hidden" id="event-id" value={event._id} />
                 <input type="hidden" id="event-title" value={event.title} />
 
@@ -383,14 +384,25 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                     placeholder="Any dietary requirements, accessibility needs, or other requests..."></textarea>
                 </div>
 
-                <div id="rsvp-msg" class="hidden mb-4 p-3 rounded text-sm"></div>
+                <div
+                  id="rsvp-msg"
+                  class={isUserRegistrationConfirmed ? 'mb-4 p-3 rounded text-sm bg-green-100 text-green-800' : 'hidden mb-4 p-3 rounded text-sm'}
+                >
+                  {isUserRegistrationConfirmed ? 'Your registration is confirmed. Your QR ticket card is shown below this form and can be used for event check-in.' : ''}
+                </div>
 
                 <!-- Submit buttons -->
                 <div class="flex gap-3 pt-2">
-                  <button type="submit" id="rsvp-submit-btn" class="btn btn-primary">
+                  <button
+                    type="submit"
+                    id="rsvp-submit-btn"
+                    class={`btn btn-primary ${isUserRegistrationConfirmed ? 'hidden' : ''}`}
+                    disabled={isUserRegistrationConfirmed}
+                    aria-hidden={isUserRegistrationConfirmed ? 'true' : 'false'}
+                  >
                     {isFull ? 'Join Waitlist' : 'Confirm Registration'}
                   </button>
-                  <button type="button" id="cancel-rsvp-btn" class="btn btn-outline hidden">
+                  <button type="button" id="cancel-rsvp-btn" class={`btn btn-outline ${isUserRegistrationConfirmed ? '' : 'hidden'}`}>
                     Cancel Registration
                   </button>
                 </div>
@@ -629,6 +641,29 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
     </div>
   </section>
 
+
+  <!-- Registration Status Modal -->
+  <div id="registration-status-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-auto text-center">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-3xl">✅</div>
+      <h3 id="registration-status-title" class="text-xl font-bold text-gray-900 mb-2">Registration Confirmed</h3>
+      <p id="registration-status-body" class="text-sm text-gray-600 mb-4">Your registration is confirmed. Thanks for registering.</p>
+      <div class="text-left bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-5">
+        <p class="text-sm font-semibold text-indigo-900 mb-2">Your QR ticket</p>
+        <ul class="list-disc pl-5 text-sm text-indigo-800 space-y-1">
+          <li>An email confirmation will be sent to your registered email address.</li>
+          <li>Your personalized QR ticket card appears below the registration form on this page.</li>
+          <li>Show the QR code to the event host at check-in so they can scan it.</li>
+        </ul>
+      </div>
+      <p id="registration-status-refresh" class="text-xs text-gray-500 mb-5 hidden">This page will refresh automatically so your QR ticket card appears.</p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button id="registration-status-close" class="btn btn-outline text-sm">Close</button>
+        <button id="registration-status-primary" class="btn btn-primary text-sm">View QR Ticket</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirmation Modal: Register -->
   <div id="confirm-register-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
     <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
@@ -677,6 +712,49 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       const el = document.getElementById(id);
       if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
     }
+
+    function scrollToQrTicket() {
+      const ticket = document.getElementById('qr-ticket');
+      if (ticket) {
+        ticket.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        document.getElementById('rsvp-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function showRegistrationStatusModal(options: { alreadyRegistered?: boolean; autoRefresh?: boolean } = {}) {
+      const title = document.getElementById('registration-status-title');
+      const body = document.getElementById('registration-status-body');
+      const refresh = document.getElementById('registration-status-refresh');
+      const primary = document.getElementById('registration-status-primary') as HTMLButtonElement | null;
+
+      if (options.alreadyRegistered) {
+        if (title) title.textContent = 'You are already registered';
+        if (body) body.textContent = 'You have already registered for this event. Your registration is confirmed.';
+      } else {
+        if (title) title.textContent = 'Registration confirmed';
+        if (body) body.textContent = 'Your registration is confirmed. Thanks for registering — an email confirmation will be sent to your registered email address.';
+      }
+
+      refresh?.classList.toggle('hidden', !options.autoRefresh);
+      if (primary) {
+        primary.textContent = options.autoRefresh ? 'Refresh now' : 'View QR Ticket';
+        primary.onclick = () => {
+          if (options.autoRefresh) {
+            window.location.reload();
+          } else {
+            hideModal('registration-status-modal');
+            scrollToQrTicket();
+          }
+        };
+      }
+
+      showModal('registration-status-modal');
+    }
+
+    document.getElementById('registration-status-close')?.addEventListener('click', () => {
+      hideModal('registration-status-modal');
+    });
 
     // -----------------------------------------------------------------------
     // Dynamic per-guest sections
@@ -747,7 +825,43 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       const eventId = (document.getElementById('event-id') as HTMLInputElement).value;
       const msgEl = document.getElementById('rsvp-msg')!;
       const cancelBtn = document.getElementById('cancel-rsvp-btn') as HTMLButtonElement;
-      const submitBtn = document.getElementById('rsvp-submit-btn') as HTMLButtonElement;
+      const submitBtn = document.getElementById('rsvp-submit-btn') as HTMLButtonElement | null;
+      let registrationRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+      function markRegistrationConfirmed() {
+        const ticketMessage = document.getElementById('qr-ticket')
+          ? 'Your registration is confirmed. Your QR ticket card is shown below this form and can be used for event check-in.'
+          : 'Your registration is confirmed. Your QR ticket card will appear below this form after the page refreshes.';
+        showMsg(ticketMessage, 'success');
+        cancelBtn.classList.remove('hidden');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('hidden');
+          submitBtn.setAttribute('aria-hidden', 'true');
+        }
+      }
+
+      async function getFreshRsvpStatus(email: string): Promise<string | null> {
+        try {
+          const res = await fetch(`/api/events/${eventId}/my-rsvp?email=${encodeURIComponent(email)}`, {
+            headers: { 'Accept': 'application/json' },
+          });
+          if (!res.ok) return null;
+          const data = await res.json();
+          return data?.rsvp?.rsvpStatus || null;
+        } catch {
+          return null;
+        }
+      }
+
+      function showConfirmedAndRefresh(alreadyRegistered = false) {
+        markRegistrationConfirmed();
+        showRegistrationStatusModal({ alreadyRegistered, autoRefresh: !alreadyRegistered });
+        if (!alreadyRegistered) {
+          if (registrationRefreshTimer) clearTimeout(registrationRefreshTimer);
+          registrationRefreshTimer = setTimeout(() => window.location.reload(), 4500);
+        }
+      }
 
       function showMsg(text: string, type: 'success' | 'error' | 'info') {
         msgEl.textContent = text;
@@ -829,19 +943,27 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
           });
           const data = await res.json();
           if (res.ok && data.success) {
-            if (data.status === 'waitlisted') {
+            const freshStatus = await getFreshRsvpStatus(email);
+            const finalStatus = freshStatus || data?.rsvp?.rsvpStatus || data.status;
+            if (finalStatus === 'waitlisted') {
               showMsg(`You've been added to the waitlist. We'll notify you if a spot opens up.`, 'success');
               if (submitBtn) { submitBtn.textContent = "You're on the waitlist"; }
+              cancelBtn.classList.remove('hidden');
+            } else if (finalStatus === 'confirmed') {
+              showConfirmedAndRefresh(false);
             } else {
-              showMsg(`Your registration is confirmed. The join link will be available once the host activates it.`, 'success');
-              if (submitBtn) { submitBtn.textContent = 'Registered'; }
+              showMsg(data.message || 'Your RSVP was saved.', 'success');
             }
-            cancelBtn.classList.remove('hidden');
           }
            else if (res.status === 409) {
-            showMsg('You are already registered for this event.', 'info');
-            cancelBtn.classList.remove('hidden');
-            if (submitBtn) { submitBtn.textContent = 'Registered'; }
+            const freshStatus = await getFreshRsvpStatus(email);
+            if (freshStatus === 'confirmed') {
+              showConfirmedAndRefresh(true);
+            } else {
+              showMsg('You are already registered for this event.', 'info');
+              cancelBtn.classList.remove('hidden');
+              if (submitBtn) { submitBtn.textContent = 'Registered'; }
+            }
           } else {
             showMsg(data.message || 'Something went wrong.', 'error');
           }
@@ -862,8 +984,15 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
 
       document.getElementById('modal-register-confirm')?.addEventListener('click', async () => {
         hideModal('confirm-register-modal');
+        if (submitBtn) { submitBtn.disabled = true; }
         await submitRsvp();
+        if (submitBtn && !submitBtn.classList.contains('hidden')) { submitBtn.disabled = false; }
       });
+
+      if (rsvpForm.dataset.initialRsvpStatus === 'confirmed') {
+        markRegistrationConfirmed();
+        showRegistrationStatusModal({ alreadyRegistered: true });
+      }
 
       cancelBtn?.addEventListener('click', () => {
         showModal('confirm-cancel-modal');
@@ -888,7 +1017,12 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
           if (res.ok && data.success) {
             showMsg('Your RSVP has been cancelled.', 'info');
             cancelBtn.classList.add('hidden');
-            if (submitBtn) { submitBtn.textContent = 'Confirm Registration'; }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.classList.remove('hidden');
+              submitBtn.removeAttribute('aria-hidden');
+              submitBtn.textContent = 'Confirm Registration';
+            }
           } else {
             showMsg(data.message || 'Could not cancel RSVP.', 'error');
           }
