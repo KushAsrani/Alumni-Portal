@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { ObjectId } from 'mongodb';
 import type { Filter } from 'mongodb';
+import { timingSafeEqual } from 'node:crypto';
 import { getCurrentAlumni, isAlumniAuthenticated } from '../../../../lib/alumni-auth';
 import { connectToDatabase } from '../../../../lib/mongodb';
 import { EventService } from '../../../../lib/db/services/eventService';
@@ -20,8 +21,16 @@ export const GET: APIRoute = async ({ params, url, request, cookies }) => {
     }
 
     const authHeader = request.headers.get('Authorization');
-    const expectedAuth = `Bearer ${import.meta.env.ADMIN_API_KEY}`;
-    const isAdminRequest = !!authHeader && authHeader === expectedAuth;
+    const providedApiKey = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : '';
+    const expectedApiKey = import.meta.env.ADMIN_API_KEY || '';
+    let isAdminRequest = false;
+    if (providedApiKey && expectedApiKey) {
+      const providedBuf = Buffer.from(providedApiKey);
+      const expectedBuf = Buffer.from(expectedApiKey);
+      if (providedBuf.length === expectedBuf.length) {
+        isAdminRequest = timingSafeEqual(providedBuf, expectedBuf);
+      }
+    }
 
     if (!isAdminRequest) {
       if (!isAlumniAuthenticated(cookies)) {

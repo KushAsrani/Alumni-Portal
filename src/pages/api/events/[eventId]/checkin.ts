@@ -3,7 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { EventService } from '../../../../lib/db/services/eventService';
 
-function isLikelyUuidToken(value: string): boolean {
+function isUuidV4Format(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
@@ -19,7 +19,7 @@ export const POST: APIRoute = async ({ request, params, url }) => {
 
     const token = url.searchParams.get('token');
     if (token) {
-      if (!isLikelyUuidToken(token)) {
+      if (!isUuidV4Format(token)) {
         return new Response(JSON.stringify({ success: false, message: 'Invalid token format' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
@@ -79,11 +79,17 @@ export const GET: APIRoute = async ({ params, url }) => {
     const { eventId } = params;
     const token = url.searchParams.get('token');
     if (!eventId || !token) {
-      return new Response('Missing eventId or token', { status: 400 });
+      return new Response(JSON.stringify({ success: false, message: 'Missing eventId or token' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    if (!isLikelyUuidToken(token)) {
-      return new Response('Invalid token format', { status: 400 });
+    if (!isUuidV4Format(token)) {
+      return new Response(JSON.stringify({ success: false, message: 'Invalid token format' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const success = await EventService.checkInByToken(eventId, token);

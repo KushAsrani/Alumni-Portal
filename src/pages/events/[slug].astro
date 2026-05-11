@@ -85,7 +85,7 @@ if (userRsvp?.rsvpStatus === 'confirmed' && userRsvp?.qrToken) {
     );
   } catch {}
 }
-const attendeeDisplayName =
+const maybeAttendeeDisplayName =
   userRsvp?.userName || alumniProfile?.name || userRsvp?.userEmail || alumniProfile?.email || '';
 
 const spotsLeft = Math.max(0, event.capacity - (event.confirmedCount || 0));
@@ -407,7 +407,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
                 <p class="text-sm text-gray-500">
                   {new Date(event.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
-                <p class="text-sm text-gray-600 mt-1">{attendeeDisplayName}</p>
+                <p class="text-sm text-gray-600 mt-1">{maybeAttendeeDisplayName}</p>
               </div>
               <img src={qrCodeDataUrl} alt="QR Code Ticket" class="mx-auto rounded-xl border border-gray-100 w-48 h-48" />
               <p class="text-xs text-gray-400 mt-3">Show this QR code to the host for check-in</p>
