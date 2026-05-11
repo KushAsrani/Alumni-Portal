@@ -11,6 +11,7 @@ import Layout from '../../layouts/Layout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { connectToDatabase } from '../../lib/mongodb';
 import { ObjectId } from 'mongodb';
+import type { EventRSVPDocument } from '../../lib/db/models/Event';
 import QRCode from 'qrcode';
 
 const { slug } = Astro.params;
@@ -64,7 +65,7 @@ try {
   });
 } catch {}
 
-let userRsvp: any = null;
+let userRsvp: EventRSVPDocument | null = null;
 let qrCodeDataUrl = '';
 try {
   if (alumniProfile?.email && event?._id) {

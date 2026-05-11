@@ -2,6 +2,7 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { ObjectId } from 'mongodb';
+import type { Filter } from 'mongodb';
 import { getCurrentAlumni, isAlumniAuthenticated } from '../../../../lib/alumni-auth';
 import { connectToDatabase } from '../../../../lib/mongodb';
 import { EventService } from '../../../../lib/db/services/eventService';
@@ -42,7 +43,7 @@ export const GET: APIRoute = async ({ params, url, request, cookies }) => {
       const username = currentAlumni.username?.trim().toLowerCase();
       if (requestedEmail !== username) {
         const { db } = await connectToDatabase();
-        let query: any = {
+        let query: Filter<{ _id: ObjectId; username: string; email: string }> = {
           $or: [{ username: currentAlumni.username }, { email: currentAlumni.username }],
         };
         if (currentAlumni.alumniId) {
