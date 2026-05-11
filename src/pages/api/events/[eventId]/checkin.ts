@@ -3,7 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { EventService } from '../../../../lib/db/services/eventService';
 
-export const POST: APIRoute = async ({ request, params }) => {
+export const POST: APIRoute = async ({ request, params, url }) => {
   try {
     const { eventId } = params;
     if (!eventId) {
@@ -11,6 +11,22 @@ export const POST: APIRoute = async ({ request, params }) => {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    const token = url.searchParams.get('token');
+    if (token) {
+      const success = await EventService.checkInByToken(eventId, token);
+      if (!success) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'RSVP not found or not confirmed' }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Checked in successfully' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     const body = await request.json();
