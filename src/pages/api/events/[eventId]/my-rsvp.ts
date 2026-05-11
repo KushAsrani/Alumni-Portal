@@ -8,6 +8,8 @@ import { getCurrentAlumni, isAlumniAuthenticated } from '../../../../lib/alumni-
 import { connectToDatabase } from '../../../../lib/mongodb';
 import { EventService } from '../../../../lib/db/services/eventService';
 
+const BEARER_PREFIX = 'Bearer ';
+
 export const GET: APIRoute = async ({ params, url, request, cookies }) => {
   try {
     const { eventId } = params;
@@ -21,7 +23,7 @@ export const GET: APIRoute = async ({ params, url, request, cookies }) => {
     }
 
     const authHeader = request.headers.get('Authorization');
-    const providedApiKey = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : '';
+    const providedApiKey = authHeader?.startsWith(BEARER_PREFIX) ? authHeader.slice(BEARER_PREFIX.length) : '';
     const expectedApiKey = import.meta.env.ADMIN_API_KEY || '';
     let isAdminRequest = false;
     if (providedApiKey && expectedApiKey) {
