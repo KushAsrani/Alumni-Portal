@@ -3,6 +3,9 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { EventService } from '../../../../lib/db/services/eventService';
 
+/**
+ * Validate UUID token format before using it in check-in queries.
+ */
 function isUuidV4Format(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
@@ -93,12 +96,21 @@ export const GET: APIRoute = async ({ params, url }) => {
     }
 
     const success = await EventService.checkInByToken(eventId, token);
-    return new Response(success ? 'Checked in successfully.' : 'RSVP not found or not confirmed.', {
-      status: success ? 200 : 404,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
+    return new Response(
+      JSON.stringify({
+        success,
+        message: success ? 'Checked in successfully' : 'RSVP not found or not confirmed',
+      }),
+      {
+        status: success ? 200 : 404,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error) {
     console.error('Error during token check-in:', error);
-    return new Response('Check-in failed.', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    return new Response(JSON.stringify({ success: false, message: 'Check-in failed' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 };

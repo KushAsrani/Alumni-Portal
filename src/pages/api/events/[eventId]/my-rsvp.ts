@@ -56,7 +56,9 @@ export const GET: APIRoute = async ({ params, url, request, cookies }) => {
           if (currentAlumni.alumniId) {
             try {
               return { _id: new ObjectId(currentAlumni.alumniId) };
-            } catch {}
+            } catch (error) {
+              console.warn('Invalid alumniId in session, falling back to username/email lookup:', error);
+            }
           }
           return { $or: [{ username: currentAlumni.username }, { email: currentAlumni.username }] };
         })();
