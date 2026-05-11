@@ -311,6 +311,9 @@ export class EventService {
     return rsvpsCollection.find(query).sort({ createdAt: 1 }).toArray();
   }
 
+  /**
+   * Get a single RSVP by event and attendee email
+   */
   static async getRsvpByEmailAndEvent(
     eventId: string,
     userEmail: string
