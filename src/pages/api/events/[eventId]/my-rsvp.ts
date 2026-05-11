@@ -20,7 +20,7 @@ export const GET: APIRoute = async ({ params, url, request, cookies }) => {
     }
 
     const authHeader = request.headers.get('Authorization');
-    const expectedAuth = `Bearer ${import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY}`;
+    const expectedAuth = `Bearer ${import.meta.env.ADMIN_API_KEY}`;
     const isAdminRequest = !!authHeader && authHeader === expectedAuth;
 
     if (!isAdminRequest) {
@@ -43,14 +43,14 @@ export const GET: APIRoute = async ({ params, url, request, cookies }) => {
       const username = currentAlumni.username?.trim().toLowerCase();
       if (requestedEmail !== username) {
         const { db } = await connectToDatabase();
-        let query: Filter<{ _id: ObjectId; username: string; email: string }> = {
-          $or: [{ username: currentAlumni.username }, { email: currentAlumni.username }],
-        };
-        if (currentAlumni.alumniId) {
-          try {
-            query = { _id: new ObjectId(currentAlumni.alumniId) };
-          } catch {}
-        }
+        const query: Filter<{ _id: ObjectId; username: string; email: string }> = (() => {
+          if (currentAlumni.alumniId) {
+            try {
+              return { _id: new ObjectId(currentAlumni.alumniId) };
+            } catch {}
+          }
+          return { $or: [{ username: currentAlumni.username }, { email: currentAlumni.username }] };
+        })();
 
         const profile = await db.collection('alumni_registrations').findOne(query, {
           projection: { email: 1 },
