@@ -11,6 +11,8 @@ import Layout from '../../layouts/Layout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { connectToDatabase } from '../../lib/mongodb';
 import { ObjectId } from 'mongodb';
+import type { EventRSVPDocument } from '../../lib/db/models/Event';
+import QRCode from 'qrcode';
 
 const { slug } = Astro.params;
 const base = Astro.url.origin;
@@ -62,6 +64,29 @@ try {
     projection: { name: 1, email: 1, mobile: 1, faculty: 1, year: 1 }
   });
 } catch {}
+
+let userRsvp: EventRSVPDocument | null = null;
+let qrCodeDataUrl = '';
+try {
+  if (alumniProfile?.email && event?._id) {
+    const { db } = await connectToDatabase();
+    userRsvp = await db.collection('event_rsvps').findOne({
+      eventId: new ObjectId(String(event._id)),
+      userEmail: alumniProfile.email,
+    });
+  }
+} catch {}
+
+if (userRsvp?.rsvpStatus === 'confirmed' && userRsvp?.qrToken) {
+  try {
+    qrCodeDataUrl = await QRCode.toDataURL(
+      `${Astro.url.origin}/api/events/${event._id}/checkin?token=${encodeURIComponent(userRsvp.qrToken)}`,
+      { width: 256, margin: 2 }
+    );
+  } catch {}
+}
+const ticketHolderName =
+  userRsvp?.userName || alumniProfile?.name || userRsvp?.userEmail || alumniProfile?.email || '';
 
 const spotsLeft = Math.max(0, event.capacity - (event.confirmedCount || 0));
 const isFull = spotsLeft === 0;
@@ -371,6 +396,28 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
               </form>
                 </>
               )}
+            </div>
+          )}
+
+          {userRsvp?.rsvpStatus === 'confirmed' && qrCodeDataUrl && (
+            <div class="card p-6 text-center max-w-md mx-auto" id="qr-ticket">
+              <div class="mb-3">
+                <span class="text-xs font-semibold uppercase tracking-widest text-indigo-500">Your Entry Ticket</span>
+                <h3 class="text-lg font-bold text-gray-900 mt-1">{event.title}</h3>
+                <p class="text-sm text-gray-500">
+                  {new Date(event.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+                <p class="text-sm text-gray-600 mt-1">{ticketHolderName}</p>
+              </div>
+              <img src={qrCodeDataUrl} alt="QR Code Ticket" class="mx-auto rounded-xl border border-gray-100 w-48 h-48" />
+              <p class="text-xs text-gray-400 mt-3">Show this QR code to the host for check-in</p>
+              <a
+                href={qrCodeDataUrl}
+                download={`ticket-${event.slug}.png`}
+                class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+              >
+                ⬇ Download Ticket
+              </a>
             </div>
           )}
 

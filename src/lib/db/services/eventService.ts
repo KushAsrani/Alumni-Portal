@@ -6,6 +6,7 @@ import type {
   RoomMessageDocument,
 } from '../models/Event';
 import { ObjectId } from 'mongodb';
+import crypto from 'node:crypto';
 
 function slugify(text: string): string {
   return text
@@ -196,6 +197,7 @@ export class EventService {
 
     const rsvpStatus: 'confirmed' | 'waitlisted' =
       confirmedCount >= event.capacity ? 'waitlisted' : 'confirmed';
+    const qrToken = rsvpStatus === 'confirmed' ? crypto.randomUUID() : undefined;
 
     const now = new Date();
     const doc: EventRSVPDocument = {
@@ -203,6 +205,7 @@ export class EventService {
       userEmail,
       userName,
       rsvpStatus,
+      qrToken,
       checkedIn: false,
       reminderSent: false,
       mobile: extraFields?.mobile,
@@ -217,7 +220,7 @@ export class EventService {
     };
 
     const result = await rsvpsCollection.insertOne(doc);
-    return { status: rsvpStatus, rsvp: { ...doc, _id: result.insertedId } };
+    return { status: rsvpStatus, rsvp: { ...doc, _id: result.insertedId, qrToken } };
   }
 
   /**
@@ -277,6 +280,22 @@ export class EventService {
   }
 
   /**
+   * Check in a user by QR token
+   */
+  static async checkInByToken(
+    eventId: string,
+    token: string
+  ): Promise<boolean> {
+    const rsvpsCollection = await getCollection<EventRSVPDocument>(this.RSVPS_COLLECTION);
+    const result = await rsvpsCollection.updateOne(
+      { eventId: new ObjectId(eventId), qrToken: token, rsvpStatus: 'confirmed' },
+      { $set: { checkedIn: true, checkedInAt: new Date() } }
+    );
+
+    return result.modifiedCount > 0;
+  }
+
+  /**
    * Get RSVPs for an event
    */
   static async getRsvps(
@@ -290,6 +309,17 @@ export class EventService {
     if (statusFilter) query.rsvpStatus = statusFilter;
 
     return rsvpsCollection.find(query).sort({ createdAt: 1 }).toArray();
+  }
+
+  /**
+   * Get a single RSVP by event and attendee email
+   */
+  static async getRsvpByEmailAndEvent(
+    eventId: string,
+    userEmail: string
+  ): Promise<EventRSVPDocument | null> {
+    const rsvpsCollection = await getCollection<EventRSVPDocument>(this.RSVPS_COLLECTION);
+    return rsvpsCollection.findOne({ eventId: new ObjectId(eventId), userEmail });
   }
 
   /**

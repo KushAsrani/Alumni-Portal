@@ -29,6 +29,7 @@ export interface EventRSVPDocument {
   userEmail: string;
   userName?: string;
   rsvpStatus: 'confirmed' | 'waitlisted' | 'cancelled';
+  qrToken?: string;
   checkedIn: boolean;
   checkedInAt?: Date;
   reminderSent: boolean;
