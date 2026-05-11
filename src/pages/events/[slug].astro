@@ -294,6 +294,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
 
                   <form id="rsvp-form" class="space-y-6">
                 <input type="hidden" id="event-id" value={event._id} />
+                <input type="hidden" id="event-title" value={event.title} />
 
                 <!-- SECTION: Attendee Information -->
                 <div>
@@ -664,7 +665,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
     </div>
   </div>
 
-  <script define:vars={{ userRsvpStatus: userRsvp?.rsvpStatus ?? null, userRsvpExists: !!userRsvp, eventTitle: event.title }}>
+  <script define:vars={{ userRsvpStatus: userRsvp?.rsvpStatus ?? null, userRsvpExists: !!userRsvp }}>
     // -----------------------------------------------------------------------
     // Utility: show/hide modal
     // -----------------------------------------------------------------------
@@ -677,7 +678,8 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
     }
 
-    function escapeHtml(text: string) {
+    function escapeHtml(text: string | null | undefined) {
+      if (!text) return '';
       return text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -686,7 +688,21 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
         .replace(/'/g, '&#39;');
     }
 
+    let activePopupInterval: ReturnType<typeof setInterval> | null = null;
+
+    function sanitizePopupHtml(html: string) {
+      return html
+        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+        .replace(/\son\w+="[^"]*"/gi, '')
+        .replace(/\son\w+='[^']*'/gi, '')
+        .replace(/javascript:/gi, '');
+    }
+
     function showPopup(title: string, bodyHtml: string, autocloseMs = 0, onClose: null | (() => void) = null) {
+      if (activePopupInterval) {
+        clearInterval(activePopupInterval);
+        activePopupInterval = null;
+      }
       document.getElementById('rsvp-popup-overlay')?.remove();
 
       const overlay = document.createElement('div');
@@ -696,9 +712,9 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       const card = document.createElement('div');
       card.style.cssText = 'background:white;border-radius:1rem;padding:2rem;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2);border:2px solid #e0e7ff;position:relative;';
       card.innerHTML = `
-        <button id="rsvp-popup-close-btn" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#6b7280;">✕</button>
+        <button id="rsvp-popup-close-btn" aria-label="Close dialog" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#6b7280;">✕</button>
         <h3 style="font-size:1.25rem;font-weight:700;color:#1f2937;margin-bottom:1rem;"></h3>
-        <div style="font-size:0.9rem;color:#374151;line-height:1.6;">${bodyHtml}</div>
+        <div style="font-size:0.9rem;color:#374151;line-height:1.6;">${sanitizePopupHtml(bodyHtml)}</div>
         ${autocloseMs > 0 ? `<p style="margin-top:1rem;font-size:0.75rem;color:#9ca3af;" id="popup-countdown"></p>` : ''}
       `;
 
@@ -709,9 +725,16 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
       document.body.appendChild(overlay);
 
       let interval: ReturnType<typeof setInterval> | null = null;
+      const clearPopupTimer = () => {
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+        activePopupInterval = null;
+      };
       const closeBtn = card.querySelector('#rsvp-popup-close-btn') as HTMLButtonElement | null;
       closeBtn?.addEventListener('click', () => {
-        if (interval) clearInterval(interval);
+        clearPopupTimer();
         overlay.remove();
       });
 
@@ -724,13 +747,17 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
           remaining--;
           if (cd) cd.textContent = remaining > 0 ? `This dialog will close in ${remaining}s…` : 'Refreshing…';
           if (remaining <= 0) {
-            if (interval) clearInterval(interval);
+            clearPopupTimer();
             overlay.remove();
             if (onClose) onClose();
           }
         }, 1000);
+        activePopupInterval = interval;
       }
     }
+
+    const RSVP_POPUP_AUTOCLOSE_MS = 3000;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     // -----------------------------------------------------------------------
     // Dynamic per-guest sections
@@ -838,7 +865,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
         link.textContent = 'View QR Ticket ↓';
         link.addEventListener('click', (e) => {
           e.preventDefault();
-          document.getElementById('qr-ticket')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.getElementById('qr-ticket')?.scrollIntoView({ behavior: prefersReducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
         });
         buttonsWrap.appendChild(link);
       }
@@ -943,15 +970,15 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
               markSubmitDisabled('✅ Registered', 'bg-gray-300');
               cancelBtn.classList.remove('hidden');
               ensureRsvpBanner('Your registration is confirmed. Scroll down to view your QR ticket.');
+              const popupEventTitle = (document.getElementById('event-title') as HTMLInputElement | null)?.value || 'this event';
               showPopup(
                 '✅ Registration Confirmed!',
-                `<p>Thank you for registering for <strong>${escapeHtml(eventTitle)}</strong>.</p>
+                `<p>Thank you for registering for <strong>${escapeHtml(popupEventTitle)}</strong>.</p>
                  <br>
                  <p>📧 <strong>A confirmation email</strong> will be sent to your registered email address.</p>
                  <br>
-                 <p>🎫 <strong>Your personalized QR Code Ticket has been generated!</strong> Scroll down below the registration form to find your entry ticket. You'll need to show this QR code to the host at the event entrance for check-in.</p>
-                 <p style="margin-top:1rem;color:#6b7280;">[This dialog will close and the page will refresh in 3 seconds...]</p>`,
-                3000,
+                 <p>🎫 <strong>Your personalized QR Code Ticket has been generated!</strong> Scroll down below the registration form to find your entry ticket. You'll need to show this QR code to the host at the event entrance for check-in.</p>`,
+                RSVP_POPUP_AUTOCLOSE_MS,
                 () => window.location.reload()
               );
               return;
@@ -963,7 +990,7 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
               `<p>You have already registered for this event.</p>
                <br>
                <p>🎫 Your <strong>QR Code Ticket</strong> is available below — scroll down to find it.</p>`,
-              3000,
+              RSVP_POPUP_AUTOCLOSE_MS,
               null
             );
             ensureRsvpBanner('Your registration is confirmed. Scroll down to view your QR ticket.');
@@ -1025,8 +1052,11 @@ const activities = activitiesMap[event.eventType] || ['Networking Session', 'Pan
         }
       });
 
-      document.addEventListener('DOMContentLoaded', applyInitialRsvpUiState);
-      applyInitialRsvpUiState();
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyInitialRsvpUiState, { once: true });
+      } else {
+        applyInitialRsvpUiState();
+      }
     }
 
     // -----------------------------------------------------------------------
