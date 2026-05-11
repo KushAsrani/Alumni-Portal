@@ -197,6 +197,7 @@ export class EventService {
 
     const rsvpStatus: 'confirmed' | 'waitlisted' =
       confirmedCount >= event.capacity ? 'waitlisted' : 'confirmed';
+    const qrToken = rsvpStatus === 'confirmed' ? crypto.randomUUID() : undefined;
 
     const now = new Date();
     const doc: EventRSVPDocument = {
@@ -204,6 +205,7 @@ export class EventService {
       userEmail,
       userName,
       rsvpStatus,
+      qrToken,
       checkedIn: false,
       reminderSent: false,
       mobile: extraFields?.mobile,
@@ -218,14 +220,6 @@ export class EventService {
     };
 
     const result = await rsvpsCollection.insertOne(doc);
-    let qrToken: string | undefined;
-    if (rsvpStatus === 'confirmed') {
-      qrToken = crypto.randomUUID();
-      await rsvpsCollection.updateOne(
-        { _id: result.insertedId },
-        { $set: { qrToken } }
-      );
-    }
     return { status: rsvpStatus, rsvp: { ...doc, _id: result.insertedId, qrToken } };
   }
 
