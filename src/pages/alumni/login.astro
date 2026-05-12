@@ -7,11 +7,19 @@ import { authenticateAlumni, setAlumniAuthCookie, isAlumniAuthenticated } from '
 
 const config = getSiteConfig();
 let errorMessage = '';
+const rawRedirect = Astro.url.searchParams.get('redirect') || '';
+let safeRedirect = '/';
+if (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !rawRedirect.includes('\\')) {
+  const parsedRedirect = new URL(rawRedirect, Astro.url.origin);
+  if (parsedRedirect.origin === Astro.url.origin) {
+    safeRedirect = `${parsedRedirect.pathname}${parsedRedirect.search}${parsedRedirect.hash}`;
+  }
+}
 
 // If already logged in, redirect to home
 try {
   if (isAlumniAuthenticated(Astro.cookies)) {
-    return Astro.redirect('/');
+    return Astro.redirect(safeRedirect);
   }
 } catch (error) {
   console.error('Alumni auth check error:', error);
@@ -50,7 +58,7 @@ if (Astro.request.method === 'POST') {
           alumni.name,
           alumni.photo_blob_url
         );
-        return Astro.redirect('/');
+        return Astro.redirect(safeRedirect);
       } else {
         errorMessage = result.message || 'Invalid credentials';
       }
@@ -86,7 +94,7 @@ if (Astro.request.method === 'POST') {
           </div>
         )}
 
-        <form method="POST" action="/alumni/login" enctype="application/x-www-form-urlencoded" class="login-form">
+        <form method="POST" action={`/alumni/login${rawRedirect ? `?redirect=${encodeURIComponent(rawRedirect)}` : ''}`} enctype="application/x-www-form-urlencoded" class="login-form">
           <div class="form-group">
             <label for="username">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

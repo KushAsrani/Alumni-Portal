@@ -3,7 +3,9 @@ export const prerender = false;
 
 import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
 if (!isAlumniAuthenticated(Astro.cookies)) {
-  return Astro.redirect(`/alumni/login?redirect=/events/${Astro.params.slug}`);
+  const refParam = Astro.url.searchParams.get('ref');
+  const redirectPath = `/events/${Astro.params.slug}${refParam ? `?ref=${encodeURIComponent(refParam)}` : ''}`;
+  return Astro.redirect(`/alumni/login?redirect=${encodeURIComponent(redirectPath)}`);
 }
 const currentAlumni = getCurrentAlumni(Astro.cookies);
 
@@ -728,7 +730,24 @@ const alumniEmail = alumniProfile?.email || '';
     </div>
   </div>
 
-  <script define:vars={{ shareEventPageUrl: eventPageUrl, shareAlumniEmail: alumniEmail, shareEventId: String(event._id), shareEventTitle: event.title, shareEventSlug: event.slug }}>
+  <div
+    id="page-server-data"
+    hidden
+    data-share-event-page-url={eventPageUrl}
+    data-share-alumni-email={alumniEmail}
+    data-share-event-id={String(event._id)}
+    data-share-event-title={event.title}
+    data-share-event-slug={event.slug}
+  ></div>
+
+  <script>
+    const _pageServerData = document.getElementById('page-server-data') as HTMLElement;
+    const shareEventPageUrl: string = _pageServerData.dataset.shareEventPageUrl!;
+    const shareAlumniEmail: string = _pageServerData.dataset.shareAlumniEmail || '';
+    const shareEventId: string      = _pageServerData.dataset.shareEventId!;
+    const shareEventTitle: string   = _pageServerData.dataset.shareEventTitle || '';
+    const shareEventSlug: string    = _pageServerData.dataset.shareEventSlug || '';
+
     // -----------------------------------------------------------------------
     // Utility: show/hide modal
     // -----------------------------------------------------------------------
