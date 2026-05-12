@@ -25,6 +25,7 @@ export const POST: APIRoute = async ({ request, params }) => {
       guests,
       activities,
       comments,
+      referralCode,
     } = body;
 
     if (!userEmail) {
@@ -43,6 +44,7 @@ export const POST: APIRoute = async ({ request, params }) => {
       guests: Array.isArray(guests) ? guests : undefined,
       activities,
       comments,
+      referralCode: referralCode ? String(referralCode) : undefined,
     });
 
     return new Response(
