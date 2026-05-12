@@ -8,7 +8,13 @@ import { authenticateAlumni, setAlumniAuthCookie, isAlumniAuthenticated } from '
 const config = getSiteConfig();
 let errorMessage = '';
 const rawRedirect = Astro.url.searchParams.get('redirect') || '';
-const safeRedirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !rawRedirect.includes('\\') ? rawRedirect : '/';
+let safeRedirect = '/';
+if (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !rawRedirect.includes('\\')) {
+  const parsedRedirect = new URL(rawRedirect, Astro.url.origin);
+  if (parsedRedirect.origin === Astro.url.origin) {
+    safeRedirect = `${parsedRedirect.pathname}${parsedRedirect.search}${parsedRedirect.hash}`;
+  }
+}
 
 // If already logged in, redirect to home
 try {
