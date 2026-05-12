@@ -1,12 +1,13 @@
 import { getCollection } from '../mongodb.ts';
 import type {
   EventDocument,
+  EventReferralDocument,
   EventRSVPDocument,
   NetworkingRoomDocument,
   RoomMessageDocument,
 } from '../models/Event';
 import { ObjectId } from 'mongodb';
-import crypto from 'node:crypto';
+import crypto, { randomBytes } from 'node:crypto';
 
 function slugify(text: string): string {
   return text
@@ -25,6 +26,7 @@ function slugify(text: string): string {
 export class EventService {
   private static readonly EVENTS_COLLECTION = 'events';
   private static readonly RSVPS_COLLECTION = 'event_rsvps';
+  private static readonly REFERRALS_COLLECTION = 'event_referrals';
   private static readonly ROOMS_COLLECTION = 'networking_rooms';
   private static readonly MESSAGES_COLLECTION = 'room_messages';
 
@@ -181,6 +183,7 @@ export class EventService {
       guests?: Array<{ name?: string; email?: string; mobile?: string; faculty?: string; year?: number }>;
       activities?: string[];
       comments?: string;
+      referralCode?: string;
     }
   ): Promise<{ status: 'confirmed' | 'waitlisted'; rsvp: EventRSVPDocument }> {
     const eventsCollection = await getCollection<EventDocument>(this.EVENTS_COLLECTION);
@@ -220,6 +223,9 @@ export class EventService {
     };
 
     const result = await rsvpsCollection.insertOne(doc);
+    if (extraFields?.referralCode) {
+      await this.incrementReferralRsvp(eventId, extraFields.referralCode, userEmail);
+    }
     return { status: rsvpStatus, rsvp: { ...doc, _id: result.insertedId, qrToken } };
   }
 
@@ -320,6 +326,80 @@ export class EventService {
   ): Promise<EventRSVPDocument | null> {
     const rsvpsCollection = await getCollection<EventRSVPDocument>(this.RSVPS_COLLECTION);
     return rsvpsCollection.findOne({ eventId: new ObjectId(eventId), userEmail });
+  }
+
+  /**
+   * Get or create a referral code for an alumni for a specific event.
+   */
+  static async getOrCreateReferralCode(eventId: string, referrerEmail: string): Promise<string> {
+    const col = await getCollection<EventReferralDocument>(this.REFERRALS_COLLECTION);
+    const normalizedEmail = referrerEmail.trim().toLowerCase();
+    const eventObjectId = new ObjectId(eventId);
+    const existing = await col.findOne({ eventId: eventObjectId, referrerEmail: normalizedEmail });
+    if (existing) return existing.referralCode;
+
+    let referralCode = '';
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const candidate = randomBytes(4).toString('hex');
+      const collision = await col.findOne({ referralCode: candidate });
+      if (!collision) {
+        referralCode = candidate;
+        break;
+      }
+    }
+
+    if (!referralCode) {
+      throw new Error('Failed to generate a unique referral code');
+    }
+
+    await col.insertOne({
+      eventId: eventObjectId,
+      referrerEmail: normalizedEmail,
+      referralCode,
+      clickCount: 0,
+      rsvpCount: 0,
+      createdAt: new Date(),
+    });
+    return referralCode;
+  }
+
+  /**
+   * Increment click count for a referral code.
+   */
+  static async incrementReferralClick(eventId: string, referralCode: string): Promise<void> {
+    const col = await getCollection<EventReferralDocument>(this.REFERRALS_COLLECTION);
+    await col.updateOne(
+      { eventId: new ObjectId(eventId), referralCode },
+      { $inc: { clickCount: 1 } }
+    );
+  }
+
+  /**
+   * Increment RSVP count for a referral code.
+   */
+  static async incrementReferralRsvp(
+    eventId: string,
+    referralCode: string,
+    attendeeEmail?: string
+  ): Promise<void> {
+    const col = await getCollection<EventReferralDocument>(this.REFERRALS_COLLECTION);
+    const normalizedAttendeeEmail = attendeeEmail?.trim().toLowerCase();
+    await col.updateOne(
+      {
+        eventId: new ObjectId(eventId),
+        referralCode,
+        ...(normalizedAttendeeEmail ? { referrerEmail: { $ne: normalizedAttendeeEmail } } : {}),
+      },
+      { $inc: { rsvpCount: 1 } }
+    );
+  }
+
+  /**
+   * Get referral stats for an event (admin use).
+   */
+  static async getReferralStats(eventId: string): Promise<EventReferralDocument[]> {
+    const col = await getCollection<EventReferralDocument>(this.REFERRALS_COLLECTION);
+    return col.find({ eventId: new ObjectId(eventId) }).sort({ clickCount: -1 }).toArray();
   }
 
   /**
@@ -499,6 +579,7 @@ export class EventService {
   static async setupIndexes(): Promise<void> {
     const eventsCol = await getCollection<EventDocument>(this.EVENTS_COLLECTION);
     const rsvpsCol = await getCollection<EventRSVPDocument>(this.RSVPS_COLLECTION);
+    const referralsCol = await getCollection<EventReferralDocument>(this.REFERRALS_COLLECTION);
     const roomsCol = await getCollection<NetworkingRoomDocument>(this.ROOMS_COLLECTION);
     const messagesCol = await getCollection<RoomMessageDocument>(this.MESSAGES_COLLECTION);
 
@@ -510,6 +591,9 @@ export class EventService {
       rsvpsCol.createIndex({ eventId: 1, userEmail: 1 }, { unique: true }),
       rsvpsCol.createIndex({ eventId: 1, rsvpStatus: 1 }),
       rsvpsCol.createIndex({ reminderSent: 1 }),
+
+      referralsCol.createIndex({ eventId: 1, referrerEmail: 1 }, { unique: true }),
+      referralsCol.createIndex({ referralCode: 1 }, { unique: true }),
 
       roomsCol.createIndex({ eventId: 1, isActive: 1 }),
 

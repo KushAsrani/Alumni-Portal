@@ -91,3 +91,13 @@ export interface PollDocument {
   isActive: boolean;
   createdAt: Date;
 }
+
+export interface EventReferralDocument {
+  _id?: ObjectId;
+  eventId: ObjectId;
+  referrerEmail: string;
+  referralCode: string;
+  clickCount: number;
+  rsvpCount: number;
+  createdAt: Date;
+}
