@@ -29,6 +29,8 @@ export class EventService {
   private static readonly REFERRALS_COLLECTION = 'event_referrals';
   private static readonly ROOMS_COLLECTION = 'networking_rooms';
   private static readonly MESSAGES_COLLECTION = 'room_messages';
+  private static readonly REFERRAL_CODE_BYTE_LENGTH = 4;
+  private static readonly MAX_REFERRAL_CODE_GENERATION_ATTEMPTS = 5;
 
   /**
    * Create a new event
@@ -338,29 +340,37 @@ export class EventService {
     const existing = await col.findOne({ eventId: eventObjectId, referrerEmail: normalizedEmail });
     if (existing) return existing.referralCode;
 
-    let referralCode = '';
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const candidate = randomBytes(4).toString('hex');
-      const collision = await col.findOne({ referralCode: candidate });
-      if (!collision) {
-        referralCode = candidate;
-        break;
+    for (let attempt = 0; attempt < this.MAX_REFERRAL_CODE_GENERATION_ATTEMPTS; attempt++) {
+      const referralCode = randomBytes(this.REFERRAL_CODE_BYTE_LENGTH).toString('hex');
+      try {
+        await col.insertOne({
+          eventId: eventObjectId,
+          referrerEmail: normalizedEmail,
+          referralCode,
+          clickCount: 0,
+          rsvpCount: 0,
+          createdAt: new Date(),
+        });
+        return referralCode;
+      } catch (error) {
+        const isDuplicateKey =
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === 11000;
+        if (!isDuplicateKey) throw error;
+
+        const insertedByAnotherRequest = await col.findOne({
+          eventId: eventObjectId,
+          referrerEmail: normalizedEmail,
+        });
+        if (insertedByAnotherRequest) {
+          return insertedByAnotherRequest.referralCode;
+        }
       }
     }
 
-    if (!referralCode) {
-      throw new Error('Failed to generate a unique referral code');
-    }
-
-    await col.insertOne({
-      eventId: eventObjectId,
-      referrerEmail: normalizedEmail,
-      referralCode,
-      clickCount: 0,
-      rsvpCount: 0,
-      createdAt: new Date(),
-    });
-    return referralCode;
+    throw new Error('Failed to generate a unique referral code');
   }
 
   /**
@@ -380,16 +390,18 @@ export class EventService {
   static async incrementReferralRsvp(
     eventId: string,
     referralCode: string,
-    attendeeEmail?: string
+    attendeeEmail: string
   ): Promise<void> {
     const col = await getCollection<EventReferralDocument>(this.REFERRALS_COLLECTION);
-    const normalizedAttendeeEmail = attendeeEmail?.trim().toLowerCase();
+    const normalizedAttendeeEmail = attendeeEmail.trim().toLowerCase();
+    const query = {
+      eventId: new ObjectId(eventId),
+      referralCode,
+      // Do not credit referrals when the attendee is the same alumni who created the code.
+      referrerEmail: { $ne: normalizedAttendeeEmail },
+    };
     await col.updateOne(
-      {
-        eventId: new ObjectId(eventId),
-        referralCode,
-        ...(normalizedAttendeeEmail ? { referrerEmail: { $ne: normalizedAttendeeEmail } } : {}),
-      },
+      query,
       { $inc: { rsvpCount: 1 } }
     );
   }

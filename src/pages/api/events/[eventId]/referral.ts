@@ -35,17 +35,26 @@ export const GET: APIRoute = async ({ params, url, cookies }) => {
     }
 
     const requestedEmail = email.trim().toLowerCase();
-    const username = currentAlumni.username?.trim().toLowerCase();
-    if (requestedEmail !== username) {
+    const authenticatedEmail = currentAlumni.username?.trim().toLowerCase();
+    if (requestedEmail !== authenticatedEmail) {
       const { db } = await connectToDatabase();
-      const query: Filter<{ _id: ObjectId; username: string; email: string }> = (() => {
-        if (currentAlumni.alumniId) {
-          try {
-            return { _id: new ObjectId(currentAlumni.alumniId) };
-          } catch {}
+      let query: Filter<{ _id: ObjectId; username: string; email: string }> | null = null;
+      if (currentAlumni.alumniId) {
+        try {
+          query = { _id: new ObjectId(currentAlumni.alumniId) };
+        } catch {
+          // Invalid alumniId sessions fall back to username/email matching below.
         }
-        return { $or: [{ username: currentAlumni.username }, { email: currentAlumni.username }] };
-      })();
+      }
+      if (!query) {
+        // Sessions store `username`, but older sessions may contain either the alumni username or email.
+        query = {
+          $or: [
+            { username: currentAlumni.username },
+            { email: currentAlumni.username },
+          ],
+        };
+      }
 
       const profile = await db.collection('alumni_registrations').findOne(query, {
         projection: { email: 1 },

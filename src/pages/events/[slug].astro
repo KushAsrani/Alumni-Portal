@@ -961,7 +961,7 @@ const alumniEmail = alumniProfile?.email || '';
           guests: guestsArr.length > 0 ? guestsArr : undefined,
           activities: [...document.querySelectorAll('input[name="activities"]:checked')].map(cb => (cb as HTMLInputElement).value),
           comments: (document.getElementById('rsvp-comments') as HTMLTextAreaElement).value.trim(),
-          referralCode: sessionStorage.getItem(`event-referral-source-${eventId}`) || undefined,
+          referralCode: sessionStorage.getItem(`event-referral-source-${shareEventId}`) || undefined,
         };
 
         try {
@@ -1255,6 +1255,8 @@ const alumniEmail = alumniProfile?.email || '';
       const referralInput = document.getElementById('referral-link-input') as HTMLInputElement | null;
       const copySuccessMsg = document.getElementById('copy-success-msg');
       const shareStorageKey = `event-referral-source-${shareEventId}`;
+      const shareMessage = (title: string) =>
+        `🎓 Join me at "${title}" — an alumni event you won't want to miss!`;
 
       function showCopyMessage(text = '✓ Copied to clipboard!') {
         if (!copySuccessMsg) return;
@@ -1273,7 +1275,10 @@ const alumniEmail = alumniProfile?.email || '';
       }
 
       function renderShareButtons(link: string) {
-        const text = `🎓 Join me at "${shareEventTitle}" — an alumni event you won't want to miss!`;
+        const safeShareTitle = String(shareEventTitle || '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        const text = shareMessage(safeShareTitle);
         const encodedText = encodeURIComponent(text);
         const encodedLink = encodeURIComponent(link);
         const buttons = [
@@ -1342,7 +1347,10 @@ const alumniEmail = alumniProfile?.email || '';
             if (referralInput) referralInput.value = referralLink;
             renderShareButtons(referralLink);
           }
-        } catch {}
+        } catch {
+          console.warn('Unable to load referral link; using base event URL instead.');
+          // Silently fail; share buttons have already been rendered with the base event URL.
+        }
       }
 
       if (referralInput) referralInput.value = referralLink;
@@ -1359,7 +1367,9 @@ const alumniEmail = alumniProfile?.email || '';
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ referralCode: refParam }),
-        }).catch(() => {});
+        }).catch((error) => {
+          console.warn('Referral click tracking failed.', error);
+        });
       }
 
       loadReferralLink();
