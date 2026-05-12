@@ -8,7 +8,7 @@ import { authenticateAlumni, setAlumniAuthCookie, isAlumniAuthenticated } from '
 const config = getSiteConfig();
 let errorMessage = '';
 const rawRedirect = Astro.url.searchParams.get('redirect') || '';
-const safeRedirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/';
+const safeRedirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !rawRedirect.includes('\\') ? rawRedirect : '/';
 
 // If already logged in, redirect to home
 try {
