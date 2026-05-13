@@ -21,6 +21,24 @@ export interface EventDocument {
   tags?: string[];
   createdAt: Date;
   updatedAt: Date;
+  // Recurring Events & Series (Feature 10)
+  recurrence?: {
+    frequency: 'weekly' | 'monthly';
+    interval: number;       // every N weeks/months (default 1)
+    until?: Date;           // end date for recurrence
+    occurrences?: number;   // max number of child events to generate
+  };
+  seriesId?: ObjectId;        // links all recurrences together (set on all events in a series)
+  parentEventId?: ObjectId;   // set on generated child events, points to the original event
+  isFeatured?: boolean;       // featured events shown with a highlight banner
+}
+
+export interface EventSeriesDocument {
+  _id?: ObjectId;
+  name: string;
+  description?: string;
+  hostEmail: string;
+  createdAt: Date;
 }
 
 export interface EventRSVPDocument {

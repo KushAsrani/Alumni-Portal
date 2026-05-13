@@ -5,6 +5,7 @@ import type {
   EventFeedbackDocument,
   EventReferralDocument,
   EventRSVPDocument,
+  EventSeriesDocument,
   NetworkingRoomDocument,
   RoomMessageDocument,
 } from '../models/Event';
@@ -33,6 +34,7 @@ export class EventService {
   private static readonly MESSAGES_COLLECTION = 'room_messages';
   private static readonly DISCUSSION_COLLECTION = 'event_discussions';
   private static readonly FEEDBACK_COLLECTION = 'event_feedback';
+  private static readonly SERIES_COLLECTION = 'event_series';
   private static readonly REFERRAL_CODE_BYTE_LENGTH = 4;
   private static readonly MAX_REFERRAL_CODE_GENERATION_ATTEMPTS = 5;
   private static readonly MAX_DISCUSSION_POSTS = 100;
@@ -70,20 +72,47 @@ export class EventService {
     page?: number;
     limit?: number;
     slug?: string;
+    eventType?: string;
+    tags?: string[];
+    search?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    sort?: 'soonest' | 'newest' | 'popular';
+    seriesId?: string;
+    isFeatured?: boolean;
   } = {}): Promise<{ events: any[]; total: number }> {
     const collection = await getCollection<EventDocument>(this.EVENTS_COLLECTION);
 
     const query: any = {};
     if (filters.status) query.status = filters.status;
     if (filters.slug) query.slug = filters.slug;
+    if (filters.eventType) query.eventType = filters.eventType;
+    if (filters.tags?.length) query.tags = { $in: filters.tags };
+    if (filters.search) query.$text = { $search: filters.search };
+    if (filters.dateFrom || filters.dateTo) {
+      query.startTime = {};
+      if (filters.dateFrom) query.startTime.$gte = filters.dateFrom;
+      if (filters.dateTo) query.startTime.$lte = filters.dateTo;
+    }
+    if (filters.seriesId) query.seriesId = new ObjectId(filters.seriesId);
+    if (filters.isFeatured !== undefined) query.isFeatured = filters.isFeatured;
 
     const page = Math.max(1, filters.page || 1);
-    const limit = Math.min(100, Math.max(1, filters.limit || 20));
+    const limit = Math.min(200, Math.max(1, filters.limit || 20));
     const skip = (page - 1) * limit;
+
+    // Determine sort stage
+    let sortStage: any;
+    if (filters.sort === 'newest') {
+      sortStage = { $sort: { createdAt: -1 } };
+    } else {
+      // 'soonest' (default) — 'popular' sort applied after $addFields
+      sortStage = { $sort: { startTime: 1 } };
+    }
 
     const pipeline: any[] = [
       { $match: query },
-      { $sort: { startTime: 1 } },
+      sortStage,
       { $skip: skip },
       { $limit: limit },
       {
@@ -150,6 +179,11 @@ export class EventService {
       },
       { $project: { rsvpStats: 0 } },
     ];
+
+    // 'popular' sort must come after $addFields so confirmedCount is available
+    if (filters.sort === 'popular') {
+      pipeline.push({ $sort: { confirmedCount: -1, startTime: 1 } });
+    }
 
     const [events, total] = await Promise.all([
       collection.aggregate(pipeline).toArray(),
@@ -686,6 +720,119 @@ export class EventService {
     return col.findOne({ eventId: new ObjectId(eventId), userEmail });
   }
 
+  // ── Recurring Events & Series (Feature 10) ────────────────────────────────
+
+  /**
+   * Create a recurring event series — generates N child events via insertMany.
+   * Returns the parentEvent plus all generated childEvents.
+   */
+  static async createRecurringEvent(
+    data: Omit<EventDocument, '_id' | 'slug' | 'createdAt' | 'updatedAt'> & {
+      recurrence: { frequency: 'weekly' | 'monthly'; interval: number; until?: Date; occurrences?: number; };
+    }
+  ): Promise<{ parentEvent: EventDocument; childEvents: EventDocument[] }> {
+    const MAX_CHILDREN = 52;
+    const seriesId = new ObjectId();
+
+    // Create the parent event
+    const parentEvent = await this.createEvent({ ...data, seriesId });
+
+    const { recurrence } = data;
+    const frequency = recurrence.frequency;
+    const interval = Math.max(1, recurrence.interval || 1);
+    const maxOccurrences = Math.min(MAX_CHILDREN, recurrence.occurrences || MAX_CHILDREN);
+    const until = recurrence.until ? new Date(recurrence.until) : undefined;
+
+    const collection = await getCollection<EventDocument>(this.EVENTS_COLLECTION);
+    const childDocs: EventDocument[] = [];
+
+    let currentStart = new Date(parentEvent.startTime);
+    let currentEnd = new Date(parentEvent.endTime);
+    const duration = currentEnd.getTime() - currentStart.getTime();
+    const regDeadlineOffset = parentEvent.registrationDeadline
+      ? parentEvent.registrationDeadline.getTime() - currentStart.getTime()
+      : null;
+
+    for (let i = 0; i < maxOccurrences; i++) {
+      // Advance by interval weeks or months
+      if (frequency === 'weekly') {
+        const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+        currentStart = new Date(currentStart.getTime() + interval * MS_PER_WEEK);
+      } else {
+        // monthly
+        const next = new Date(currentStart);
+        next.setMonth(next.getMonth() + interval);
+        currentStart = next;
+      }
+
+      if (until && currentStart > until) break;
+
+      currentEnd = new Date(currentStart.getTime() + duration);
+      const now = new Date();
+      // Use occurrence number (parent is #1, children are #2, #3, ...) for readable slugs
+      // Base the slug on parent's slug to ensure uniqueness
+      const occurrenceNumber = i + 2;
+      const childSlug = `${parentEvent.slug}-${occurrenceNumber}`;
+
+      const childDoc: EventDocument = {
+        ...data,
+        seriesId,
+        parentEventId: parentEvent._id,
+        slug: childSlug,
+        startTime: new Date(currentStart),
+        endTime: new Date(currentEnd),
+        registrationDeadline:
+          regDeadlineOffset !== null
+            ? new Date(currentStart.getTime() + regDeadlineOffset)
+            : undefined,
+        createdAt: now,
+        updatedAt: now,
+      };
+      childDocs.push(childDoc);
+    }
+
+    if (childDocs.length > 0) {
+      const result = await collection.insertMany(childDocs);
+      childDocs.forEach((doc, idx) => {
+        doc._id = result.insertedIds[idx];
+      });
+    }
+
+    return { parentEvent, childEvents: childDocs };
+  }
+
+  /**
+   * Get all events in a series, sorted by startTime.
+   */
+  static async getSeriesEvents(seriesId: string): Promise<EventDocument[]> {
+    const collection = await getCollection<EventDocument>(this.EVENTS_COLLECTION);
+    return collection
+      .find({ seriesId: new ObjectId(seriesId) })
+      .sort({ startTime: 1 })
+      .toArray();
+  }
+
+  /**
+   * Create or fetch a named series.
+   */
+  static async getOrCreateSeries(
+    name: string,
+    hostEmail: string,
+    description?: string
+  ): Promise<EventSeriesDocument> {
+    const col = await getCollection<EventSeriesDocument>(this.SERIES_COLLECTION);
+    const existing = await col.findOne({ name, hostEmail });
+    if (existing) return existing;
+    const doc: EventSeriesDocument = {
+      name,
+      description,
+      hostEmail,
+      createdAt: new Date(),
+    };
+    const result = await col.insertOne(doc);
+    return { ...doc, _id: result.insertedId };
+  }
+
   /**
    * Set up MongoDB indexes for Q&A and Polls collections
    */
@@ -714,6 +861,8 @@ export class EventService {
       eventsCol.createIndex({ slug: 1 }, { unique: true }),
       eventsCol.createIndex({ status: 1 }),
       eventsCol.createIndex({ startTime: 1 }),
+      eventsCol.createIndex({ seriesId: 1 }),
+      eventsCol.createIndex({ isFeatured: 1 }),
 
       rsvpsCol.createIndex({ eventId: 1, userEmail: 1 }, { unique: true }),
       rsvpsCol.createIndex({ eventId: 1, rsvpStatus: 1 }),
@@ -730,5 +879,17 @@ export class EventService {
       feedbackCol.createIndex({ eventId: 1, userEmail: 1 }, { unique: true }),
       feedbackCol.createIndex({ eventId: 1 }),
     ]);
+
+    // Text index for full-text search (Feature 11) — in separate try/catch to
+    // degrade gracefully if an incompatible text index already exists.
+    try {
+      await eventsCol.createIndex({ title: 'text', description: 'text' });
+    } catch {
+      // ignore — text index may already exist in a different form
+    }
+
+    // Series collection index
+    const seriesCol = await getCollection(this.SERIES_COLLECTION);
+    await seriesCol.createIndex({ hostEmail: 1 });
   }
 }
