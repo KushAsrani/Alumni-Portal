@@ -716,7 +716,7 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
       isFeatured,
       ...(isRecurring ? {
         recurrence: {
-          frequency: document.querySelector('input[name="fRecurrenceFreq"]:checked').value,
+          frequency: (document.querySelector('input[name="fRecurrenceFreq"]:checked') as HTMLInputElement)?.value || 'weekly',
           interval: parseInt($('fRecurrenceInterval').value) || 1,
           ...($('fEndUntil').checked && $('fRecurrenceUntil').value
             ? { until: new Date($('fRecurrenceUntil').value).toISOString() }

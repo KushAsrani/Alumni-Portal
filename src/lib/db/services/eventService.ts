@@ -756,7 +756,8 @@ export class EventService {
     for (let i = 0; i < maxOccurrences; i++) {
       // Advance by interval weeks or months
       if (frequency === 'weekly') {
-        currentStart = new Date(currentStart.getTime() + interval * 7 * 24 * 60 * 60 * 1000);
+        const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+        currentStart = new Date(currentStart.getTime() + interval * MS_PER_WEEK);
       } else {
         // monthly
         const next = new Date(currentStart);
@@ -768,7 +769,10 @@ export class EventService {
 
       currentEnd = new Date(currentStart.getTime() + duration);
       const now = new Date();
-      const childSlug = `${slugify(parentEvent.title)}-${currentStart.getTime()}`;
+      // Use occurrence number (parent is #1, children are #2, #3, ...) for readable slugs
+      // Base the slug on parent's slug to ensure uniqueness
+      const occurrenceNumber = i + 2;
+      const childSlug = `${parentEvent.slug}-${occurrenceNumber}`;
 
       const childDoc: EventDocument = {
         ...data,

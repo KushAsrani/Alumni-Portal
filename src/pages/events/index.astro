@@ -223,7 +223,11 @@ const breadcrumbItems = [
           if (!haystack.includes(q)) return false;
         }
         if (dateFrom && new Date(e.startTime) < new Date(dateFrom)) return false;
-        if (dateTo && new Date(e.startTime) > new Date(dateTo + 'T23:59:59')) return false;
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          toDate.setHours(23, 59, 59, 999);
+          if (new Date(e.startTime) > toDate) return false;
+        }
         return true;
       });
 
