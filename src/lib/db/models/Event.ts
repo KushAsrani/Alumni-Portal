@@ -101,3 +101,24 @@ export interface EventReferralDocument {
   rsvpCount: number;
   createdAt: Date;
 }
+
+export interface DiscussionPostDocument {
+  _id?: ObjectId;
+  eventId: ObjectId;
+  authorEmail: string;
+  authorName?: string;
+  content: string;
+  isAnonymous?: boolean;
+  createdAt: Date;
+}
+
+export interface EventFeedbackDocument {
+  _id?: ObjectId;
+  eventId: ObjectId;
+  userEmail: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  wouldRecommend: boolean;
+  highlights?: string;
+  improvements?: string;
+  createdAt: Date;
+}

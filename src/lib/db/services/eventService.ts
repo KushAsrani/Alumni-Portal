@@ -1,6 +1,8 @@
 import { getCollection } from '../mongodb.ts';
 import type {
+  DiscussionPostDocument,
   EventDocument,
+  EventFeedbackDocument,
   EventReferralDocument,
   EventRSVPDocument,
   NetworkingRoomDocument,
@@ -29,6 +31,8 @@ export class EventService {
   private static readonly REFERRALS_COLLECTION = 'event_referrals';
   private static readonly ROOMS_COLLECTION = 'networking_rooms';
   private static readonly MESSAGES_COLLECTION = 'room_messages';
+  private static readonly DISCUSSION_COLLECTION = 'event_discussions';
+  private static readonly FEEDBACK_COLLECTION = 'event_feedback';
   private static readonly REFERRAL_CODE_BYTE_LENGTH = 4;
   private static readonly MAX_REFERRAL_CODE_GENERATION_ATTEMPTS = 5;
 
@@ -573,6 +577,112 @@ export class EventService {
       .toArray();
   }
 
+  // ── Discussion ──────────────────────────────────────────────────────────────
+
+  /**
+   * Get discussion posts for an event, sorted by createdAt ascending.
+   */
+  static async getDiscussionPosts(eventId: string): Promise<DiscussionPostDocument[]> {
+    const col = await getCollection<DiscussionPostDocument>(this.DISCUSSION_COLLECTION);
+    return col.find({ eventId: new ObjectId(eventId) }).sort({ createdAt: 1 }).limit(100).toArray();
+  }
+
+  /**
+   * Add a new discussion post for an event.
+   */
+  static async addDiscussionPost(
+    eventId: string,
+    authorEmail: string,
+    authorName: string | undefined,
+    content: string,
+    isAnonymous?: boolean
+  ): Promise<DiscussionPostDocument> {
+    const col = await getCollection<DiscussionPostDocument>(this.DISCUSSION_COLLECTION);
+    const doc: DiscussionPostDocument = {
+      eventId: new ObjectId(eventId),
+      authorEmail,
+      authorName,
+      content,
+      isAnonymous: !!isAnonymous,
+      createdAt: new Date(),
+    };
+    const result = await col.insertOne(doc);
+    return { ...doc, _id: result.insertedId };
+  }
+
+  /**
+   * Delete a discussion post by ID.
+   */
+  static async deleteDiscussionPost(postId: string): Promise<boolean> {
+    const col = await getCollection<DiscussionPostDocument>(this.DISCUSSION_COLLECTION);
+    const result = await col.deleteOne({ _id: new ObjectId(postId) });
+    return result.deletedCount > 0;
+  }
+
+  /**
+   * Get a single discussion post by ID.
+   */
+  static async getDiscussionPost(postId: string): Promise<DiscussionPostDocument | null> {
+    const col = await getCollection<DiscussionPostDocument>(this.DISCUSSION_COLLECTION);
+    return col.findOne({ _id: new ObjectId(postId) });
+  }
+
+  // ── Feedback ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Submit feedback for an event. Throws if the user has already submitted.
+   */
+  static async submitFeedback(
+    eventId: string,
+    userEmail: string,
+    data: { rating: number; wouldRecommend: boolean; highlights?: string; improvements?: string }
+  ): Promise<EventFeedbackDocument> {
+    const col = await getCollection<EventFeedbackDocument>(this.FEEDBACK_COLLECTION);
+    const doc: EventFeedbackDocument = {
+      eventId: new ObjectId(eventId),
+      userEmail,
+      rating: data.rating as 1 | 2 | 3 | 4 | 5,
+      wouldRecommend: data.wouldRecommend,
+      highlights: data.highlights,
+      improvements: data.improvements,
+      createdAt: new Date(),
+    };
+    try {
+      const result = await col.insertOne(doc);
+      return { ...doc, _id: result.insertedId };
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        throw new Error('You have already submitted feedback for this event.');
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Get aggregate feedback summary for an event.
+   */
+  static async getFeedbackSummary(
+    eventId: string
+  ): Promise<{ count: number; avgRating: number; recommendPct: number; feedbacks: EventFeedbackDocument[] }> {
+    const col = await getCollection<EventFeedbackDocument>(this.FEEDBACK_COLLECTION);
+    const feedbacks = await col.find({ eventId: new ObjectId(eventId) }).toArray();
+    const count = feedbacks.length;
+    if (count === 0) {
+      return { count: 0, avgRating: 0, recommendPct: 0, feedbacks: [] };
+    }
+    const avgRating = Math.round((feedbacks.reduce((sum, f) => sum + f.rating, 0) / count) * 10) / 10;
+    const recommendPct = Math.round((feedbacks.filter(f => f.wouldRecommend).length / count) * 100);
+    return { count, avgRating, recommendPct, feedbacks };
+  }
+
+  /**
+   * Get a single user's feedback for an event.
+   */
+  static async getUserFeedback(eventId: string, userEmail: string): Promise<EventFeedbackDocument | null> {
+    const col = await getCollection<EventFeedbackDocument>(this.FEEDBACK_COLLECTION);
+    return col.findOne({ eventId: new ObjectId(eventId), userEmail });
+  }
+
   /**
    * Set up MongoDB indexes for Q&A and Polls collections
    */
@@ -594,6 +704,8 @@ export class EventService {
     const referralsCol = await getCollection<EventReferralDocument>(this.REFERRALS_COLLECTION);
     const roomsCol = await getCollection<NetworkingRoomDocument>(this.ROOMS_COLLECTION);
     const messagesCol = await getCollection<RoomMessageDocument>(this.MESSAGES_COLLECTION);
+    const discussionCol = await getCollection(this.DISCUSSION_COLLECTION);
+    const feedbackCol = await getCollection(this.FEEDBACK_COLLECTION);
 
     await Promise.all([
       eventsCol.createIndex({ slug: 1 }, { unique: true }),
@@ -610,6 +722,10 @@ export class EventService {
       roomsCol.createIndex({ eventId: 1, isActive: 1 }),
 
       messagesCol.createIndex({ roomId: 1, createdAt: 1 }),
+
+      discussionCol.createIndex({ eventId: 1, createdAt: 1 }),
+      feedbackCol.createIndex({ eventId: 1, userEmail: 1 }, { unique: true }),
+      feedbackCol.createIndex({ eventId: 1 }),
     ]);
   }
 }
