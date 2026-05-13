@@ -16,7 +16,6 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Events Management | Admin</title>
-  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -716,7 +715,7 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
       isFeatured,
       ...(isRecurring ? {
         recurrence: {
-          frequency: (document.querySelector('input[name="fRecurrenceFreq"]:checked') as HTMLInputElement)?.value || 'weekly',
+          frequency: document.querySelector('input[name="fRecurrenceFreq"]:checked')?.value || 'weekly',
           interval: parseInt($('fRecurrenceInterval').value) || 1,
           ...($('fEndUntil').checked && $('fRecurrenceUntil').value
             ? { until: new Date($('fRecurrenceUntil').value).toISOString() }
