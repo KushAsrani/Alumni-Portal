@@ -215,6 +215,70 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
             <label class="block text-sm font-medium text-gray-700 mb-1">Created At <span class="text-gray-400 text-xs">(read-only)</span></label>
             <input id="fCreatedAt" type="text" disabled class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
           </div>
+
+          <!-- Featured Event -->
+          <div class="md:col-span-2 flex items-center gap-3">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="fIsFeatured" class="sr-only peer" />
+              <div class="w-10 h-5 bg-gray-200 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+            </label>
+            <span class="text-sm font-medium text-gray-700">⭐ Featured Event (shown with a highlight banner)</span>
+          </div>
+
+          <!-- Recurring Event -->
+          <div class="md:col-span-2">
+            <div class="flex items-center gap-3 mb-3">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="fIsRecurring" class="sr-only peer" />
+                <div class="w-10 h-5 bg-gray-200 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+              <span class="text-sm font-medium text-gray-700">🔁 Make this a recurring event</span>
+            </div>
+            <div id="fRecurringOptions" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                <div class="flex gap-4">
+                  <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="radio" name="fRecurrenceFreq" id="fFreqWeekly" value="weekly" checked class="accent-indigo-600" />
+                    Weekly
+                  </label>
+                  <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="radio" name="fRecurrenceFreq" id="fFreqMonthly" value="monthly" class="accent-indigo-600" />
+                    Monthly
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Interval</label>
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-gray-600">Every</span>
+                  <input id="fRecurrenceInterval" type="number" min="1" max="52" value="1" class="w-20 px-2 py-1 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                  <span id="fIntervalUnit" class="text-sm text-gray-600">week(s)</span>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">End Condition</label>
+                <div class="flex gap-4">
+                  <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="radio" name="fRecurrenceEnd" id="fEndUntil" value="until" checked class="accent-indigo-600" />
+                    Until date
+                  </label>
+                  <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="radio" name="fRecurrenceEnd" id="fEndOccurrences" value="occurrences" class="accent-indigo-600" />
+                    Number of occurrences
+                  </label>
+                </div>
+              </div>
+              <div id="fUntilRow">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Until Date</label>
+                <input id="fRecurrenceUntil" type="date" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              </div>
+              <div id="fOccurrencesRow" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Number of Occurrences</label>
+                <input id="fRecurrenceOccurrences" type="number" min="2" max="52" value="4" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              </div>
+            </div>
+          </div>
         </div>
         <div id="formError" class="hidden text-red-600 text-sm bg-red-50 px-4 py-2 rounded-xl"></div>
         <div class="flex justify-end gap-3 pt-2">
@@ -474,7 +538,7 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
               <span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${typeClass}">${ev.eventType || 'event'}</span>
               <span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${ev.status || 'upcoming'}</span>
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 truncate">${escHtml(ev.title || 'Untitled')}</h3>
+            <h3 class="text-lg font-semibold text-gray-900 truncate">${escHtml(ev.title || 'Untitled')}${ev.recurrence ? ' <span title="Recurring event" class="text-base">🔁</span>' : ''}${ev.isFeatured ? ' <span title="Featured event" class="text-base">⭐</span>' : ''}</h3>
             <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
               <span>📅 ${fmtDate(ev.startTime)}</span>
               <span>👥 Capacity: ${ev.capacity ?? '—'}</span>
@@ -546,6 +610,9 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
     $('editEventId').value = '';
     $('eventForm').reset();
     $('fMeetingUrlActive').checked = false;
+    $('fIsFeatured').checked = false;
+    $('fIsRecurring').checked = false;
+    $('fRecurringOptions').classList.add('hidden');
     $('fCreatedAtRow').classList.add('hidden');
     $('formError').classList.add('hidden');
     $('eventModal').classList.remove('hidden');
@@ -576,6 +643,9 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
     $('fHostEmail').value = ev.hostEmail || '';
     $('fHostName').value = ev.hostName || '';
     $('fTags').value = Array.isArray(ev.tags) ? ev.tags.join(', ') : (ev.tags || '');
+    $('fIsFeatured').checked = !!ev.isFeatured;
+    $('fIsRecurring').checked = false;
+    $('fRecurringOptions').classList.add('hidden');
     if (ev.createdAt) {
       $('fCreatedAt').value = fmtDate(ev.createdAt);
       $('fCreatedAtRow').classList.remove('hidden');
@@ -595,12 +665,37 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
   $('cancelModal').addEventListener('click', closeModal);
   $('eventModal').addEventListener('click', e => { if (e.target === $('eventModal')) closeModal(); });
 
+  // ── Recurring event toggle ─────────────────────────────────────
+  $('fIsRecurring').addEventListener('change', () => {
+    $('fRecurringOptions').classList.toggle('hidden', !$('fIsRecurring').checked);
+  });
+
+  // Update interval unit label when frequency changes
+  document.querySelectorAll('input[name="fRecurrenceFreq"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      $('fIntervalUnit').textContent = radio.value === 'weekly' ? 'week(s)' : 'month(s)';
+    });
+  });
+
+  // Toggle until/occurrences rows
+  $('fEndUntil').addEventListener('change', () => {
+    $('fUntilRow').classList.remove('hidden');
+    $('fOccurrencesRow').classList.add('hidden');
+  });
+  $('fEndOccurrences').addEventListener('change', () => {
+    $('fUntilRow').classList.add('hidden');
+    $('fOccurrencesRow').classList.remove('hidden');
+  });
+
   $('eventForm').addEventListener('submit', async e => {
     e.preventDefault();
     const id = $('editEventId').value;
     const isEdit = !!id;
 
     const tags = $('fTags').value.split(',').map(t => t.trim()).filter(Boolean);
+    const isFeatured = $('fIsFeatured').checked;
+    const isRecurring = $('fIsRecurring').checked && !id; // only on create
+
     const payload = {
       title: $('fTitle').value.trim(),
       description: $('fDescription').value.trim(),
@@ -618,6 +713,19 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
       hostEmail: $('fHostEmail').value.trim(),
       hostName: $('fHostName').value.trim(),
       tags,
+      isFeatured,
+      ...(isRecurring ? {
+        recurrence: {
+          frequency: document.querySelector('input[name="fRecurrenceFreq"]:checked').value,
+          interval: parseInt($('fRecurrenceInterval').value) || 1,
+          ...($('fEndUntil').checked && $('fRecurrenceUntil').value
+            ? { until: new Date($('fRecurrenceUntil').value).toISOString() }
+            : {}),
+          ...($('fEndOccurrences').checked
+            ? { occurrences: parseInt($('fRecurrenceOccurrences').value) || 4 }
+            : {}),
+        }
+      } : {}),
     };
 
     const url = isEdit ? `/api/events/${id}` : '/api/events';
@@ -634,6 +742,9 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
       closeModal();
+      if (data.recurring && data.childEvents) {
+        alert(`✅ Recurring event created! ${data.childEvents.length} additional occurrence${data.childEvents.length !== 1 ? 's' : ''} generated.`);
+      }
       await loadEvents();
     } catch (err) {
       $('formError').textContent = err.message;

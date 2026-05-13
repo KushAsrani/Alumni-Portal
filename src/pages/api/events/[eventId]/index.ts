@@ -16,7 +16,7 @@ export const PATCH: APIRoute = async ({ params, request, url }) => {
       });
     }
     const body = await request.json();
-    const allowedFields = ['title', 'hostEmail', 'hostName', 'eventType', 'startTime', 'endTime', 'registrationDeadline', 'capacity', 'bannerUrl', 'status', 'meetingUrl', 'meetingUrlActive', 'venue', 'location', 'description', 'tags'];
+    const allowedFields = ['title', 'hostEmail', 'hostName', 'eventType', 'startTime', 'endTime', 'registrationDeadline', 'capacity', 'bannerUrl', 'status', 'meetingUrl', 'meetingUrlActive', 'venue', 'location', 'description', 'tags', 'recurrence', 'seriesId', 'parentEventId', 'isFeatured'];
     const updates: Record<string, any> = { updatedAt: new Date() };
     const unsetFields: Record<string, ''> = {};
     // Fields that must be stored as BSON Date

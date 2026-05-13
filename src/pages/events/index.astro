@@ -1,13 +1,15 @@
 ---
 export const prerender = false;
 
-import { isAlumniAuthenticated } from '../../lib/alumni-auth';
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
 if (!isAlumniAuthenticated(Astro.cookies)) {
   return Astro.redirect('/alumni/login?redirect=/events');
 }
 
 import Layout from '../../layouts/Layout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { connectToDatabase } from '../../lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 const base = Astro.url.origin;
 
@@ -18,6 +20,29 @@ const allEvents: any[] = allEventsData.events || [];
 // Collect unique event types and tags for filter dropdowns
 const allTypes = [...new Set(allEvents.map((e: any) => e.eventType).filter(Boolean))];
 const allTags = [...new Set(allEvents.flatMap((e: any) => e.tags || []).filter(Boolean))];
+
+// Feature 11 — get logged-in alumni's email and RSVP event IDs
+const currentAlumni = getCurrentAlumni(Astro.cookies);
+let alumniEmail = '';
+let myRsvpEventIds: string[] = [];
+
+try {
+  const { db } = await connectToDatabase();
+  let query: any = { $or: [{ username: currentAlumni?.username }, { email: currentAlumni?.username }] };
+  if (currentAlumni?.alumniId) {
+    try { query = { _id: new ObjectId(currentAlumni.alumniId) }; } catch {}
+  }
+  const profile = await db.collection('alumni_registrations').findOne(query, { projection: { email: 1 } });
+  alumniEmail = profile?.email || '';
+
+  if (alumniEmail) {
+    const myRsvps = await db.collection('event_rsvps')
+      .find({ userEmail: alumniEmail, rsvpStatus: { $in: ['confirmed', 'waitlisted'] } })
+      .project({ eventId: 1 })
+      .toArray();
+    myRsvpEventIds = myRsvps.map((r: any) => r.eventId?.toString()).filter(Boolean);
+  }
+} catch {}
 
 const breadcrumbItems = [
   { label: 'Home', href: '/' },
@@ -30,6 +55,18 @@ const breadcrumbItems = [
   <section class="section">
     <div class="container-custom">
       <h1 class="text-3xl font-bold mb-6">Events</h1>
+
+      <!-- Featured Event Banner (populated by JS) -->
+      <div id="featured-event-banner" class="hidden mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-6">
+        <p class="text-xs font-semibold text-indigo-500 uppercase tracking-widest mb-1">⭐ Featured Event</p>
+        <h2 id="featured-title" class="text-xl font-bold text-gray-900 mb-1"></h2>
+        <p id="featured-desc" class="text-sm text-gray-600 mb-3 line-clamp-2"></p>
+        <div class="flex items-center gap-4 text-sm text-gray-500 mb-4">
+          <span id="featured-date"></span>
+          <span id="featured-type" class="badge badge-primary text-xs"></span>
+        </div>
+        <a id="featured-link" href="#" class="btn btn-primary btn-sm">View Event →</a>
+      </div>
 
       <!-- Filter Bar -->
       <div class="mb-8 space-y-4">
@@ -65,11 +102,12 @@ const breadcrumbItems = [
             </button>
           </div>
 
-          <!-- Status filter (All / Upcoming / Past) -->
+          <!-- Status filter (All / Upcoming / Past / My Events) -->
           <div class="flex gap-2">
             <button class="filter-status-btn btn btn-sm btn-primary" data-status="all">All</button>
             <button class="filter-status-btn btn btn-sm btn-outline" data-status="upcoming">Upcoming</button>
             <button class="filter-status-btn btn btn-sm btn-outline" data-status="ended">Past</button>
+            <button class="filter-status-btn btn btn-sm btn-outline" data-status="mine">My Events</button>
           </div>
 
           <!-- Type filter -->
@@ -84,8 +122,31 @@ const breadcrumbItems = [
             {allTags.map((t: any) => <option value={t}>{t}</option>)}
           </select>
 
+          <!-- Sort dropdown -->
+          <select id="filter-sort" class="input input-sm max-w-[160px]">
+            <option value="soonest">Soonest First</option>
+            <option value="newest">Newest Added</option>
+            <option value="popular">Most Popular</option>
+          </select>
+
           <!-- Result count -->
           <span id="result-count" class="text-sm text-gray-500 ml-auto"></span>
+        </div>
+
+        <!-- Advanced Filters toggle -->
+        <div id="advanced-filters-toggle">
+          <button id="toggle-advanced" class="btn btn-sm btn-outline text-xs">⚙ Advanced Filters</button>
+        </div>
+        <div id="advanced-filters" class="hidden mt-3 flex flex-wrap gap-3 items-center bg-gray-50 border border-gray-100 rounded-xl p-3">
+          <div class="flex items-center gap-2 text-sm">
+            <label class="text-gray-600 font-medium">From:</label>
+            <input id="filter-date-from" type="date" class="input input-sm" />
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <label class="text-gray-600 font-medium">To:</label>
+            <input id="filter-date-to" type="date" class="input input-sm" />
+          </div>
+          <button id="clear-advanced" class="btn btn-sm btn-outline text-xs text-gray-500">Clear</button>
         </div>
       </div>
 
@@ -120,25 +181,40 @@ const breadcrumbItems = [
         </div>
         <div id="cal-week-grid" class="grid grid-cols-7 gap-2"></div>
       </div>
+
+      <!-- Event Series Section (populated by JS) -->
+      <div id="series-section" class="hidden mt-12">
+        <h2 class="text-2xl font-bold mb-6">📚 Event Series</h2>
+        <div id="series-list" class="space-y-6"></div>
+      </div>
     </div>
   </section>
 
   <script id="events-data" type="application/json" set:html={JSON.stringify(allEvents)}></script>
+  <script id="alumni-data" type="application/json" set:html={JSON.stringify({ alumniEmail, myRsvpEventIds })}></script>
 
   <script>
-    const raw = JSON.parse((document.getElementById('events-data') as HTMLScriptElement).text);
+    const raw: any[] = JSON.parse((document.getElementById('events-data') as HTMLScriptElement).text);
+    const alumniDataEl = document.getElementById('alumni-data') as HTMLScriptElement | null;
+    const alumniData = alumniDataEl ? JSON.parse(alumniDataEl.text) : { alumniEmail: '', myRsvpEventIds: [] };
+    const myRsvpEventIds: string[] = alumniData.myRsvpEventIds || [];
+
     let activeStatus = 'all';
     let activeType = '';
     let activeTag = '';
     let searchQuery = '';
+    let activeSort: 'soonest' | 'newest' | 'popular' = 'soonest';
+    let dateFrom = '';
+    let dateTo = '';
 
     function spotsLeft(e: any) { return Math.max(0, e.capacity - (e.confirmedCount || 0)); }
 
-    function renderEvents() {
+    function getFilteredEvents() {
       const now = new Date();
-      const filtered = raw.filter((e: any) => {
+      let result = raw.filter((e: any) => {
         if (activeStatus === 'upcoming' && new Date(e.startTime) < now) return false;
         if (activeStatus === 'ended' && new Date(e.startTime) >= now) return false;
+        if (activeStatus === 'mine' && !myRsvpEventIds.includes(e._id)) return false;
         if (activeType && e.eventType !== activeType) return false;
         if (activeTag && !(e.tags || []).includes(activeTag)) return false;
         if (searchQuery) {
@@ -146,8 +222,24 @@ const breadcrumbItems = [
           const haystack = `${e.title} ${e.description || ''}`.toLowerCase();
           if (!haystack.includes(q)) return false;
         }
+        if (dateFrom && new Date(e.startTime) < new Date(dateFrom)) return false;
+        if (dateTo && new Date(e.startTime) > new Date(dateTo + 'T23:59:59')) return false;
         return true;
       });
+
+      if (activeSort === 'newest') {
+        result.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } else if (activeSort === 'popular') {
+        result.sort((a: any, b: any) => (b.confirmedCount || 0) - (a.confirmedCount || 0));
+      } else {
+        result.sort((a: any, b: any) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      }
+
+      return result;
+    }
+
+    function renderEvents() {
+      const filtered = getFilteredEvents();
 
       const grid = document.getElementById('events-grid')!;
       const empty = document.getElementById('events-empty')!;
@@ -170,13 +262,15 @@ const breadcrumbItems = [
         const date = new Date(e.startTime).toDateString();
         const pct = Math.min(100, Math.round(((e.confirmedCount || 0) / e.capacity) * 100));
         const isLive = e.meetingUrlActive === true && e.status !== 'ended';
+        const seriesBadge = e.seriesId ? `<span title="Part of a series" class="text-base">🔁</span>` : '';
+        const featuredBadge = e.isFeatured ? `<span title="Featured event" class="text-base">⭐</span>` : '';
         return `
           <a href="/events/${e.slug}" class="card card-hover block${isLive ? ' ring-2 ring-red-400' : ''}">
             <div class="p-6">
               <div class="flex items-center justify-between mb-3">
                 <span class="badge ${badgeClass(e.status)} text-xs">${e.status.charAt(0).toUpperCase() + e.status.slice(1)}</span>
                 ${e.eventType ? `<span class="badge badge-secondary text-xs uppercase">${e.eventType}</span>` : ''}
-                <span class="text-sm text-gray-500">${date}</span>
+                <span class="flex items-center gap-1 text-sm text-gray-500">${seriesBadge}${featuredBadge}${date}</span>
               </div>
               ${isLive ? `
               <div class="mb-2">
@@ -238,7 +332,93 @@ const breadcrumbItems = [
       if (activeView === 'week') renderWeekCalendar();
     });
 
+    (document.getElementById('filter-sort') as HTMLSelectElement)?.addEventListener('change', (e) => {
+      activeSort = (e.target as HTMLSelectElement).value as 'soonest' | 'newest' | 'popular';
+      renderEvents();
+      if (activeView === 'month') renderMonthCalendar();
+      if (activeView === 'week') renderWeekCalendar();
+    });
+
+    (document.getElementById('filter-date-from') as HTMLInputElement)?.addEventListener('change', (e) => {
+      dateFrom = (e.target as HTMLInputElement).value;
+      renderEvents();
+      if (activeView === 'month') renderMonthCalendar();
+      if (activeView === 'week') renderWeekCalendar();
+    });
+
+    (document.getElementById('filter-date-to') as HTMLInputElement)?.addEventListener('change', (e) => {
+      dateTo = (e.target as HTMLInputElement).value;
+      renderEvents();
+      if (activeView === 'month') renderMonthCalendar();
+      if (activeView === 'week') renderWeekCalendar();
+    });
+
+    document.getElementById('toggle-advanced')?.addEventListener('click', () => {
+      document.getElementById('advanced-filters')?.classList.toggle('hidden');
+    });
+
+    document.getElementById('clear-advanced')?.addEventListener('click', () => {
+      dateFrom = '';
+      dateTo = '';
+      (document.getElementById('filter-date-from') as HTMLInputElement).value = '';
+      (document.getElementById('filter-date-to') as HTMLInputElement).value = '';
+      renderEvents();
+      if (activeView === 'month') renderMonthCalendar();
+      if (activeView === 'week') renderWeekCalendar();
+    });
+
     renderEvents();
+
+    // Featured event banner
+    function renderFeaturedBanner() {
+      const featured = raw.find((e: any) => e.isFeatured && e.status === 'upcoming');
+      const banner = document.getElementById('featured-event-banner');
+      if (!banner || !featured) return;
+      document.getElementById('featured-title')!.textContent = featured.title;
+      document.getElementById('featured-desc')!.textContent = featured.description || '';
+      document.getElementById('featured-date')!.textContent = new Date(featured.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+      document.getElementById('featured-type')!.textContent = featured.eventType;
+      (document.getElementById('featured-link') as HTMLAnchorElement).href = `/events/${featured.slug}`;
+      banner.classList.remove('hidden');
+    }
+    renderFeaturedBanner();
+
+    // Series grouping section
+    function renderSeriesSection() {
+      const seriesMap: Record<string, any[]> = {};
+      raw.forEach((e: any) => {
+        if (e.seriesId) {
+          const key = typeof e.seriesId === 'string' ? e.seriesId : String(e.seriesId);
+          if (!seriesMap[key]) seriesMap[key] = [];
+          seriesMap[key].push(e);
+        }
+      });
+      const seriesSection = document.getElementById('series-section');
+      const seriesList = document.getElementById('series-list');
+      if (!seriesSection || !seriesList) return;
+      const seriesKeys = Object.keys(seriesMap).filter(k => seriesMap[k].length > 1);
+      if (seriesKeys.length === 0) return;
+      seriesSection.classList.remove('hidden');
+      seriesList.innerHTML = seriesKeys.map(key => {
+        const events = seriesMap[key].sort((a: any, b: any) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        const seriesName = events[0].title.replace(/\s*#\d+$/, '') + ' Series';
+        return `
+          <div class="card p-6">
+            <h3 class="text-lg font-semibold mb-3">🔁 ${seriesName}</h3>
+            <div class="flex flex-wrap gap-3">
+              ${events.map((e: any) => `
+                <a href="/events/${e.slug}" class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition text-sm">
+                  <span class="font-medium">${new Date(e.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  <span class="text-gray-500 truncate max-w-[120px]">${e.title}</span>
+                  <span class="badge ${e.status === 'upcoming' ? 'badge-primary' : e.status === 'live' ? 'badge-accent' : 'badge-secondary'} text-xs">${e.status}</span>
+                </a>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    renderSeriesSection();
 
     // -----------------------------------------------------------------------
     // Calendar views
@@ -268,22 +448,6 @@ const breadcrumbItems = [
         switchView(btn.getAttribute('data-view') as 'grid' | 'month' | 'week');
       });
     });
-
-    function getFilteredEvents() {
-      const now = new Date();
-      return raw.filter((e: any) => {
-        if (activeStatus === 'upcoming' && new Date(e.startTime) < now) return false;
-        if (activeStatus === 'ended' && new Date(e.startTime) >= now) return false;
-        if (activeType && e.eventType !== activeType) return false;
-        if (activeTag && !(e.tags || []).includes(activeTag)) return false;
-        if (searchQuery) {
-          const q = searchQuery.toLowerCase();
-          const haystack = `${e.title} ${e.description || ''}`.toLowerCase();
-          if (!haystack.includes(q)) return false;
-        }
-        return true;
-      });
-    }
 
     function renderMonthCalendar() {
       const year = calMonthDate.getFullYear();

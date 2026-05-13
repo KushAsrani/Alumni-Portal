@@ -9,6 +9,17 @@ export const GET: APIRoute = async ({ url }) => {
     const slug = url.searchParams.get('slug') || undefined;
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '20');
+    const eventType = url.searchParams.get('eventType') || undefined;
+    const tags = url.searchParams.getAll('tags').filter(Boolean);
+    const search = url.searchParams.get('search') || undefined;
+    const dateFromStr = url.searchParams.get('dateFrom');
+    const dateToStr = url.searchParams.get('dateTo');
+    const dateFrom = dateFromStr ? new Date(dateFromStr) : undefined;
+    const dateTo = dateToStr ? new Date(dateToStr) : undefined;
+    const sort = (url.searchParams.get('sort') as 'soonest' | 'newest' | 'popular') || undefined;
+    const seriesId = url.searchParams.get('seriesId') || undefined;
+    const isFeaturedParam = url.searchParams.get('isFeatured');
+    const isFeatured = isFeaturedParam === 'true' ? true : isFeaturedParam === 'false' ? false : undefined;
 
     if (slug) {
       const event = await EventService.getEventBySlug(slug);
@@ -24,7 +35,19 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    const { events, total } = await EventService.getEvents({ status, page, limit });
+    const { events, total } = await EventService.getEvents({
+      status,
+      page,
+      limit,
+      eventType,
+      tags: tags.length ? tags : undefined,
+      search,
+      dateFrom,
+      dateTo,
+      sort,
+      seriesId,
+      isFeatured,
+    });
 
     return new Response(
       JSON.stringify({
@@ -32,7 +55,12 @@ export const GET: APIRoute = async ({ url }) => {
         total,
         page,
         limit,
-        events: events.map((e: any) => ({ ...e, _id: e._id?.toString() })),
+        events: events.map((e: any) => ({
+          ...e,
+          _id: e._id?.toString(),
+          seriesId: e.seriesId?.toString(),
+          parentEventId: e.parentEventId?.toString(),
+        })),
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -52,7 +80,7 @@ export const GET: APIRoute = async ({ url }) => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { title, hostEmail, hostName, eventType, startTime, endTime, registrationDeadline, capacity, description, meetingUrl, meetingUrlActive, bannerUrl, tags, venue, location, status } = body;
+    const { title, hostEmail, hostName, eventType, startTime, endTime, registrationDeadline, capacity, description, meetingUrl, meetingUrlActive, bannerUrl, tags, venue, location, status, recurrence, isFeatured } = body;
 
     if (!title || !hostEmail || !eventType || !startTime || !endTime || !capacity) {
       return new Response(
@@ -61,7 +89,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const event = await EventService.createEvent({
+    const parsedData = {
       title,
       hostEmail,
       hostName,
@@ -78,7 +106,28 @@ export const POST: APIRoute = async ({ request }) => {
       venue,
       location,
       status: status || 'upcoming',
-    });
+      isFeatured: isFeatured === true || String(isFeatured) === 'true',
+    };
+
+    if (recurrence?.frequency) {
+      const result = await EventService.createRecurringEvent({ ...parsedData, recurrence: {
+        frequency: recurrence.frequency,
+        interval: recurrence.interval || 1,
+        until: recurrence.until ? new Date(recurrence.until) : undefined,
+        occurrences: recurrence.occurrences,
+      }});
+      return new Response(
+        JSON.stringify({
+          success: true,
+          event: { ...result.parentEvent, _id: result.parentEvent._id?.toString(), seriesId: result.parentEvent.seriesId?.toString() },
+          childEvents: result.childEvents.map((e) => ({ ...e, _id: e._id?.toString(), seriesId: e.seriesId?.toString(), parentEventId: e.parentEventId?.toString() })),
+          recurring: true,
+        }),
+        { status: 201, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const event = await EventService.createEvent(parsedData);
 
     return new Response(
       JSON.stringify({ success: true, event: { ...event, _id: event._id?.toString() } }),
