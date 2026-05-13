@@ -190,6 +190,38 @@ const activitiesMap: Record<string, string[]> = {
 const activities = activitiesMap[event.eventType] || ['Networking Session', 'Panel Discussion', 'Workshops', 'Guest Lectures', 'Alumni Awards Ceremony', 'Campus Tours/Revisiting Dorms', 'Talent Showcases & Concerts', 'Industry Panels/Mentorship Circles'];
 const eventPageUrl = `${Astro.url.origin}/events/${event.slug}`;
 const alumniEmail = alumniProfile?.email || '';
+
+// Fetch discussion posts (for upcoming/live events, for registered attendees)
+let discussionPosts: any[] = [];
+const showDiscussion = (event.status === 'upcoming' || event.status === 'live') && userRsvp && (userRsvp.rsvpStatus === 'confirmed' || userRsvp.rsvpStatus === 'waitlisted');
+if (showDiscussion && event._id) {
+  try {
+    const dRes = await fetch(`${base}/api/events/${event._id}/discussion`);
+    if (dRes.ok) {
+      const dData = await dRes.json();
+      discussionPosts = dData.posts || [];
+    }
+  } catch {}
+}
+
+// Fetch feedback data (for ended events)
+let userFeedback: any = null;
+let feedbackSummary: any = null;
+const showFeedbackForm = isEnded && userRsvp?.checkedIn === true;
+const showFeedbackSummary = isEnded;
+if (isEnded && event._id) {
+  try {
+    const fUrl = alumniProfile?.email
+      ? `${base}/api/events/${event._id}/feedback?userEmail=${encodeURIComponent(alumniProfile.email)}`
+      : `${base}/api/events/${event._id}/feedback`;
+    const fRes = await fetch(fUrl);
+    if (fRes.ok) {
+      const fData = await fRes.json();
+      userFeedback = fData.feedback || null;
+      feedbackSummary = fData.summary || null;
+    }
+  } catch {}
+}
 ---
 
 <Layout title={event.title} description={event.description}>
@@ -438,6 +470,44 @@ const alumniEmail = alumniProfile?.email || '';
             </div>
           )}
 
+          {showDiscussion && (
+            <div class="card p-6" id="discussion-section"
+                 data-event-id={String(event._id)}
+                 data-user-email={alumniProfile?.email || ''}
+                 data-user-name={alumniProfile?.name || ''}>
+              <h2 class="text-xl font-semibold mb-1">💬 Pre-Event Discussion</h2>
+              <p class="text-sm text-gray-500 mb-4">Chat with other registered attendees before the event. Introduce yourself or ask the host a question!</p>
+
+              <div id="discussion-list" class="space-y-3 mb-6">
+                {discussionPosts.length === 0 ? (
+                  <p class="text-gray-400 text-sm">No messages yet. Be the first to start the conversation!</p>
+                ) : discussionPosts.map((post: any) => (
+                  <div class="bg-gray-50 rounded-xl p-3 text-sm" data-post-id={String(post._id)}>
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="font-semibold text-gray-800">{post.isAnonymous ? 'Anonymous' : (post.authorName || post.authorEmail)}</span>
+                      <span class="text-xs text-gray-400">{new Date(post.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <p class="text-gray-700">{post.content}</p>
+                  </div>
+                ))}
+              </div>
+
+              <form id="discussion-form" class="space-y-3">
+                <div class="relative">
+                  <textarea id="discussion-text" maxlength="1000" rows="3"
+                    placeholder="Write a message…"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"></textarea>
+                  <span id="discussion-char" class="absolute bottom-2 right-3 text-xs text-gray-400">0/1000</span>
+                </div>
+                <label class="flex items-center gap-2 text-sm text-gray-600">
+                  <input type="checkbox" id="discussion-anon" /> Post anonymously
+                </label>
+                <button type="submit" class="btn btn-primary text-sm">Post Message</button>
+                <p id="discussion-msg" class="text-sm hidden"></p>
+              </form>
+            </div>
+          )}
+
           {event.status === 'live' && (
             <div class="space-y-6" id="live-panel"
                  data-event-id={String(event._id)}
@@ -506,6 +576,93 @@ const alumniEmail = alumniProfile?.email || '';
                   <button type="submit" class="btn btn-primary btn-sm">Send</button>
                 </form>
               </div>
+            </div>
+          )}
+
+          {isEnded && (
+            <div class="card p-6" id="feedback-section"
+                 data-event-id={String(event._id)}
+                 data-user-email={alumniProfile?.email || ''}>
+
+              <h2 class="text-xl font-semibold mb-1">⭐ Event Feedback</h2>
+
+              {feedbackSummary && feedbackSummary.count > 0 && (
+                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-5">
+                  <p class="text-sm font-semibold text-indigo-900 mb-1">Community Rating</p>
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl font-bold text-indigo-700">{feedbackSummary.avgRating.toFixed(1)}</span>
+                    <div>
+                      <div class="flex gap-0.5">
+                        {[1,2,3,4,5].map((s: number) => (
+                          <span class={`text-lg ${s <= Math.round(feedbackSummary.avgRating) ? 'text-yellow-400' : 'text-gray-300'}`}>★</span>
+                        ))}
+                      </div>
+                      <p class="text-xs text-indigo-600 mt-0.5">{feedbackSummary.count} review{feedbackSummary.count !== 1 ? 's' : ''} · {feedbackSummary.recommendPct}% would recommend</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showFeedbackForm && !userFeedback && (
+                <>
+                  <p class="text-sm text-gray-500 mb-4">You attended this event! Share your experience to help future attendees.</p>
+                  <form id="feedback-form" class="space-y-5">
+                    <div>
+                      <label class="block text-sm font-medium mb-2">Overall Rating <span class="text-red-500">*</span></label>
+                      <div class="flex gap-2" id="star-rating">
+                        {[1,2,3,4,5].map((s: number) => (
+                          <button type="button" class="star-btn text-3xl text-gray-300 hover:text-yellow-400 transition-colors" data-value={s}>★</button>
+                        ))}
+                      </div>
+                      <input type="hidden" id="feedback-rating" name="rating" value="" />
+                      <p id="feedback-rating-error" class="text-red-500 text-xs mt-1 hidden">Please select a rating.</p>
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium mb-2">Would you recommend this event? <span class="text-red-500">*</span></label>
+                      <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                          <input type="radio" name="wouldRecommend" value="yes" class="w-4 h-4" /> Yes
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                          <input type="radio" name="wouldRecommend" value="no" class="w-4 h-4" /> No
+                        </label>
+                      </div>
+                      <p id="feedback-recommend-error" class="text-red-500 text-xs mt-1 hidden">Please select an option.</p>
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium mb-1" for="feedback-highlights">What did you enjoy most?</label>
+                      <textarea id="feedback-highlights" name="highlights" class="input w-full" rows={3} maxlength={500}
+                        placeholder="e.g. The Q&A session was very insightful…"></textarea>
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium mb-1" for="feedback-improvements">What could be improved?</label>
+                      <textarea id="feedback-improvements" name="improvements" class="input w-full" rows={3} maxlength={500}
+                        placeholder="e.g. More time for networking…"></textarea>
+                    </div>
+
+                    <p id="feedback-msg" class="text-sm hidden"></p>
+                    <button type="submit" class="btn btn-primary text-sm">Submit Feedback</button>
+                  </form>
+                </>
+              )}
+
+              {userFeedback && (
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4 mt-2">
+                  <p class="text-sm font-semibold text-green-800 mb-1">✅ You've already submitted feedback — thank you!</p>
+                  <div class="flex gap-0.5 mt-1">
+                    {[1,2,3,4,5].map((s: number) => (
+                      <span class={`text-lg ${s <= userFeedback.rating ? 'text-yellow-400' : 'text-gray-300'}`}>★</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {isEnded && !showFeedbackForm && !userFeedback && (
+                <p class="text-sm text-gray-400 mt-2 italic">Feedback is available to attendees who checked in at the event.</p>
+              )}
             </div>
           )}
         </div>
@@ -1618,6 +1775,191 @@ const alumniEmail = alumniProfile?.email || '';
         clearInterval(qaInterval);
         clearInterval(pollsInterval);
       });
+    }
+
+    // ── Discussion Thread ──────────────────────────────────────────
+    const discussionSection = document.getElementById('discussion-section') as HTMLElement | null;
+    if (discussionSection) {
+      const dEventId = discussionSection.dataset.eventId!;
+      const dUserEmail = discussionSection.dataset.userEmail!;
+      const dUserName = discussionSection.dataset.userName || '';
+      const dForm = document.getElementById('discussion-form') as HTMLFormElement;
+      const dText = document.getElementById('discussion-text') as HTMLTextAreaElement;
+      const dChar = document.getElementById('discussion-char')!;
+      const dMsg = document.getElementById('discussion-msg')!;
+      const dList = document.getElementById('discussion-list')!;
+      const dAnon = document.getElementById('discussion-anon') as HTMLInputElement;
+
+      dText.addEventListener('input', () => {
+        dChar.textContent = `${dText.value.length}/1000`;
+      });
+
+      function escapeHtml(str: string): string {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function renderPost(post: any) {
+        const div = document.createElement('div');
+        div.className = 'bg-gray-50 rounded-xl p-3 text-sm';
+        div.dataset.postId = post._id;
+        const displayName = post.isAnonymous ? 'Anonymous' : (post.authorName || post.authorEmail);
+        const dateStr = new Date(post.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        div.innerHTML = `
+          <div class="flex items-center gap-2 mb-1">
+            <span class="font-semibold text-gray-800">${escapeHtml(displayName)}</span>
+            <span class="text-xs text-gray-400">${escapeHtml(dateStr)}</span>
+            ${post.authorEmail === dUserEmail ? `<button class="ml-auto text-xs text-red-400 hover:text-red-600 delete-post-btn">Delete</button>` : ''}
+          </div>
+          <p class="text-gray-700">${escapeHtml(post.content)}</p>
+        `;
+        div.querySelector('.delete-post-btn')?.addEventListener('click', async () => {
+          if (!confirm('Delete this message?')) return;
+          await fetch(`/api/events/${dEventId}/discussion`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId: post._id, userEmail: dUserEmail }),
+          });
+          div.remove();
+          if (!dList.querySelector('[data-post-id]')) {
+            dList.innerHTML = '<p class="text-gray-400 text-sm">No messages yet. Be the first to start the conversation!</p>';
+          }
+        });
+        return div;
+      }
+
+      let lastFetched = Date.now();
+      async function pollDiscussion() {
+        try {
+          const res = await fetch(`/api/events/${dEventId}/discussion`);
+          if (!res.ok) return;
+          const data = await res.json();
+          const posts: any[] = data.posts || [];
+          const newPosts = posts.filter((p: any) => new Date(p.createdAt).getTime() > lastFetched);
+          if (newPosts.length > 0) {
+            const placeholder = dList.querySelector('p.text-gray-400');
+            if (placeholder) placeholder.remove();
+            newPosts.forEach((p: any) => dList.appendChild(renderPost(p)));
+            lastFetched = Date.now();
+          }
+        } catch {}
+      }
+      const DISCUSSION_POLL_INTERVAL_MS = 15_000;
+      const discussionInterval = setInterval(pollDiscussion, DISCUSSION_POLL_INTERVAL_MS);
+      window.addEventListener('pagehide', () => clearInterval(discussionInterval));
+
+      dForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const content = dText.value.trim();
+        if (!content) {
+          dMsg.textContent = 'Please write a message.';
+          dMsg.className = 'text-red-500 text-sm';
+          dMsg.classList.remove('hidden');
+          return;
+        }
+        dMsg.classList.add('hidden');
+        try {
+          const res = await fetch(`/api/events/${dEventId}/discussion`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ authorEmail: dUserEmail, authorName: dUserName, content, isAnonymous: dAnon.checked }),
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            const placeholder = dList.querySelector('p.text-gray-400');
+            if (placeholder) placeholder.remove();
+            dList.appendChild(renderPost(data.post));
+            dText.value = '';
+            dChar.textContent = '0/1000';
+            lastFetched = Date.now();
+          } else {
+            dMsg.textContent = data.error || data.message || 'Failed to post message.';
+            dMsg.className = 'text-red-500 text-sm';
+            dMsg.classList.remove('hidden');
+          }
+        } catch {
+          dMsg.textContent = 'Network error. Please try again.';
+          dMsg.className = 'text-red-500 text-sm';
+          dMsg.classList.remove('hidden');
+        }
+      });
+    }
+
+    // ── Feedback Form ──────────────────────────────────────────────
+    const feedbackSection = document.getElementById('feedback-section') as HTMLElement | null;
+    if (feedbackSection) {
+      const fEventId = feedbackSection.dataset.eventId!;
+      const fUserEmail = feedbackSection.dataset.userEmail!;
+      const fForm = document.getElementById('feedback-form') as HTMLFormElement | null;
+      if (fForm) {
+        let selectedRating = 0;
+        const starBtns = fForm.querySelectorAll('.star-btn') as NodeListOf<HTMLButtonElement>;
+        const ratingInput = document.getElementById('feedback-rating') as HTMLInputElement;
+
+        function updateStars(val: number) {
+          starBtns.forEach((btn) => {
+            const v = parseInt(btn.dataset.value || '0');
+            btn.classList.toggle('text-yellow-400', v <= val);
+            btn.classList.toggle('text-gray-300', v > val);
+          });
+        }
+
+        starBtns.forEach((btn) => {
+          btn.addEventListener('click', () => {
+            selectedRating = parseInt(btn.dataset.value || '0');
+            ratingInput.value = String(selectedRating);
+            updateStars(selectedRating);
+          });
+          btn.addEventListener('mouseenter', () => updateStars(parseInt(btn.dataset.value || '0')));
+          btn.addEventListener('mouseleave', () => updateStars(selectedRating));
+        });
+
+        fForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const fMsg = document.getElementById('feedback-msg')!;
+          const ratingErr = document.getElementById('feedback-rating-error')!;
+          const recommendErr = document.getElementById('feedback-recommend-error')!;
+
+          let valid = true;
+          if (!selectedRating) { ratingErr.classList.remove('hidden'); valid = false; } else { ratingErr.classList.add('hidden'); }
+          const recommend = (fForm.querySelector('input[name="wouldRecommend"]:checked') as HTMLInputElement | null)?.value;
+          if (!recommend) { recommendErr.classList.remove('hidden'); valid = false; } else { recommendErr.classList.add('hidden'); }
+          if (!valid) return;
+
+          try {
+            const res = await fetch(`/api/events/${fEventId}/feedback`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userEmail: fUserEmail,
+                rating: selectedRating,
+                wouldRecommend: recommend === 'yes',
+                highlights: (document.getElementById('feedback-highlights') as HTMLTextAreaElement)?.value.trim() || undefined,
+                improvements: (document.getElementById('feedback-improvements') as HTMLTextAreaElement)?.value.trim() || undefined,
+              }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+              fMsg.textContent = '✅ Thank you for your feedback!';
+              fMsg.className = 'text-green-700 text-sm';
+              fMsg.classList.remove('hidden');
+              setTimeout(() => window.location.reload(), 1500);
+            } else {
+              fMsg.textContent = data.error || data.message || 'Failed to submit feedback.';
+              fMsg.className = 'text-red-500 text-sm';
+              fMsg.classList.remove('hidden');
+            }
+          } catch {
+            fMsg.textContent = 'Network error. Please try again.';
+            fMsg.className = 'text-red-500 text-sm';
+            fMsg.classList.remove('hidden');
+          }
+        });
+      }
     }
   </script>
 </Layout>
