@@ -638,7 +638,7 @@ const alumniEmail = alumniProfile?.email || '';
                   Copy
                 </button>
               </div>
-              <p id="copy-success-msg" class="text-xs text-green-600 mt-1 hidden">✓ Copied to clipboard!</p>
+              <p id="copy-success-msg" class="text-xs text-green-600 mt-1 hidden">Copied to clipboard!</p>
             </div>
           </div>
 
@@ -1277,7 +1277,7 @@ const alumniEmail = alumniProfile?.email || '';
       const shareMessage = (title: string) =>
         `🎓 Join me at "${title}" — an alumni event you won't want to miss!`;
 
-      function showCopyMessage(text = '✓ Copied to clipboard!') {
+      function showCopyMessage(text = 'Copied to clipboard!') {
         if (!copySuccessMsg) return;
         copySuccessMsg.textContent = text;
         copySuccessMsg.classList.remove('hidden');
@@ -1308,7 +1308,7 @@ const alumniEmail = alumniProfile?.email || '';
             url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedLink}`,
           },
           {
-            name: 'Twitter / X',
+            name: 'X',
             color: '#000000',
             icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.259 5.631 5.905-5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
             url: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedLink}`,
@@ -1338,13 +1338,13 @@ const alumniEmail = alumniProfile?.email || '';
           </a>
         `).join('')}
         <button type="button" data-share-action="instagram"
-           class="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-gray-200 hover:border-pink-300 hover:bg-pink-50 transition-all duration-200 text-sm font-medium text-gray-700">
+           class="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-gray-200 hover:border-indigo-300 hover:bg-pink-50 transition-all duration-200 text-sm font-medium text-gray-700">
           <span style="color: #E1306C;"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7.75 2C4.574 2 2 4.574 2 7.75v8.5C2 19.426 4.574 22 7.75 22h8.5C19.426 22 22 19.426 22 16.25v-8.5C22 4.574 19.426 2 16.25 2h-8.5zm0 1.8h8.5a3.95 3.95 0 013.95 3.95v8.5a3.95 3.95 0 01-3.95 3.95h-8.5a3.95 3.95 0 01-3.95-3.95v-8.5A3.95 3.95 0 017.75 3.8zm8.95 1.35a1.1 1.1 0 100 2.2 1.1 1.1 0 000-2.2zM12 6.6A5.4 5.4 0 106 12a5.4 5.4 0 006 5.4 5.4 5.4 0 000-10.8zm0 1.8A3.6 3.6 0 1112 15.6 3.6 3.6 0 0112 8.4z"/></svg></span>
           Instagram
         </button>
         <button type="button" data-share-action="copy"
            class="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-200 text-sm font-medium text-gray-700">
-          <span style="color: #4F46E5;"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16h8M8 12h8m-7 8h6a2 2 0 002-2V6.828a2 2 0 00-.586-1.414l-2.828-2.828A2 2 0 0012.172 2H9a2 2 0 00-2 2v2m-2 4H4a2 2 0 00-2 2v7a2 2 0 002 2h7a2 2 0 002-2v-1"/></svg></span>
+          <span style="color: #4F46E5;"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2Z"/></svg></span>
           Copy Link
         </button>`;
 
