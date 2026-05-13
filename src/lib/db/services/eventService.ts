@@ -35,6 +35,8 @@ export class EventService {
   private static readonly FEEDBACK_COLLECTION = 'event_feedback';
   private static readonly REFERRAL_CODE_BYTE_LENGTH = 4;
   private static readonly MAX_REFERRAL_CODE_GENERATION_ATTEMPTS = 5;
+  private static readonly MAX_DISCUSSION_POSTS = 100;
+  private static readonly RATING_PRECISION = 1;
 
   /**
    * Create a new event
@@ -584,7 +586,7 @@ export class EventService {
    */
   static async getDiscussionPosts(eventId: string): Promise<DiscussionPostDocument[]> {
     const col = await getCollection<DiscussionPostDocument>(this.DISCUSSION_COLLECTION);
-    return col.find({ eventId: new ObjectId(eventId) }).sort({ createdAt: 1 }).limit(100).toArray();
+    return col.find({ eventId: new ObjectId(eventId) }).sort({ createdAt: 1 }).limit(this.MAX_DISCUSSION_POSTS).toArray();
   }
 
   /**
@@ -670,7 +672,8 @@ export class EventService {
     if (count === 0) {
       return { count: 0, avgRating: 0, recommendPct: 0, feedbacks: [] };
     }
-    const avgRating = Math.round((feedbacks.reduce((sum, f) => sum + f.rating, 0) / count) * 10) / 10;
+    const precision = Math.pow(10, this.RATING_PRECISION);
+    const avgRating = Math.round((feedbacks.reduce((sum, f) => sum + f.rating, 0) / count) * precision) / precision;
     const recommendPct = Math.round((feedbacks.filter(f => f.wouldRecommend).length / count) * 100);
     return { count, avgRating, recommendPct, feedbacks };
   }

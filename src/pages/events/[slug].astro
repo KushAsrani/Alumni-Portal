@@ -590,7 +590,7 @@ if (isEnded && event._id) {
                 <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-5">
                   <p class="text-sm font-semibold text-indigo-900 mb-1">Community Rating</p>
                   <div class="flex items-center gap-3">
-                    <span class="text-3xl font-bold text-indigo-700">{feedbackSummary.avgRating.toFixed(1)}</span>
+                    <span class="text-3xl font-bold text-indigo-700">{(isNaN(feedbackSummary.avgRating) ? 0 : feedbackSummary.avgRating).toFixed(1)}</span>
                     <div>
                       <div class="flex gap-0.5">
                         {[1,2,3,4,5].map((s: number) => (
@@ -1848,7 +1848,8 @@ if (isEnded && event._id) {
           }
         } catch {}
       }
-      const discussionInterval = setInterval(pollDiscussion, 15000);
+      const DISCUSSION_POLL_INTERVAL_MS = 15_000;
+      const discussionInterval = setInterval(pollDiscussion, DISCUSSION_POLL_INTERVAL_MS);
       window.addEventListener('pagehide', () => clearInterval(discussionInterval));
 
       dForm.addEventListener('submit', async (e) => {
