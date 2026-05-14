@@ -179,6 +179,9 @@ const eventTypeLabels: Record<string, string> = {
   webinar: 'Webinar',
   ama: 'AMA',
   workshop: 'Workshop',
+  networking: 'Networking',
+  panel: 'Panel Discussion',
+  hackathon: 'Hackathon',
 };
 
 // Activities options based on event type
@@ -186,6 +189,9 @@ const activitiesMap: Record<string, string[]> = {
   webinar: ['Q&A Session', 'Panel Discussion', 'Networking Session', 'Live Demo', 'Guest Lectures'],
   ama: ['Ask Me Anything', 'Networking Session', 'Career Guidance', 'Industry Insights'],
   workshop: ['Hands-on Workshop', 'Group Activities', 'Networking Session', 'Mentorship Circles', 'Campus Tours', 'Alumni Awards Ceremony', 'Talent Showcases & Concerts'],
+  networking: ['Speed Networking', 'Industry Mixers', 'Career Guidance', 'Alumni Introductions', 'Open Q&A'],
+  panel: ['Panel Discussion', 'Q&A Session', 'Industry Insights', 'Live Demo', 'Networking Session'],
+  hackathon: ['Team Formation', 'Project Pitching', 'Mentorship Circles', 'Demo Day', 'Networking Session'],
 };
 const activities = activitiesMap[event.eventType] || ['Networking Session', 'Panel Discussion', 'Workshops', 'Guest Lectures', 'Alumni Awards Ceremony', 'Campus Tours/Revisiting Dorms', 'Talent Showcases & Concerts', 'Industry Panels/Mentorship Circles'];
 const eventPageUrl = `${Astro.url.origin}/events/${event.slug}`;
@@ -194,6 +200,30 @@ const alumniEmail = alumniProfile?.email || '';
 // Fetch discussion posts (for upcoming/live events, for registered attendees)
 let discussionPosts: any[] = [];
 const showDiscussion = (event.status === 'upcoming' || event.status === 'live') && userRsvp && (userRsvp.rsvpStatus === 'confirmed' || userRsvp.rsvpStatus === 'waitlisted');
+
+// Fetch attendees list (Feature 12)
+let attendeesList: Array<{ userEmail: string; userName?: string; faculty?: string; graduationYear?: number }> = [];
+try {
+  if (event.status === 'upcoming' || event.status === 'live') {
+    const attendeesRes = await fetch(`${base}/api/events/${event._id}/attendees`);
+    if (attendeesRes.ok) {
+      const attendeesData = await attendeesRes.json();
+      attendeesList = attendeesData.attendees || [];
+    }
+  }
+} catch {}
+
+// Check if user has bookmarked this event (Feature 14)
+let isEventSaved = false;
+try {
+  if (alumniProfile?.email && event?._id) {
+    const saveRes = await fetch(`${base}/api/events/${event._id}/save?userEmail=${encodeURIComponent(alumniProfile.email)}`);
+    if (saveRes.ok) {
+      const saveData = await saveRes.json();
+      isEventSaved = saveData.saved;
+    }
+  }
+} catch {}
 if (showDiscussion && event._id) {
   try {
     const dRes = await fetch(`${base}/api/events/${event._id}/discussion`);
@@ -229,10 +259,13 @@ if (isEnded && event._id) {
 
   <!-- Event Banner -->
   <div class={`w-full py-16 px-6 relative overflow-hidden border-t border-b ${
-    event.eventType === 'ama'      ? 'bg-gradient-to-br from-white to-white text-black' :
-    event.eventType === 'workshop' ? 'bg-gradient-to-br from-white to-white text-black' :
-    event.eventType === 'webinar'  ? 'bg-gradient-to-br from-white to-white text-black' :
-                                     'bg-gradient-to-br from-white to-white text-black'             
+    event.eventType === 'ama'         ? 'bg-gradient-to-br from-white to-white text-black' :
+    event.eventType === 'workshop'    ? 'bg-gradient-to-br from-white to-white text-black' :
+    event.eventType === 'webinar'     ? 'bg-gradient-to-br from-white to-white text-black' :
+    event.eventType === 'networking'  ? 'bg-gradient-to-br from-teal-50 to-teal-100 text-teal-900' :
+    event.eventType === 'panel'       ? 'bg-gradient-to-br from-orange-50 to-orange-100 text-orange-900' :
+    event.eventType === 'hackathon'   ? 'bg-gradient-to-br from-red-50 to-red-100 text-red-900' :
+                                        'bg-gradient-to-br from-white to-white text-black'             
   }`}
     style={safeBannerUrl ? `background-image: url('${safeBannerUrl}'); background-size: cover; background-position: center;` : ''}>
     {safeBannerUrl && <div class="absolute inset-0 bg-black/50"></div>}
@@ -288,6 +321,16 @@ if (isEnded && event._id) {
               <span class={`badge ${event.status === 'upcoming' ? 'badge-primary' : event.status === 'live' ? 'badge-accent' : 'badge-secondary'}`}>
                 {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
               </span>
+              <div class="ml-auto">
+                <button id="bookmark-btn"
+                  class={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition border ${isEventSaved ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                  data-event-id={String(event._id)}
+                  data-user-email={alumniProfile?.email || ''}
+                  data-saved={String(isEventSaved)}>
+                  <span id="bookmark-icon">{isEventSaved ? '🔖' : '🏷️'}</span>
+                  <span id="bookmark-label">{isEventSaved ? 'Saved' : 'Save Event'}</span>
+                </button>
+              </div>
             </div>
             <h1 class="text-3xl font-bold mb-2">{event.title}</h1>
             {event.description && <p class="text-gray-600 mb-4">{event.description}</p>}
@@ -299,6 +342,32 @@ if (isEnded && event._id) {
               </div>
             )}
           </div>
+
+          {/* Feature 15 — Countdown Timer (only for upcoming events) */}
+          {event.status === 'upcoming' && (
+            <div id="countdown-section" class="my-6">
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 text-center">Event starts in</p>
+              <div class="flex justify-center gap-3" id="countdown">
+                <div class="bg-primary-50 border border-primary-100 rounded-2xl p-4 min-w-[72px] text-center shadow-sm">
+                  <span id="cd-days" class="text-3xl font-bold text-primary-600 block">--</span>
+                  <p class="text-xs text-gray-500 mt-1">Days</p>
+                </div>
+                <div class="bg-primary-50 border border-primary-100 rounded-2xl p-4 min-w-[72px] text-center shadow-sm">
+                  <span id="cd-hours" class="text-3xl font-bold text-primary-600 block">--</span>
+                  <p class="text-xs text-gray-500 mt-1">Hours</p>
+                </div>
+                <div class="bg-primary-50 border border-primary-100 rounded-2xl p-4 min-w-[72px] text-center shadow-sm">
+                  <span id="cd-minutes" class="text-3xl font-bold text-primary-600 block">--</span>
+                  <p class="text-xs text-gray-500 mt-1">Minutes</p>
+                </div>
+                <div class="bg-primary-50 border border-primary-100 rounded-2xl p-4 min-w-[72px] text-center shadow-sm">
+                  <span id="cd-seconds" class="text-3xl font-bold text-primary-600 block">--</span>
+                  <p class="text-xs text-gray-500 mt-1">Seconds</p>
+                </div>
+              </div>
+              <p id="cd-ended-msg" class="hidden text-center text-sm text-gray-500 mt-2">This event has started!</p>
+            </div>
+          )}
 
           <!-- Event Registration Form (only for non-ended events) -->
           {!isEnded && (
@@ -467,6 +536,34 @@ if (isEnded && event._id) {
               >
                 ⬇ Download Ticket
               </a>
+            </div>
+          )}
+
+          {/* Feature 12 — Who's Attending Panel */}
+          {(event.status === 'upcoming' || event.status === 'live') && attendeesList.length > 0 && (
+            <div class="card p-6 mt-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">🧑‍🤝‍🧑 Who's Attending ({attendeesList.length})</h3>
+              </div>
+              <div class="flex flex-wrap gap-3">
+                {attendeesList.slice(0, 24).map((a: any) => (
+                  <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm hover:bg-primary-50 hover:border-primary-200 transition" title={[a.faculty, a.graduationYear ? `Class of ${a.graduationYear}` : ''].filter(Boolean).join(' · ')}>
+                    <div class="w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-xs flex-shrink-0">
+                      {(a.userName || a.userEmail || '?')[0].toUpperCase()}
+                    </div>
+                    <span class="font-medium text-gray-800">{a.userName || a.userEmail.split('@')[0]}</span>
+                    {a.faculty && <span class="text-gray-400 text-xs hidden sm:inline">· {a.faculty}</span>}
+                  </div>
+                ))}
+                {attendeesList.length > 24 && (
+                  <div class="flex items-center px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-500">
+                    +{attendeesList.length - 24} more
+                  </div>
+                )}
+              </div>
+              {isUserRegistrationConfirmed && (
+                <p class="text-xs text-gray-400 mt-3">You appear in this list. To hide yourself, update your RSVP preferences.</p>
+              )}
             </div>
           )}
 
@@ -1959,6 +2056,82 @@ if (isEnded && event._id) {
             fMsg.classList.remove('hidden');
           }
         });
+      }
+    }
+  </script>
+
+  <!-- Feature 14: Bookmark button script -->
+  <script>
+    const bookmarkBtn = document.getElementById('bookmark-btn');
+    if (bookmarkBtn) {
+      bookmarkBtn.addEventListener('click', async () => {
+        const eventId = (bookmarkBtn as HTMLButtonElement).dataset.eventId;
+        const userEmail = (bookmarkBtn as HTMLButtonElement).dataset.userEmail;
+        const isSaved = (bookmarkBtn as HTMLButtonElement).dataset.saved === 'true';
+        if (!eventId || !userEmail) return;
+        try {
+          const res = await fetch(`/api/events/${eventId}/save`, {
+            method: isSaved ? 'DELETE' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userEmail }),
+          });
+          if (res.ok) {
+            const newSaved = !isSaved;
+            (bookmarkBtn as HTMLButtonElement).dataset.saved = String(newSaved);
+            const iconEl = document.getElementById('bookmark-icon');
+            const labelEl = document.getElementById('bookmark-label');
+            if (iconEl) iconEl.textContent = newSaved ? '🔖' : '🏷️';
+            if (labelEl) labelEl.textContent = newSaved ? 'Saved' : 'Save Event';
+            if (newSaved) {
+              bookmarkBtn.classList.remove('bg-gray-50', 'text-gray-500', 'border-gray-200', 'hover:bg-gray-100');
+              bookmarkBtn.classList.add('bg-amber-50', 'text-amber-600', 'border-amber-200', 'hover:bg-amber-100');
+            } else {
+              bookmarkBtn.classList.remove('bg-amber-50', 'text-amber-600', 'border-amber-200', 'hover:bg-amber-100');
+              bookmarkBtn.classList.add('bg-gray-50', 'text-gray-500', 'border-gray-200', 'hover:bg-gray-100');
+            }
+          }
+        } catch {}
+      });
+    }
+  </script>
+
+  <!-- Feature 15: Countdown timer script -->
+  <script define:vars={{ eventStartTime: event.startTime.toISOString(), isUpcoming: event.status === 'upcoming' }}>
+    if (isUpcoming) {
+      const cdDays = document.getElementById('cd-days');
+      const cdHours = document.getElementById('cd-hours');
+      const cdMinutes = document.getElementById('cd-minutes');
+      const cdSeconds = document.getElementById('cd-seconds');
+      const cdEndedMsg = document.getElementById('cd-ended-msg');
+
+      if (cdDays && cdHours && cdMinutes && cdSeconds) {
+        const targetTime = new Date(eventStartTime).getTime();
+
+        function updateCountdown() {
+          const diff = targetTime - Date.now();
+          if (diff <= 0) {
+            cdDays.textContent = '0';
+            cdHours.textContent = '0';
+            cdMinutes.textContent = '0';
+            cdSeconds.textContent = '0';
+            if (cdEndedMsg) cdEndedMsg.classList.remove('hidden');
+            const cdSection = document.getElementById('countdown-section');
+            if (cdSection) cdSection.classList.add('opacity-50');
+            return;
+          }
+          const days = Math.floor(diff / 86400000);
+          const hours = Math.floor((diff % 86400000) / 3600000);
+          const minutes = Math.floor((diff % 3600000) / 60000);
+          const seconds = Math.floor((diff % 60000) / 1000);
+          cdDays.textContent = String(days).padStart(2, '0');
+          cdHours.textContent = String(hours).padStart(2, '0');
+          cdMinutes.textContent = String(minutes).padStart(2, '0');
+          cdSeconds.textContent = String(seconds).padStart(2, '0');
+        }
+
+        updateCountdown();
+        const cdTimer = setInterval(updateCountdown, 1000);
+        document.addEventListener('astro:before-swap', function() { clearInterval(cdTimer); }, { once: true });
       }
     }
   </script>

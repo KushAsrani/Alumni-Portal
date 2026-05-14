@@ -86,6 +86,8 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
           <option value="ama">AMA</option>
           <option value="networking">Networking</option>
           <option value="workshop">Workshop</option>
+          <option value="panel">Panel</option>
+          <option value="hackathon">Hackathon</option>
         </select>
       </div>
       <div class="flex gap-3">
@@ -145,6 +147,8 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
               <option value="ama">AMA</option>
               <option value="networking">Networking</option>
               <option value="workshop">Workshop</option>
+              <option value="panel">Panel Discussion</option>
+              <option value="hackathon">Hackathon</option>
             </select>
           </div>
           <div>
@@ -473,6 +477,8 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
     ama: 'bg-amber-100 text-amber-700',
     networking: 'bg-teal-100 text-teal-700',
     workshop: 'bg-indigo-100 text-indigo-700',
+    panel: 'bg-orange-100 text-orange-700',
+    hackathon: 'bg-red-100 text-red-700',
   };
 
   const statusBadgeClass = {

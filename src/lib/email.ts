@@ -100,3 +100,38 @@ export function buildNotifyMeEmail(params: {
   const text = `The join link for "${eventTitle}" is now live!\n\nJoin now: ${joinLinkUrl}\n\nEvent details: ${eventUrl}`;
   return { subject, html, text };
 }
+
+export function buildWaitlistPromotionEmail(opts: {
+  userName: string;
+  eventTitle: string;
+  eventUrl: string;
+  startTime: Date;
+}): { subject: string; html: string; text: string } {
+  const { userName, eventTitle, eventUrl, startTime } = opts;
+  const dateStr = new Date(startTime).toLocaleString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+  const subject = `🎉 Great news! You've been confirmed for: ${eventTitle}`;
+  const html = `
+    <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 0;">
+      <div style="background: #2e4096; padding: 32px 40px; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 22px;">🎉 You're off the waitlist!</h1>
+      </div>
+      <div style="background: white; padding: 32px 40px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="color: #334155; font-size: 16px;">Hi <strong>${userName}</strong>,</p>
+        <p style="color: #334155; font-size: 16px;">A spot has opened up and you've been automatically confirmed for <strong>${eventTitle}</strong>.</p>
+        <div style="background: #eef2ff; border-left: 4px solid #2e4096; padding: 16px 20px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0 0 8px; color: #1d275c;"><strong>📌 Event:</strong> ${eventTitle}</p>
+          <p style="margin: 0; color: #1d275c;"><strong>📆 Date:</strong> ${dateStr}</p>
+        </div>
+        <a href="${eventUrl}" style="display: inline-block; background: #2e4096; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; margin-top: 8px;">
+          View Event &amp; Your Ticket →
+        </a>
+        <p style="color: #94a3b8; font-size: 13px; margin-top: 32px;">You can cancel your spot at any time from the event page.</p>
+      </div>
+    </div>
+  `;
+  const text = `Hi ${userName},\n\nYou've been confirmed for ${eventTitle} on ${dateStr}.\n\nView your ticket: ${eventUrl}`;
+  return { subject, html, text };
+}
