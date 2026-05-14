@@ -66,7 +66,8 @@ try {
   <Breadcrumbs items={breadcrumbItems} />
   <section class="section">
     <div class="container-custom">
-      <h1 class="text-3xl font-bold mb-6">Events</h1>
+      <h1 class="text-3xl text-center font-bold mb-6">Events and Webinars</h1>
+      <p class="text-black mb-6"> Stay updated with the latest events, webinars, workshops, reunions, and networking opportunities in our alumni community. Explore upcoming events, register for those that interest you, and connect with fellow alumni. Whether you're looking to learn new skills, catch up with old friends, or just have fun, there's something for everyone in our vibrant event calendar. </p>
 
       <!-- Featured Event Banner (populated by JS) -->
       <div id="featured-event-banner" class="hidden mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-6">
@@ -84,11 +85,15 @@ try {
       <div class="mb-8 space-y-4">
         <!-- Search bar -->
         <div class="relative">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
           <input
             id="event-search"
             type="text"
             placeholder="Search events by title or description..."
             class="input w-full pl-10"
+            style="padding: 0.875rem 1.25rem 0.875rem 2.75rem;"
           />
           <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true"></span>
         </div>
@@ -96,31 +101,36 @@ try {
         <!-- Filter row -->
         <div class="flex flex-wrap gap-3 items-center">
           <!-- View Toggle -->
+          <span class="text-black font-bold">View:</span>
           <div class="flex gap-1 border border-gray-200 rounded-lg p-1 bg-gray-50">
             <button id="view-grid" class="view-toggle-btn btn btn-sm btn-primary" data-view="grid" title="Grid View">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
               </svg>
+              Grid View
             </button>
             <button id="view-month" class="view-toggle-btn btn btn-sm btn-outline" data-view="month" title="Month View">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
+              Month View
             </button>
             <button id="view-week" class="view-toggle-btn btn btn-sm btn-outline" data-view="week" title="Week View">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
+              Week View
             </button>
           </div>
 
           <!-- Status filter (All / Upcoming / Past / My Events / Saved) -->
+           <span class="text-black font-bold"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg> Filter:</span>
           <div class="flex gap-2">
             <button class="filter-status-btn btn btn-sm btn-primary" data-status="all">All</button>
             <button class="filter-status-btn btn btn-sm btn-outline" data-status="upcoming">Upcoming</button>
             <button class="filter-status-btn btn btn-sm btn-outline" data-status="ended">Past</button>
-            <button class="filter-status-btn btn btn-sm btn-outline" data-status="mine">My Events</button>
-            <button class="filter-status-btn btn btn-sm btn-outline" data-status="saved">🔖 Saved</button>
+            <button class="filter-status-btn btn btn-sm btn-outline" data-status="mine">My Registrations</button>
+            <button class="filter-status-btn btn btn-sm btn-outline" data-status="saved"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v18l7-5 7 5V3z" /></svg>Bookmarks</button>
           </div>
 
           <!-- Type filter -->
@@ -148,7 +158,7 @@ try {
 
         <!-- Advanced Filters toggle -->
         <div id="advanced-filters-toggle">
-          <button id="toggle-advanced" class="btn btn-sm btn-outline text-xs">⚙ Advanced Filters</button>
+          <button id="toggle-advanced" class="btn btn-sm btn-outline text-xs"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg>Advanced Filters</button>
         </div>
         <div id="advanced-filters" class="hidden mt-3 flex flex-wrap gap-3 items-center bg-gray-50 border border-gray-100 rounded-xl p-3">
           <div class="flex items-center gap-2 text-sm">
@@ -162,8 +172,9 @@ try {
           <button id="clear-advanced" class="btn btn-sm btn-outline text-xs text-gray-500">Clear</button>
         </div>
       </div>
+      <div id="border" class="border-t border-gray-200 mb-8"></div>
 
-      <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-30/12 mx-auto gap-6">
         <!-- events rendered here by JS -->
       </div>
       <div id="events-empty" class="hidden text-center py-12 text-gray-500">
@@ -287,22 +298,22 @@ try {
         const pct = Math.min(100, Math.round(((e.confirmedCount || 0) / e.capacity) * 100));
         const isLive = e.meetingUrlActive === true && e.status !== 'ended';
         const seriesBadge = e.seriesId ? `<span title="Part of a series" class="text-base">🔁</span>` : '';
-        const featuredBadge = e.isFeatured ? `<span title="Featured event" class="text-base">⭐</span>` : '';
+        const featuredBadge = e.isFeatured ? `<span title="Featured Event" class="badge badge-primary text-black" style="background-color: #fcd34d;">⭐Featured</span>` : '';
         const isSaved = savedEventIds.includes(e._id);
         const bookmarkBtn = alumniEmail ? `
-          <button class="btn-bookmark p-1.5 rounded-lg transition ${isSaved ? 'text-amber-500 bg-amber-50 hover:bg-amber-100' : 'text-gray-400 bg-gray-50 hover:bg-gray-100'}"
-            data-id="${e._id}" data-saved="${isSaved}" title="${isSaved ? 'Remove bookmark' : 'Save event'}">
-            ${isSaved ? '🔖' : '🏷️'}
-          </button>` : '';
+        <button class="btn-bookmark p-1.5 rounded-lg transition ${isSaved ? 'text-amber-500 bg-gray-50 hover:bg-gray-100' : 'text-gray-400 bg-gray-50 hover:bg-gray-100'}"
+          data-id="${e._id}" data-saved="${isSaved}" title="${isSaved ? 'Remove bookmark' : 'Bookmark event'}">
+          ${isSaved ? '<svg xmlns="http://www.w3.org/2000/svg" fill="#2e4096" viewBox="0 0 24 24" class="w-5 h-5"><path d="M5 3v18l7-5 7 5V3z"/></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="w-5 h-5"><path d="M5 3v18l7-5 7 5V3z"/></svg>'}
+        </button>` : '';
         return `
           <div class="card card-hover${isLive ? ' ring-2 ring-red-400' : ''} relative">
             ${bookmarkBtn ? `<div class="absolute top-3 right-3 z-10">${bookmarkBtn}</div>` : ''}
             <a href="/events/${e.slug}" class="block">
             <div class="p-6">
-              <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2 mb-3">
                 <span class="badge ${badgeClass(e.status)} text-xs">${e.status.charAt(0).toUpperCase() + e.status.slice(1)}</span>
                 ${e.eventType ? `<span class="badge badge-secondary text-xs uppercase">${e.eventType}</span>` : ''}
-                <span class="flex items-center gap-1 text-sm text-gray-500">${seriesBadge}${featuredBadge}${date}</span>
+                <span class="flex items-center gap-1 text-sm text-gray-500">${seriesBadge}${featuredBadge}</span>
               </div>
               ${isLive ? `
               <div class="mb-2">
@@ -314,6 +325,7 @@ try {
               ` : ''}
               <h3 class="text-xl font-semibold mb-2">${e.title}</h3>
               ${e.description ? `<p class="text-gray-600 mb-3 text-sm line-clamp-2">${e.description}</p>` : ''} ${e.venue ? `<p class="text-gray-500 mb-3 text-sm"> <svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>${e.venue}, ${e.location}</p>` : ''}
+              ${date ? `<p class="text-gray-500 mb-3 text-sm"><svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${date}</p>` : ''}
               ${e.tags && e.tags.length ? `<div class="flex flex-wrap gap-1 mb-3">${e.tags.map((t: string) => `<span class="badge badge-secondary text-xs">${t}</span>`).join('')}</div>` : ''}
               <div class="mt-2">
                 <div class="flex items-center justify-between text-sm mb-1">
