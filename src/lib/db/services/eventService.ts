@@ -302,6 +302,25 @@ export class EventService {
           { _id: next._id },
           { $set: { rsvpStatus: 'confirmed' } }
         );
+
+        // Send email notification to the promoted user
+        try {
+          const { buildWaitlistPromotionEmail, sendEmail } = await import('../../email');
+          const eventDoc = await EventService.getEventById(eventId);
+          if (eventDoc) {
+            const { subject, html, text } = buildWaitlistPromotionEmail({
+              userName: next.userName || next.userEmail,
+              eventTitle: eventDoc.title,
+              eventUrl: `${process.env.SITE_URL || 'http://localhost:4321'}/events/${eventDoc.slug}`,
+              startTime: eventDoc.startTime,
+            });
+            await sendEmail({ to: next.userEmail, subject, html, text });
+          }
+        } catch (emailErr) {
+          // log but don't fail the cancellation
+          console.error('Failed to send waitlist promotion email:', emailErr);
+        }
+
         return { promoted: true, promotedEmail: next.userEmail };
       }
     }
@@ -891,5 +910,10 @@ export class EventService {
     // Series collection index
     const seriesCol = await getCollection(this.SERIES_COLLECTION);
     await seriesCol.createIndex({ hostEmail: 1 });
+
+    // Saved events collection indexes (Feature 14)
+    const savedCol = await getCollection('saved_events');
+    await savedCol.createIndex({ userEmail: 1, eventId: 1 }, { unique: true });
+    await savedCol.createIndex({ userEmail: 1 });
   }
 }

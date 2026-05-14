@@ -7,7 +7,7 @@ export interface EventDocument {
   description?: string;
   hostEmail: string;
   hostName?: string;   // display name for host
-  eventType: 'webinar' | 'ama' | 'workshop';
+  eventType: 'webinar' | 'ama' | 'workshop' | 'networking' | 'panel' | 'hackathon';
   startTime: Date;
   endTime: Date;
   registrationDeadline?: Date;   // optional deadline for RSVP/registration; falls back to startTime if not set
@@ -64,6 +64,14 @@ export interface EventRSVPDocument {
   guests?: Array<{ name?: string; email?: string; mobile?: string; faculty?: string; year?: number }>;
   activities?: string[];
   comments?: string;
+  showInAttendeeList?: boolean;  // default true — attendee opts OUT to hide themselves
+  createdAt: Date;
+}
+
+export interface SavedEventDocument {
+  _id?: ObjectId;
+  userEmail: string;
+  eventId: ObjectId;
   createdAt: Date;
 }
 
