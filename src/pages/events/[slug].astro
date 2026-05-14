@@ -995,12 +995,12 @@ if (isEnded && event._id) {
   ></div>
 
   <script>
-    const _pageServerData = document.getElementById('page-server-data') as HTMLElement;
-    const shareEventPageUrl: string = _pageServerData.dataset.shareEventPageUrl!;
-    const shareAlumniEmail: string = _pageServerData.dataset.shareAlumniEmail || '';
-    const shareEventId: string      = _pageServerData.dataset.shareEventId!;
-    const shareEventTitle: string   = _pageServerData.dataset.shareEventTitle || '';
-    const shareEventSlug: string    = _pageServerData.dataset.shareEventSlug || '';
+    const _pageServerData = document.getElementById('page-server-data');
+    const shareEventPageUrl: string = _pageServerData?.dataset?.shareEventPageUrl ?? '';
+    const shareAlumniEmail: string  = _pageServerData?.dataset?.shareAlumniEmail ?? '';
+    const shareEventId: string      = _pageServerData?.dataset?.shareEventId ?? '';
+    const shareEventTitle: string   = _pageServerData?.dataset?.shareEventTitle ?? '';
+    const shareEventSlug: string    = _pageServerData?.dataset?.shareEventSlug ?? '';
 
     // -----------------------------------------------------------------------
     // Utility: show/hide modal
@@ -2096,7 +2096,7 @@ if (isEnded && event._id) {
   </script>
 
   <!-- Feature 15: Countdown timer script -->
-  <script define:vars={{ eventStartTime: event.startTime.toISOString(), isUpcoming: event.status === 'upcoming' }}>
+  <script define:vars={{ eventStartTime: new Date(event.startTime).toISOString(), isUpcoming: event.status === 'upcoming' }}>
     if (isUpcoming) {
       const cdDays = document.getElementById('cd-days');
       const cdHours = document.getElementById('cd-hours');
