@@ -547,7 +547,7 @@ if (isEnded && event._id) {
               </div>
               <div class="flex flex-wrap gap-3">
                 {attendeesList.slice(0, 24).map((a: any) => (
-                  <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm hover:bg-primary-50 hover:border-primary-200 transition" title={[a.faculty, a.graduationYear ? `'${String(a.graduationYear).slice(-2)}` : ''].filter(Boolean).join(' ')}>
+                  <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm hover:bg-primary-50 hover:border-primary-200 transition" title={[a.faculty, a.graduationYear ? `Class of ${a.graduationYear}` : ''].filter(Boolean).join(' · ')}>
                     <div class="w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-xs flex-shrink-0">
                       {(a.userName || a.userEmail || '?')[0].toUpperCase()}
                     </div>
