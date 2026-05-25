@@ -78,7 +78,7 @@ try {
           <span id="featured-date"></span>
           <span id="featured-type" class="badge badge-primary text-xs"></span>
         </div>
-        <a id="featured-link" href="#" class="btn btn-primary btn-sm">View Event →</a>
+        <a id="featured-link" href="#" class="btn btn-primary btn-sm">View Event</a>
       </div>
 
       <!-- Filter Bar -->
@@ -117,7 +117,7 @@ try {
             </button>
             <button id="view-week" class="view-toggle-btn btn btn-sm btn-outline" data-view="week" title="Week View">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               Week View
             </button>
@@ -126,9 +126,9 @@ try {
           <!-- Status filter (All / Upcoming / Past / My Events / Saved) -->
            <span class="text-black font-bold"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg> Filter:</span>
           <div class="flex gap-2">
-            <button class="filter-status-btn btn btn-sm btn-primary" data-status="all">All</button>
-            <button class="filter-status-btn btn btn-sm btn-outline" data-status="upcoming">Upcoming</button>
-            <button class="filter-status-btn btn btn-sm btn-outline" data-status="ended">Past</button>
+            <button class="filter-status-btn btn btn-sm btn-primary" data-status="all">All Events</button>
+            <button class="filter-status-btn btn btn-sm btn-outline" data-status="upcoming">Upcoming Events</button>
+            <button class="filter-status-btn btn btn-sm btn-outline" data-status="ended">Past Events</button>
             <button class="filter-status-btn btn btn-sm btn-outline" data-status="mine">My Registrations</button>
             <button class="filter-status-btn btn btn-sm btn-outline" data-status="saved"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v18l7-5 7 5V3z" /></svg>Bookmarks</button>
           </div>
@@ -297,7 +297,7 @@ try {
         const date = new Date(e.startTime).toDateString();
         const pct = Math.min(100, Math.round(((e.confirmedCount || 0) / e.capacity) * 100));
         const isLive = e.meetingUrlActive === true && e.status !== 'ended';
-        const seriesBadge = e.seriesId ? `<span title="Part of a series" class="text-base">🔁</span>` : '';
+        const seriesBadge = e.seriesId ? `<span title="Part of a series" class="text-base"></span>` : '';
         const featuredBadge = e.isFeatured ? `<span title="Featured Event" class="badge badge-primary text-black" style="background-color: #fcd34d;">⭐Featured</span>` : '';
         const isSaved = savedEventIds.includes(e._id);
         const bookmarkBtn = alumniEmail ? `
@@ -315,6 +315,7 @@ try {
                 ${e.eventType ? `<span class="badge badge-secondary text-xs uppercase">${e.eventType}</span>` : ''}
                 <span class="flex items-center gap-1 text-sm text-gray-500">${seriesBadge}${featuredBadge}</span>
               </div>
+              ${seriesBadge ? `<div class="flex items-center gap-2 mb-3">🔁 Recurring Event</div>` : ''}
               ${isLive ? `
               <div class="mb-2">
                 <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full animate-pulse">
@@ -324,8 +325,9 @@ try {
               </div>
               ` : ''}
               <h3 class="text-xl font-semibold mb-2">${e.title}</h3>
-              ${e.description ? `<p class="text-gray-600 mb-3 text-sm line-clamp-2">${e.description}</p>` : ''} ${e.venue ? `<p class="text-gray-500 mb-3 text-sm"> <svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>${e.venue}, ${e.location}</p>` : ''}
-              ${date ? `<p class="text-gray-500 mb-3 text-sm"><svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${date}</p>` : ''}
+              ${e.description ? `<p class="text-gray-600 mb-3 text-sm line-clamp-2">${e.description}</p>` : ''} ${e.venue ? `<p class="text-gray-500 mb-3 text-sm"> <svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Venue: ${e.venue}, ${e.location}</p>` : ''}
+              ${date ? `<p class="text-gray-500 mb-3 text-sm"><svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Date: ${date}</p>` : ''}
+              ${e.startTime && e.endTime ? `<p class="text-gray-500 mb-3 text-sm"><svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Time: ${new Date(e.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(e.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>` : ''}
               ${e.tags && e.tags.length ? `<div class="flex flex-wrap gap-1 mb-3">${e.tags.map((t: string) => `<span class="badge badge-secondary text-xs">${t}</span>`).join('')}</div>` : ''}
               <div class="mt-2">
                 <div class="flex items-center justify-between text-sm mb-1">

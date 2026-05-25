@@ -205,7 +205,7 @@ function formatDate(date: Date | string | undefined) {
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
               </svg>
-              <span>Manage Registrations</span>
+              <span>Manage Alumni Registrations</span>
               {alumniStats.pending > 0 && (
                 <span class="action-badge">{alumniStats.pending}</span>
               )}
@@ -226,7 +226,7 @@ function formatDate(date: Date | string | undefined) {
                 <line x1="8" y1="2" x2="8" y2="6"></line>
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
-              <span>View All Events</span>
+              <span>View and Manage All Events</span>
             </a>
 
             <button id="exportCsvBtn" class="action-card action-gray" style="border:none;cursor:pointer;text-align:center;">
@@ -235,7 +235,7 @@ function formatDate(date: Date | string | undefined) {
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              <span>Export CSV</span>
+              <span>Export Alumni Registrations to CSV</span>
             </button>
           </div>
         </div>
@@ -247,13 +247,15 @@ function formatDate(date: Date | string | undefined) {
         <!-- Recent Registrations -->
         <section class="section-card">
           <div class="section-header">
-            <h2>Recent Registrations</h2>
-            <a href="/admin/registrations" class="view-all-link">View all →</a>
+            <h2>New Alumni Account Registrations</h2>
+            <span class="pending-count">{alumniStats.pending} pending</span>
+            <a href="/admin/registrations" class="view-all-link">View all</a>
           </div>
           {recentRegistrations.length === 0 ? (
             <p class="empty-state">No registrations yet.</p>
           ) : (
             <div class="table-wrapper">
+              <p class="section-subtitle mb-4">View the most recent alumni account registrations and manage approvals</p>
               <table class="data-table">
                 <thead>
                   <tr>
@@ -291,13 +293,14 @@ function formatDate(date: Date | string | undefined) {
         <!-- Upcoming Events -->
         <section class="section-card">
           <div class="section-header">
-            <h2>Upcoming Events</h2>
-            <a href="/admin/events" class="view-all-link">View all →</a>
+            <h2>Upcoming Events and Webinars</h2>
+            <a href="/admin/events" class="view-all-link">View all</a>
           </div>
           {upcomingEvents.length === 0 ? (
             <p class="empty-state">No upcoming events scheduled.</p>
           ) : (
             <div class="events-list">
+              <p class="section-subtitle mb-4">View and manage upcoming events, webinars, and workshops for alumni. See event details and registration stats.</p>
               {upcomingEvents.map(event => (
                 <div class="event-item">
                   <div class="event-meta">

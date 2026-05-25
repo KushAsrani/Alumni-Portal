@@ -259,16 +259,15 @@ if (isEnded && event._id) {
 
   <!-- Event Banner -->
   <div class={`w-full py-16 px-6 relative overflow-hidden border-t border-b ${
-    event.eventType === 'ama'         ? 'bg-gradient-to-br from-white to-white text-black' :
-    event.eventType === 'workshop'    ? 'bg-gradient-to-br from-white to-white text-black' :
-    event.eventType === 'webinar'     ? 'bg-gradient-to-br from-white to-white text-black' :
-    event.eventType === 'networking'  ? 'bg-gradient-to-br from-teal-50 to-teal-100 text-teal-900' :
-    event.eventType === 'panel'       ? 'bg-gradient-to-br from-orange-50 to-orange-100 text-orange-900' :
-    event.eventType === 'hackathon'   ? 'bg-gradient-to-br from-red-50 to-red-100 text-red-900' :
-                                        'bg-gradient-to-br from-white to-white text-black'             
-  }`}
-    style={safeBannerUrl ? `background-image: url('${safeBannerUrl}'); background-size: cover; background-position: center;` : ''}>
-    {safeBannerUrl && <div class="absolute inset-0 bg-black/50"></div>}
+    event.eventType === 'ama'         ? 'bg-white' :
+    event.eventType === 'workshop'    ? 'bg-white' :
+    event.eventType === 'webinar'     ? 'bg-white' :
+    event.eventType === 'networking'  ? 'bg-white' :
+    event.eventType === 'panel'       ? 'bg-white' :
+    event.eventType === 'hackathon'   ? 'bg-white' :
+                                        'bg-white'             
+  }`}>
+    {safeBannerUrl && <div class="absolute inset-0 bg-white"></div>}
     <div class="container-custom relative z-10 text-white text-center">
       <div class="flex items-center justify-center gap-3 mb-4">
         <span class="badge badge-primary backdrop-blur-sm text-black text-sm font-semibold px-4 py-1 rounded-full tracking-wide" style="width: max-content; height: 30px;">
@@ -323,22 +322,25 @@ if (isEnded && event._id) {
               </span>
               <div class="ml-auto">
                 <button id="bookmark-btn"
-                  class={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition border ${isEventSaved ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                  class={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition border ${isEventSaved ? 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
                   data-event-id={String(event._id)}
                   data-user-email={alumniProfile?.email || ''}
                   data-saved={String(isEventSaved)}>
-                  <span id="bookmark-icon">{isEventSaved ? '🔖' : '🏷️'}</span>
-                  <span id="bookmark-label">{isEventSaved ? 'Saved' : 'Save Event'}</span>
+                  <span id="bookmark-icon">{isEventSaved ? <svg xmlns="http://www.w3.org/2000/svg" fill="#2e4096" viewBox="0 0 24 24" class="w-5 h-5"><path d="M5 3v18l7-5 7 5V3z"/></svg> : <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="w-5 h-5"><path d="M5 3v18l7-5 7 5V3z"/></svg>}</span>
+                  <span id="bookmark-label">{isEventSaved ? 'Saved' : 'Bookmark Event'}</span>
                 </button>
               </div>
             </div>
             <h1 class="text-3xl font-bold mb-2">{event.title}</h1>
             {event.description && <p class="text-gray-600 mb-4">{event.description}</p>}
             {event.tags && event.tags.length > 0 && (
-              <div class="flex flex-wrap gap-2">
+              <div class="flex flex-wrap gap-2 mb-4">
                 {event.tags.map((tag: string) => (
-                  <span class="badge badge-secondary text-xs">{tag}</span>
+                  <span class="badge badge-secondary text-xs mb-4">{tag}</span>
                 ))}
+            {event.bannerUrl && (
+              <img src={event.bannerUrl} alt={`${event.title} banner`} class="w-full h-64 object-cover rounded-lg mb-4" />
+            )}
               </div>
             )}
           </div>
@@ -379,9 +381,9 @@ if (isEnded && event._id) {
 
               {isRegistrationClosed ? (
                 <div class="bg-red-50 border border-red-200 rounded-xl p-5 text-center">
-                  <div class="text-3xl mb-2">🚫</div>
+                  <div class="text-3xl mb-2"></div>
                   <h3 class="font-semibold text-red-700 text-base mb-1">Registration Has Ended</h3>
-                  <p class="text-red-600 text-sm">The registration deadline for this event was <strong>{registrationDeadlineStr}</strong>. Registration is now closed and no new sign-ups are being accepted.</p>
+                  <p class="text-red-600 text-sm">The registration deadline for this event has ended. Registration is now closed and no new sign-ups are being accepted. If you have already registered, please check your email for any updates from the event organizers. We look forward to seeing you at the event! </p>
                 </div>
               ) : (
                 <>
@@ -539,11 +541,11 @@ if (isEnded && event._id) {
             </div>
           )}
 
-          {/* Feature 12 — Who's Attending Panel */}
+          {/* Feature 12 — Attendees Panel */}
           {(event.status === 'upcoming' || event.status === 'live') && attendeesList.length > 0 && (
             <div class="card p-6 mt-6">
               <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">🧑‍🤝‍🧑 Who's Attending ({attendeesList.length})</h3>
+                <h3 class="text-lg font-semibold text-gray-900">Attendees ({attendeesList.length})</h3>
               </div>
               <div class="flex flex-wrap gap-3">
                 {attendeesList.slice(0, 24).map((a: any) => (
@@ -572,8 +574,8 @@ if (isEnded && event._id) {
                  data-event-id={String(event._id)}
                  data-user-email={alumniProfile?.email || ''}
                  data-user-name={alumniProfile?.name || ''}>
-              <h2 class="text-xl font-semibold mb-1">💬 Pre-Event Discussion</h2>
-              <p class="text-sm text-gray-500 mb-4">Chat with other registered attendees before the event. Introduce yourself or ask the host a question!</p>
+              <h2 class="text-xl font-semibold mb-1">Pre-Event Discussion</h2>
+              <p class="text-sm text-gray-500 mb-4">Chat with other registered attendees before the event. Introduce yourself or ask the host a question! Remember to be respectful and follow our community guidelines. </p>
 
               <div id="discussion-list" class="space-y-3 mb-6">
                 {discussionPosts.length === 0 ? (
@@ -581,10 +583,13 @@ if (isEnded && event._id) {
                 ) : discussionPosts.map((post: any) => (
                   <div class="bg-gray-50 rounded-xl p-3 text-sm" data-post-id={String(post._id)}>
                     <div class="flex items-center gap-2 mb-1">
+                      <div class="w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-xs flex-shrink-0">
+                        {(post.authorName || post.authorEmail || '?')[0].toUpperCase()}
+                      </div>
                       <span class="font-semibold text-gray-800">{post.isAnonymous ? 'Anonymous' : (post.authorName || post.authorEmail)}</span>
                       <span class="text-xs text-gray-400">{new Date(post.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
-                    <p class="text-gray-700">{post.content}</p>
+                    <p class="text-gray-700 ml-8">{post.content}</p>
                   </div>
                 ))}
               </div>
@@ -2080,11 +2085,11 @@ if (isEnded && event._id) {
             (bookmarkBtn as HTMLButtonElement).dataset.saved = String(newSaved);
             const iconEl = document.getElementById('bookmark-icon');
             const labelEl = document.getElementById('bookmark-label');
-            if (iconEl) iconEl.textContent = newSaved ? '🔖' : '🏷️';
-            if (labelEl) labelEl.textContent = newSaved ? 'Saved' : 'Save Event';
+            if (iconEl) iconEl.innerHTML = newSaved ? '<svg xmlns="http://www.w3.org/2000/svg" fill="#2e4096" viewBox="0 0 24 24" class="w-5 h-5"><path d="M5 3v18l7-5 7 5V3z"/></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="w-5 h-5"><path d="M5 3v18l7-5 7 5V3z"/></svg>' ;
+            if (labelEl) labelEl.textContent = newSaved ? 'Saved' : 'Bookmark Event';
             if (newSaved) {
               bookmarkBtn.classList.remove('bg-gray-50', 'text-gray-500', 'border-gray-200', 'hover:bg-gray-100');
-              bookmarkBtn.classList.add('bg-amber-50', 'text-amber-600', 'border-amber-200', 'hover:bg-amber-100');
+              bookmarkBtn.classList.add('bg-gray-50', 'text-gray-500', 'border-gray-200', 'hover:bg-gray-100');
             } else {
               bookmarkBtn.classList.remove('bg-amber-50', 'text-amber-600', 'border-amber-200', 'hover:bg-amber-100');
               bookmarkBtn.classList.add('bg-gray-50', 'text-gray-500', 'border-gray-200', 'hover:bg-gray-100');
