@@ -51,11 +51,15 @@ export interface AlumniRegistration {
   portfolio?: string;
   
   // Content
-  skills?: string;
+  skills?: string | string[];
   projects?: string;
   work_experience?: string;
   interests?: string;
   short_bio?: string;
+  open_to_mentorship?: boolean;
+  open_to_work?: boolean;
+  open_to_referral?: boolean;
+  skill_readiness?: Record<string, 'beginner' | 'intermediate' | 'advanced' | 'expert'>;
   
   // Files
   photo_blob_url?: string;

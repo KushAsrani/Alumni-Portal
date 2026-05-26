@@ -1,21 +1,211 @@
 ---
+export const prerender = false;
+
 import Layout from '@/layouts/Layout.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import Icon from '../../../components/Icon.astro';
 import { getCollection } from 'astro:content';
 import { getSiteConfig } from '@/utils/config';
-import Icon from '../../../components/Icon.astro';
 
 const config = getSiteConfig();
-const alumni = await getCollection('alumni');
+const contentAlumni = await getCollection('alumni');
+
 const breadcrumbItems = [
   { label: 'Home', href: '/' },
   { label: 'Profiles', href: '/alumni' },
   { label: 'Directory' },
 ];
 
-// Get unique faculties and years for filters
-const faculties = [...new Set(alumni.map(a => a.data.faculty))];
-const years = [...new Set(alumni.map(a => a.data.year))].sort((a, b) => b - a);
+const parseCsvParam = (params: URLSearchParams, key: string) =>
+  (params.get(key) || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const normalizeSkills = (value: unknown) => {
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  if (typeof value === 'string') return value.split(',').map((item) => item.trim()).filter(Boolean);
+  return [];
+};
+
+const searchParams = Astro.url.searchParams;
+const queryState = {
+  q: (searchParams.get('q') || '').trim(),
+  faculty: parseCsvParam(searchParams, 'faculty'),
+  year: parseCsvParam(searchParams, 'year'),
+  skills: parseCsvParam(searchParams, 'skills'),
+  location: parseCsvParam(searchParams, 'location'),
+  company: parseCsvParam(searchParams, 'company'),
+  availability: parseCsvParam(searchParams, 'availability').filter((value) =>
+    ['mentorship', 'open_to_work', 'open_to_referral'].includes(value)
+  ),
+  page: Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1),
+  limit: Math.max(1, parseInt(searchParams.get('limit') || String(config.content.alumni_per_page || 12), 10) || (config.content.alumni_per_page || 12)),
+  sort: (['name', 'year', 'faculty'].includes(searchParams.get('sort') || '') ? searchParams.get('sort') : 'name') as 'name' | 'year' | 'faculty',
+};
+
+const fallbackAlumni = contentAlumni.map((entry) => ({
+  ...entry.data,
+  _id: entry.id,
+  status: 'approved',
+  job_designation: entry.data.position,
+  open_to_mentorship: false,
+  open_to_work: false,
+  open_to_referral: false,
+  skill_readiness: {},
+}));
+
+const toFacetEntries = (map: Map<any, number>) =>
+  [...map.entries()].map(([value, count]) => ({ value, count }));
+
+function fallbackSearch() {
+  let filtered = fallbackAlumni.filter((alum) => alum.status === 'approved');
+
+  if (queryState.q) {
+    const regex = new RegExp(escapeRegex(queryState.q), 'i');
+    filtered = filtered.filter((alum) =>
+      regex.test(alum.name || '') ||
+      regex.test(alum.faculty || '') ||
+      regex.test(alum.short_bio || '') ||
+      regex.test((alum.skills || []).join(' ')) ||
+      regex.test(alum.company || '') ||
+      regex.test(alum.location || '')
+    );
+  }
+
+  if (queryState.faculty.length) {
+    filtered = filtered.filter((alum) => queryState.faculty.includes(alum.faculty || ''));
+  }
+
+  if (queryState.year.length) {
+    filtered = filtered.filter((alum) => queryState.year.includes(String(alum.year || '')));
+  }
+
+  if (queryState.skills.length) {
+    filtered = filtered.filter((alum) => {
+      const skills = normalizeSkills(alum.skills);
+      return queryState.skills.some((skill) => skills.includes(skill));
+    });
+  }
+
+  if (queryState.location.length) {
+    filtered = filtered.filter((alum) => queryState.location.includes(alum.location || ''));
+  }
+
+  if (queryState.company.length) {
+    filtered = filtered.filter((alum) => queryState.company.includes(alum.company || ''));
+  }
+
+  if (queryState.availability.length) {
+    filtered = filtered.filter((alum) => {
+      const availability = [
+        queryState.availability.includes('mentorship') && alum.open_to_mentorship,
+        queryState.availability.includes('open_to_work') && alum.open_to_work,
+        queryState.availability.includes('open_to_referral') && alum.open_to_referral,
+      ];
+      return availability.some(Boolean);
+    });
+  }
+
+  const sorters: Record<string, (a: any, b: any) => number> = {
+    name: (a, b) => String(a.name || '').localeCompare(String(b.name || '')),
+    year: (a, b) => Number(b.year || 0) - Number(a.year || 0),
+    faculty: (a, b) => String(a.faculty || '').localeCompare(String(b.faculty || '')),
+  };
+
+  filtered.sort(sorters[queryState.sort] || sorters.name);
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / queryState.limit));
+  const page = Math.min(queryState.page, totalPages);
+  const start = (page - 1) * queryState.limit;
+
+  const faculties = new Map<string, number>();
+  const years = new Map<string, number>();
+  const skills = new Map<string, number>();
+  const locations = new Map<string, number>();
+  const companies = new Map<string, number>();
+
+  filtered.forEach((alum) => {
+    if (alum.faculty) faculties.set(alum.faculty, (faculties.get(alum.faculty) || 0) + 1);
+    if (alum.year) years.set(String(alum.year), (years.get(String(alum.year)) || 0) + 1);
+    if (alum.location) locations.set(alum.location, (locations.get(alum.location) || 0) + 1);
+    if (alum.company) companies.set(alum.company, (companies.get(alum.company) || 0) + 1);
+    normalizeSkills(alum.skills).forEach((skill) => {
+      skills.set(skill, (skills.get(skill) || 0) + 1);
+    });
+  });
+
+  return {
+    alumni: filtered.slice(start, start + queryState.limit),
+    total,
+    page,
+    totalPages,
+    facets: {
+      faculties: toFacetEntries(faculties).sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value))),
+      years: toFacetEntries(years).sort((a, b) => b.count - a.count || Number(b.value) - Number(a.value)),
+      skills: toFacetEntries(skills).sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value))),
+      locations: toFacetEntries(locations).sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value))),
+      companies: toFacetEntries(companies).sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value))),
+    },
+  };
+}
+
+let initialResponse: any = null;
+let searchUnavailable = false;
+
+const serverParams = new URLSearchParams();
+if (queryState.q) serverParams.set('q', queryState.q);
+if (queryState.faculty.length) serverParams.set('faculty', queryState.faculty.join(','));
+if (queryState.year.length) serverParams.set('year', queryState.year.join(','));
+if (queryState.skills.length) serverParams.set('skills', queryState.skills.join(','));
+if (queryState.location.length) serverParams.set('location', queryState.location.join(','));
+if (queryState.company.length) serverParams.set('company', queryState.company.join(','));
+if (queryState.availability.length) serverParams.set('availability', queryState.availability.join(','));
+serverParams.set('page', String(queryState.page));
+serverParams.set('limit', String(queryState.limit));
+serverParams.set('sort', queryState.sort);
+
+try {
+  const apiResponse = await fetch(`${Astro.url.origin}/api/alumni/search?${serverParams.toString()}`);
+  if (!apiResponse.ok) throw new Error('Search API unavailable');
+  initialResponse = await apiResponse.json();
+} catch {
+  searchUnavailable = true;
+  initialResponse = fallbackSearch();
+}
+
+const alumni = initialResponse?.alumni || [];
+const total = initialResponse?.total || 0;
+const totalPages = initialResponse?.totalPages || 1;
+const page = initialResponse?.page || 1;
+const facets = initialResponse?.facets || { faculties: [], skills: [], locations: [], companies: [], years: [] };
+
+const allFaculties = [...new Set(contentAlumni.map((entry) => entry.data.faculty).filter(Boolean))];
+const allYears = [...new Set(contentAlumni.map((entry) => entry.data.year).filter(Boolean))].sort((a, b) => Number(b) - Number(a));
+
+const initialPayload = {
+  state: queryState,
+  data: { alumni, total, totalPages, page, facets },
+  fallbackData: {
+    faculties: facets.faculties || [],
+    years: facets.years || [],
+    skills: (facets.skills || []).slice(0, 20),
+    locations: facets.locations || [],
+    companies: facets.companies || [],
+  },
+  searchUnavailable,
+};
+
+const skillReadinessColor: Record<string, string> = {
+  beginner: '#93c5fd',
+  intermediate: '#34d399',
+  advanced: '#f59e0b',
+  expert: '#ef4444',
+};
+
+const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
 ---
 
 <Layout title="Alumni Directory" description="Browse alumni by faculty, year, and search.">
@@ -23,144 +213,181 @@ const years = [...new Set(alumni.map(a => a.data.year))].sort((a, b) => b - a);
 
   <section class="section">
     <div class="container-custom">
-      <!-- Header -->
       <div class="text-center mb-12">
-        <h1 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">
-          Alumni Directory
-        </h1>
+        <h1 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">Alumni Directory</h1>
         <p class="text-xl text-accent-600 max-w-3xl mx-auto">
-          Connect with fellow alumni from {config.organization.name}. Browse profiles by faculty, graduation year, or search for specific alumni.
+          Connect with fellow alumni from {config.organization.name}. Discover alumni by faculty, year, skills, location, and availability.
         </p>
       </div>
 
-      <!-- Stats -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         <div class="bg-gradient-to-br from-primary-50 to-primary-100 p-6 rounded-2xl text-center">
           <div class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="mdi:account-group" class="w-8 h-8 text-white" />
           </div>
-          <h3 class="text-2xl font-bold text-primary-900">{alumni.length}</h3>
+          <h3 class="text-2xl font-bold text-primary-900">{contentAlumni.length}</h3>
           <p class="text-primary-700">Total Alumni</p>
         </div>
         <div class="bg-gradient-to-br from-secondary-50 to-secondary-100 p-6 rounded-2xl text-center">
           <div class="w-16 h-16 bg-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="mdi:school" class="w-8 h-8 text-white" />
           </div>
-          <h3 class="text-2xl font-bold text-secondary-900">{faculties.length}</h3>
+          <h3 class="text-2xl font-bold text-secondary-900">{allFaculties.length}</h3>
           <p class="text-secondary-700">Faculties</p>
         </div>
         <div class="bg-gradient-to-br from-accent-50 to-accent-100 p-6 rounded-2xl text-center">
           <div class="w-16 h-16 bg-accent-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="mdi:calendar" class="w-8 h-8 text-white" />
           </div>
-          <h3 class="text-2xl font-bold text-accent-900">{years.length}</h3>
+          <h3 class="text-2xl font-bold text-accent-900">{allYears.length}</h3>
           <p class="text-accent-700">Graduation Years</p>
         </div>
       </div>
 
-      <!-- Filters and Search -->
-      <div class="bg-white rounded-2xl shadow-sm border border-accent-100 p-6 mb-8">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <!-- Search -->
-          <div class="lg:col-span-2">
-            <label for="search" class="block text-sm font-medium text-accent-700 mb-2">Search Alumni</label>
-            <div class="search-wrapper">
-  <Icon name="mdi:magnify" class="search-icon" />
-  <input
-    type="text"
-    id="search"
-    placeholder="Search by name, faculty, or skills..."
-  />
-</div>
+      <div class="bg-white rounded-2xl shadow-sm border border-accent-100 p-6 mb-8 space-y-5">
+        <div>
+          <label for="search" class="block text-sm font-medium text-accent-700 mb-2">🔍 Search</label>
+          <input id="search" type="text" class="input input-bordered w-full" placeholder="Search by name, faculty, bio, skills, location, company..." value={queryState.q} />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="relative">
+            <button id="faculty-toggle" class="filter-toggle" type="button">Faculty <span id="faculty-selected-count" class="selected-count"></span></button>
+            <div id="faculty-panel" class="filter-panel hidden">
+              <div id="faculty-options" class="space-y-2 max-h-48 overflow-auto"></div>
+            </div>
           </div>
-          
-          <!-- Faculty Filter -->
-          <div>
-            <label for="faculty-filter" class="block text-sm font-medium text-accent-700 mb-2">Faculty</label>
-            <select id="faculty-filter" class="select">
-              <option value="">All Faculties</option>
-              {faculties.map((faculty) => (
-                <option value={faculty}>{faculty}</option>
-              ))}
-            </select>
+
+          <div class="relative">
+            <button id="year-toggle" class="filter-toggle" type="button">Year <span id="year-selected-count" class="selected-count"></span></button>
+            <div id="year-panel" class="filter-panel hidden">
+              <div id="year-options" class="space-y-2 max-h-48 overflow-auto"></div>
+            </div>
           </div>
-          
-          <!-- Year Filter -->
-          <div>
-            <label for="year-filter" class="block text-sm font-medium text-accent-700 mb-2">Graduation Year</label>
-            <select id="year-filter" class="select">
-              <option value="">All Years</option>
-              {years.map((year) => (
-                <option value={year}>{year}</option>
-              ))}
-            </select>
+
+          <div class="relative">
+            <button id="location-toggle" class="filter-toggle" type="button">Location <span id="location-selected-count" class="selected-count"></span></button>
+            <div id="location-panel" class="filter-panel hidden">
+              <input id="location-search" class="input input-bordered w-full mb-2" type="text" placeholder="Search location" />
+              <div id="location-options" class="space-y-2 max-h-40 overflow-auto"></div>
+            </div>
           </div>
+
+          <div class="relative">
+            <button id="company-toggle" class="filter-toggle" type="button">Company <span id="company-selected-count" class="selected-count"></span></button>
+            <div id="company-panel" class="filter-panel hidden">
+              <input id="company-search" class="input input-bordered w-full mb-2" type="text" placeholder="Search company" />
+              <div id="company-options" class="space-y-2 max-h-40 overflow-auto"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-sm font-medium text-accent-700 mb-2">Skills</p>
+          <div id="skills-cloud" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div>
+          <p class="text-sm font-medium text-accent-700 mb-2">Availability</p>
+          <div class="flex flex-wrap gap-4">
+            <label class="inline-flex items-center gap-2"><input id="availability-mentorship" type="checkbox" class="rounded border-accent-300" /> Open to Mentorship</label>
+            <label class="inline-flex items-center gap-2"><input id="availability-open_to_work" type="checkbox" class="rounded border-accent-300" /> Open to Work</label>
+            <label class="inline-flex items-center gap-2"><input id="availability-open_to_referral" type="checkbox" class="rounded border-accent-300" /> Open to Referral</label>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div id="active-filters" class="flex flex-wrap gap-2"></div>
+          <button id="clear-all-filters" type="button" class="btn btn-outline btn-sm">Clear All Filters</button>
         </div>
       </div>
 
-      <!-- Results Count -->
-      <div class="flex items-center justify-between mb-6">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <p class="text-accent-600">
-          Showing <span id="results-count">{alumni.length}</span> of {alumni.length} alumni
+          Showing <span id="results-count">{alumni.length}</span> of <span id="results-total">{total}</span> alumni
         </p>
         <div class="flex items-center space-x-2">
           <span class="text-sm text-accent-600">Sort by:</span>
           <select id="sort-by" class="select w-auto">
-            <option value="name">Name</option>
-            <option value="year">Graduation Year</option>
-            <option value="faculty">Faculty</option>
+            <option value="name" selected={queryState.sort === 'name'}>Name</option>
+            <option value="year" selected={queryState.sort === 'year'}>Graduation Year</option>
+            <option value="faculty" selected={queryState.sort === 'faculty'}>Faculty</option>
           </select>
         </div>
       </div>
 
-      <!-- Alumni Grid -->
+      <p id="search-status" class={`text-sm mb-4 ${searchUnavailable ? 'text-amber-700' : 'hidden'}`}>
+        Search unavailable from MongoDB. Showing content collection fallback results.
+      </p>
+
       <div id="alumni-grid" class="grid-responsive-lg mb-8">
-                 {alumni.slice(0, config.content.alumni_per_page).map((alum) => (
-           <div class="profile-card" data-faculty={alum.data.faculty} data-year={alum.data.year} data-name={alum.data.name.toLowerCase()}>
-             <div class="relative">
-               {alum.data.photo ? (
-                 <img 
-                   src={alum.data.photo} 
-                   alt={alum.data.name}
-                   class="profile-avatar"
-                   loading="lazy"
-                 />
-               ) : (
-                 <div class="profile-avatar-placeholder">
-                   {alum.data.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                 </div>
-               )}
-               <div class="absolute top-0 right-0">
-                 <span class="badge badge-primary">{alum.data.faculty}</span>
-               </div>
-             </div>
-             
-             <h3 class="text-xl font-semibold text-accent-900 mb-2">{alum.data.name}</h3>
-             <p class="text-accent-600 mb-3">{alum.data.short_bio}</p>
-             
-             
-             <div class="flex items-center justify-between text-sm text-accent-500">
-               <span>Class of {alum.data.year}</span>
-               <a href={`/alumni/profiles/${alum.data.slug}`} class="text-primary-600 hover:text-primary-700 font-medium">
-                 View Profile →
-               </a>
-             </div>
-           </div>
-         ))}
+        {alumni.map((alum: any) => (
+          <div class="profile-card">
+            <div class="relative">
+              {alum.photo || alum.photo_blob_url ? (
+                <img src={alum.photo || alum.photo_blob_url} alt={alum.name} class="profile-avatar" loading="lazy" />
+              ) : (
+                <div class="profile-avatar-placeholder">
+                  {String(alum.name || '')
+                    .split(' ')
+                    .map((part: string) => part[0])
+                    .join('')
+                    .toUpperCase()}
+                </div>
+              )}
+              <div class="absolute top-0 right-0">
+                <span class="badge badge-primary">{alum.faculty || 'Alumni'}</span>
+              </div>
+            </div>
+
+            <h3 class="text-xl font-semibold text-accent-900 mb-1">{alum.name}</h3>
+            <p class="text-accent-600 mb-3 line-clamp-2">{alum.short_bio || 'No bio available'}</p>
+
+            {getSkills(alum).length > 0 && (
+              <div class="flex flex-wrap gap-2 mb-3">
+                {getSkills(alum).map((skill) => {
+                  const readiness = alum.skill_readiness?.[skill];
+                  return (
+                    <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-primary-50 text-primary-700">
+                      {readiness && (
+                        <span style={`width: 8px; height: 8px; border-radius: 9999px; background-color: ${skillReadinessColor[readiness] || '#9ca3af'};`} />
+                      )}
+                      {skill}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {(alum.company || alum.job_designation || alum.position) && (
+              <p class="text-sm text-accent-700 mb-1">{alum.company || 'Company'}{alum.job_designation || alum.position ? ` • ${alum.job_designation || alum.position}` : ''}</p>
+            )}
+            {alum.location && <p class="text-sm text-accent-600 mb-2">📍 {alum.location}</p>}
+            {alum.open_to_mentorship && (
+              <span class="inline-block text-xs px-2 py-1 mb-3 rounded-full bg-secondary-100 text-secondary-800">Open to Mentor ��</span>
+            )}
+
+            <div class="flex items-center justify-between text-sm text-accent-500">
+              <span>Class of {alum.year || '—'}</span>
+              {alum.slug ? (
+                <a href={`/alumni/profiles/${alum.slug}`} class="text-primary-600 hover:text-primary-700 font-medium">View Profile →</a>
+              ) : (
+                <span class="text-accent-400">Profile unavailable</span>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <!-- Pagination -->
-      <div class="flex items-center justify-center space-x-2">
-        <button id="prev-page" class="btn btn-outline btn-sm" disabled>
+      <div class="flex items-center justify-center space-x-2" id="pagination-controls">
+        <button id="prev-page" class="btn btn-outline btn-sm" disabled={page <= 1}>
           <Icon name="mdi:chevron-left" class="w-4 h-4 mr-1" />
           Previous
         </button>
-        
-        <div id="page-numbers" class="flex items-center space-x-1">
-          <!-- Page numbers will be generated by JavaScript -->
-        </div>
-        
-        <button id="next-page" class="btn btn-outline btn-sm">
+
+        <div id="page-numbers" class="flex items-center space-x-1"></div>
+
+        <button id="next-page" class="btn btn-outline btn-sm" disabled={page >= totalPages}>
           Next
           <Icon name="mdi:chevron-right" class="w-4 h-4 ml-1" />
         </button>
@@ -169,227 +396,457 @@ const years = [...new Set(alumni.map(a => a.data.year))].sort((a, b) => b - a);
   </section>
 </Layout>
 
-<script define:vars={{
-  alumniData: alumni.map(a => ({
-    slug: a.data.slug,
-    name: a.data.name,
-    faculty: a.data.faculty,
-    year: a.data.year,
-    short_bio: a.data.short_bio,
-    photo: a.data.photo
-  })),
-  itemsPerPage: config.content.alumni_per_page
-}}>
-  // Alumni data for client-side filtering
-  let currentPage = 1;
-  let filteredAlumni = [...alumniData];
-  
-  // DOM elements
-  const searchInput = document.getElementById('search');
-  const facultyFilter = document.getElementById('faculty-filter');
-  const yearFilter = document.getElementById('year-filter');
-  const sortSelect = document.getElementById('sort-by');
-  const alumniGrid = document.getElementById('alumni-grid');
-  const resultsCount = document.getElementById('results-count');
-  const prevBtn = document.getElementById('prev-page');
-  const nextBtn = document.getElementById('next-page');
-  const pageNumbers = document.getElementById('page-numbers');
-  
-  // Filter and search functionality
-  function filterAlumni() {
-    const searchTerm = searchInput.value.toLowerCase();
-    const facultyValue = facultyFilter.value;
-    const yearValue = yearFilter.value;
-    
-    filteredAlumni = alumniData.filter(alum => {
-      const matchesSearch = alum.name.toLowerCase().includes(searchTerm) ||
-                           alum.faculty.toLowerCase().includes(searchTerm) ||
-                           alum.short_bio.toLowerCase().includes(searchTerm);
-      const matchesFaculty = !facultyValue || alum.faculty === facultyValue;
-      const matchesYear = !yearValue || alum.year.toString() === yearValue;
-      
-      return matchesSearch && matchesFaculty && matchesYear;
+<script id="alumni-initial-data" type="application/json">{JSON.stringify(initialPayload)}</script>
+
+<script>
+  const payloadEl = document.getElementById('alumni-initial-data');
+  const payload = payloadEl ? JSON.parse(payloadEl.textContent || '{}') : {};
+
+  const state = {
+    ...(payload.state || {}),
+    faculty: payload.state?.faculty || [],
+    year: payload.state?.year || [],
+    skills: payload.state?.skills || [],
+    location: payload.state?.location || [],
+    company: payload.state?.company || [],
+    availability: payload.state?.availability || [],
+  };
+
+  const resultState = {
+    data: payload.data || { alumni: [], total: 0, page: 1, totalPages: 1, facets: {} },
+    facets: payload.data?.facets || payload.fallbackData || {
+      faculties: [], years: [], skills: [], locations: [], companies: [],
+    },
+  };
+
+  const elements = {
+    search: document.getElementById('search'),
+    sort: document.getElementById('sort-by'),
+    grid: document.getElementById('alumni-grid'),
+    resultsCount: document.getElementById('results-count'),
+    resultsTotal: document.getElementById('results-total'),
+    searchStatus: document.getElementById('search-status'),
+    activeFilters: document.getElementById('active-filters'),
+    clearAll: document.getElementById('clear-all-filters'),
+    prev: document.getElementById('prev-page'),
+    next: document.getElementById('next-page'),
+    pageNumbers: document.getElementById('page-numbers'),
+    faculty: { toggle: document.getElementById('faculty-toggle'), panel: document.getElementById('faculty-panel'), options: document.getElementById('faculty-options'), count: document.getElementById('faculty-selected-count') },
+    year: { toggle: document.getElementById('year-toggle'), panel: document.getElementById('year-panel'), options: document.getElementById('year-options'), count: document.getElementById('year-selected-count') },
+    location: { toggle: document.getElementById('location-toggle'), panel: document.getElementById('location-panel'), options: document.getElementById('location-options'), search: document.getElementById('location-search'), count: document.getElementById('location-selected-count') },
+    company: { toggle: document.getElementById('company-toggle'), panel: document.getElementById('company-panel'), options: document.getElementById('company-options'), search: document.getElementById('company-search'), count: document.getElementById('company-selected-count') },
+    skillsCloud: document.getElementById('skills-cloud'),
+    availability: {
+      mentorship: document.getElementById('availability-mentorship'),
+      open_to_work: document.getElementById('availability-open_to_work'),
+      open_to_referral: document.getElementById('availability-open_to_referral'),
+    },
+  };
+
+  const availabilityLabels = {
+    mentorship: 'Open to Mentorship',
+    open_to_work: 'Open to Work',
+    open_to_referral: 'Open to Referral',
+  };
+
+  const skillReadinessColor = {
+    beginner: '#93c5fd',
+    intermediate: '#34d399',
+    advanced: '#f59e0b',
+    expert: '#ef4444',
+  };
+
+  const normalizeSkills = (value) => {
+    if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+    if (typeof value === 'string') return value.split(',').map((item) => item.trim()).filter(Boolean);
+    return [];
+  };
+
+  const esc = (value) =>
+    String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  function formatMultiSelectLabel(values, singular) {
+    return values.length ? `(${values.length})` : '';
+  }
+
+  function mergeFacetWithSelections(items = [], selected = []) {
+    const map = new Map(items.map((item) => [String(item.value), item]));
+    selected.forEach((value) => {
+      const key = String(value);
+      if (!map.has(key)) map.set(key, { value, count: 0 });
     });
-    
-    // Sort alumni
-    const sortBy = sortSelect.value;
-    filteredAlumni.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'year':
-          return b.year - a.year;
-        case 'faculty':
-          return a.faculty.localeCompare(b.faculty);
-        default:
-          return 0;
-      }
+    return [...map.values()];
+  }
+
+  function renderMultiSelectOptions(groupKey, facetKey, filterText = '') {
+    const selected = state[groupKey] || [];
+    const facetItems = mergeFacetWithSelections(resultState.facets[facetKey] || [], selected)
+      .filter((item) => String(item.value).toLowerCase().includes(filterText.toLowerCase()));
+
+    elements[groupKey].count.textContent = formatMultiSelectLabel(selected, groupKey);
+
+    elements[groupKey].options.innerHTML = facetItems.length
+      ? facetItems
+          .map(
+            (item) => `<label class="flex items-center justify-between gap-2 text-sm">
+              <span class="flex items-center gap-2">
+                <input type="checkbox" data-group="${groupKey}" data-value="${esc(item.value)}" ${selected.includes(String(item.value)) ? 'checked' : ''}>
+                <span>${esc(item.value)}</span>
+              </span>
+              <span class="text-xs text-accent-500">${item.count ?? 0}</span>
+            </label>`
+          )
+          .join('')
+      : '<p class="text-sm text-accent-500">No options available</p>';
+  }
+
+  function renderSkills() {
+    const selectedSkills = state.skills || [];
+    const skillItems = mergeFacetWithSelections(resultState.facets.skills || [], selectedSkills)
+      .sort((a, b) => (b.count || 0) - (a.count || 0))
+      .slice(0, 20);
+
+    elements.skillsCloud.innerHTML = skillItems
+      .map((item) => {
+        const active = selectedSkills.includes(String(item.value));
+        return `<button type="button" data-skill="${esc(item.value)}" class="px-3 py-1 rounded-full border text-sm ${active ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-accent-700 border-accent-300'}">
+          <span class="inline-block w-2 h-2 rounded-full bg-primary-300 mr-1"></span>
+          ${esc(item.value)} <span class="text-xs opacity-80">${item.count ?? 0}</span>
+        </button>`;
+      })
+      .join('');
+  }
+
+  function renderActiveFilters() {
+    const chips = [];
+    const chip = (group, value, label = value) => `<button type="button" class="chip" data-remove-group="${group}" data-remove-value="${esc(value)}">${esc(label)} ✕</button>`;
+
+    if (state.q) chips.push(chip('q', state.q, `Search: ${state.q}`));
+    state.faculty.forEach((value) => chips.push(chip('faculty', value)));
+    state.year.forEach((value) => chips.push(chip('year', value)));
+    state.skills.forEach((value) => chips.push(chip('skills', value)));
+    state.location.forEach((value) => chips.push(chip('location', value)));
+    state.company.forEach((value) => chips.push(chip('company', value)));
+    state.availability.forEach((value) => chips.push(chip('availability', value, availabilityLabels[value] || value)));
+
+    elements.activeFilters.innerHTML = chips.length ? chips.join('') : '<span class="text-sm text-accent-500">No active filters</span>';
+  }
+
+  function renderCards() {
+    const alumni = resultState.data.alumni || [];
+    elements.grid.innerHTML = alumni.length
+      ? alumni
+          .map((alum) => {
+            const initials = esc(String(alum.name || '').split(' ').map((part) => part[0]).join('').toUpperCase());
+            const photo = alum.photo || alum.photo_blob_url;
+            const skills = normalizeSkills(alum.skills).slice(0, 3);
+            const skillBadges = skills
+              .map((skill) => {
+                const readiness = alum.skill_readiness?.[skill];
+                const color = readiness ? skillReadinessColor[readiness] || '#9ca3af' : null;
+                return `<span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-primary-50 text-primary-700">${color ? `<span style="width:8px;height:8px;border-radius:9999px;background:${color};"></span>` : ''}${esc(skill)}</span>`;
+              })
+              .join('');
+
+            return `<div class="profile-card">
+              <div class="relative">
+                ${photo ? `<img src="${esc(photo)}" alt="${esc(alum.name)}" class="profile-avatar" loading="lazy" />` : `<div class="profile-avatar-placeholder">${initials}</div>`}
+                <div class="absolute top-0 right-0"><span class="badge badge-primary">${esc(alum.faculty || 'Alumni')}</span></div>
+              </div>
+              <h3 class="text-xl font-semibold text-accent-900 mb-1">${esc(alum.name)}</h3>
+              <p class="text-accent-600 mb-3 line-clamp-2">${esc(alum.short_bio || 'No bio available')}</p>
+              ${skillBadges ? `<div class="flex flex-wrap gap-2 mb-3">${skillBadges}</div>` : ''}
+              ${alum.company || alum.job_designation || alum.position ? `<p class="text-sm text-accent-700 mb-1">${esc(alum.company || 'Company')}${alum.job_designation || alum.position ? ` • ${esc(alum.job_designation || alum.position)}` : ''}</p>` : ''}
+              ${alum.location ? `<p class="text-sm text-accent-600 mb-2">📍 ${esc(alum.location)}</p>` : ''}
+              ${alum.open_to_mentorship ? '<span class="inline-block text-xs px-2 py-1 mb-3 rounded-full bg-secondary-100 text-secondary-800">Open to Mentor 🤝</span>' : ''}
+              <div class="flex items-center justify-between text-sm text-accent-500">
+                <span>Class of ${esc(alum.year || '—')}</span>
+                ${alum.slug ? `<a href="/alumni/profiles/${encodeURIComponent(alum.slug)}" class="text-primary-600 hover:text-primary-700 font-medium">View Profile →</a>` : '<span class="text-accent-400">Profile unavailable</span>'}
+              </div>
+            </div>`;
+          })
+          .join('')
+      : '<div class="col-span-full text-center text-accent-500 py-10">No alumni found for the selected filters.</div>';
+
+    elements.resultsCount.textContent = String(alumni.length);
+    elements.resultsTotal.textContent = String(resultState.data.total || 0);
+  }
+
+  function renderPagination() {
+    const totalPages = resultState.data.totalPages || 1;
+    const currentPage = resultState.data.page || 1;
+
+    elements.prev.disabled = currentPage <= 1;
+    elements.next.disabled = currentPage >= totalPages;
+
+    elements.pageNumbers.innerHTML = '';
+    const maxButtons = 7;
+    const start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+    const end = Math.min(totalPages, start + maxButtons - 1);
+
+    for (let i = start; i <= end; i++) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `w-10 h-10 rounded-lg text-sm font-medium transition-colors duration-200 ${
+        i === currentPage
+          ? 'bg-primary-600 text-white'
+          : 'text-accent-600 hover:text-accent-900 hover:bg-accent-100'
+      }`;
+      btn.textContent = String(i);
+      btn.addEventListener('click', () => {
+        if (i !== currentPage) {
+          state.page = i;
+          fetchResults(false);
+        }
+      });
+      elements.pageNumbers.appendChild(btn);
+    }
+  }
+
+  function updateURL() {
+    const params = new URLSearchParams();
+    if (state.q) params.set('q', state.q);
+    if (state.faculty.length) params.set('faculty', state.faculty.join(','));
+    if (state.year.length) params.set('year', state.year.join(','));
+    if (state.skills.length) params.set('skills', state.skills.join(','));
+    if (state.location.length) params.set('location', state.location.join(','));
+    if (state.company.length) params.set('company', state.company.join(','));
+    if (state.availability.length) params.set('availability', state.availability.join(','));
+    if (state.sort && state.sort !== 'name') params.set('sort', state.sort);
+    if ((state.page || 1) > 1) params.set('page', String(state.page));
+    if (state.limit) params.set('limit', String(state.limit));
+
+    const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+    history.replaceState({}, '', next);
+  }
+
+  function syncAvailabilityUI() {
+    Object.keys(elements.availability).forEach((key) => {
+      elements.availability[key].checked = state.availability.includes(key);
     });
-    
-    currentPage = 1;
-    updateDisplay();
   }
-  
-  // Update display with pagination
-  function updateDisplay() {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentAlumni = filteredAlumni.slice(startIndex, endIndex);
-    
-    // Update results count
-    if (resultsCount) {
-      resultsCount.textContent = filteredAlumni.length.toString();
-    }
-    
-    // Update grid
-    if (alumniGrid) {
-      alumniGrid.innerHTML = currentAlumni.map(alum => `
-  <div class="profile-card" data-faculty="${alum.faculty}" data-year="${alum.year}" data-name="${alum.name.toLowerCase()}">
-    <div class="relative">
-      ${alum.photo ? 
-        `<img src="${alum.photo}" alt="${alum.name}" class="profile-avatar" loading="lazy" />` :
-        `<div class="profile-avatar-placeholder">${alum.name.split(' ').map(n => n[0]).join('').toUpperCase()}</div>`
-      }
-      <div class="absolute top-0 right-0">
-        <span class="badge badge-primary">${alum.faculty}</span>
-      </div>
-    </div>
-    
-    <h3 class="text-xl font-semibold text-accent-900 mb-2">${alum.name}</h3>
-    <p class="text-accent-600 mb-3">${alum.short_bio}</p>
-    
-    <div class="flex items-center justify-center space-x-2 mb-4">
-      ${alum.linkedin ? 
-        `<a href="${alum.linkedin}" target="_blank" rel="noopener noreferrer" class="text-accent-400 hover:text-primary-600 transition-colors duration-200">
-          <Icon name="mdi:linkedin" class="w-5 h-5" />
-        </a>` : ''
-      }
-      ${alum.twitter ? 
-        `<a href="${alum.twitter}" target="_blank" rel="noopener noreferrer" class="text-accent-400 hover:text-primary-600 transition-colors duration-200">
-          <Icon name="mdi:twitter" class="w-5 h-5" />
-        </a>` : ''
-      }
-      ${alum.github ? 
-        `<a href="${alum.github}" target="_blank" rel="noopener noreferrer" class="text-accent-400 hover:text-primary-600 transition-colors duration-200">
-          <Icon name="mdi:github" class="w-5 h-5" />
-        </a>` : ''
-      }
-    </div>
-    
-    <div class="flex items-center justify-between text-sm text-accent-500">
-      <span>Class of ${alum.year}</span>
-      <a href="/alumni/profiles/${alum.slug}" class="text-primary-600 hover:text-primary-700 font-medium">
-        View Profile →
-      </a>
-    </div>
-  </div>
-`).join('');
-    }
-    
-    updatePagination();
+
+  function syncSortAndSearchUI() {
+    elements.search.value = state.q || '';
+    elements.sort.value = state.sort || 'name';
   }
-  
-  // Update pagination controls
-  function updatePagination() {
-    const totalPages = Math.ceil(filteredAlumni.length / itemsPerPage);
-    
-    // Update prev/next buttons
-    if (prevBtn) prevBtn.disabled = currentPage === 1;
-    if (nextBtn) nextBtn.disabled = currentPage === totalPages;
-    
-    // Update page numbers
-    if (pageNumbers) {
-      pageNumbers.innerHTML = '';
-      
-      for (let i = 1; i <= totalPages; i++) {
-        const pageBtn = document.createElement('button');
-        pageBtn.className = `w-10 h-10 rounded-lg text-sm font-medium transition-colors duration-200 ${
-          i === currentPage 
-            ? 'bg-primary-600 text-white' 
-            : 'text-accent-600 hover:text-accent-900 hover:bg-accent-100'
-        }`;
-        pageBtn.textContent = i.toString();
-        pageBtn.addEventListener('click', () => {
-          currentPage = i;
-          updateDisplay();
-        });
-        pageNumbers.appendChild(pageBtn);
-      }
-    }
+
+  function toggleArrayValue(group, value) {
+    const list = state[group] || [];
+    if (list.includes(value)) state[group] = list.filter((item) => item !== value);
+    else state[group] = [...list, value];
   }
-  
-  // Event listeners
-  searchInput?.addEventListener('input', filterAlumni);
-  facultyFilter?.addEventListener('change', filterAlumni);
-  yearFilter?.addEventListener('change', filterAlumni);
-  sortSelect?.addEventListener('change', filterAlumni);
-  
-  prevBtn?.addEventListener('click', () => {
-    if (currentPage > 1) {
-      currentPage--;
-      updateDisplay();
+
+  function renderAllControls() {
+    renderMultiSelectOptions('faculty', 'faculties');
+    renderMultiSelectOptions('year', 'years');
+    renderMultiSelectOptions('location', 'locations', elements.location.search.value || '');
+    renderMultiSelectOptions('company', 'companies', elements.company.search.value || '');
+    renderSkills();
+    renderActiveFilters();
+    syncAvailabilityUI();
+    syncSortAndSearchUI();
+  }
+
+  const debounce = (fn, delay = 300) => {
+    let timer = null;
+    return (...args) => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
+  };
+
+  async function fetchResults(resetPage = true) {
+    if (resetPage) state.page = 1;
+    state.sort = elements.sort.value || 'name';
+    state.q = elements.search.value.trim();
+
+    updateURL();
+
+    const params = new URLSearchParams();
+    if (state.q) params.set('q', state.q);
+    if (state.faculty.length) params.set('faculty', state.faculty.join(','));
+    if (state.year.length) params.set('year', state.year.join(','));
+    if (state.skills.length) params.set('skills', state.skills.join(','));
+    if (state.location.length) params.set('location', state.location.join(','));
+    if (state.company.length) params.set('company', state.company.join(','));
+    if (state.availability.length) params.set('availability', state.availability.join(','));
+    params.set('page', String(state.page || 1));
+    params.set('limit', String(state.limit || 12));
+    params.set('sort', state.sort || 'name');
+
+    try {
+      const response = await fetch(`/api/alumni/search?${params.toString()}`);
+      if (!response.ok) throw new Error('Search failed');
+      const data = await response.json();
+      resultState.data = data;
+      resultState.facets = data.facets || resultState.facets;
+      elements.searchStatus.classList.add('hidden');
+    } catch {
+      elements.searchStatus.classList.remove('hidden');
+      elements.searchStatus.textContent = 'Search unavailable. Please try again later.';
+    }
+
+    renderCards();
+    renderPagination();
+    renderAllControls();
+  }
+
+  const debouncedSearch = debounce(() => fetchResults(true), 300);
+
+  [['faculty', 'faculties'], ['year', 'years'], ['location', 'locations'], ['company', 'companies']].forEach(([group, facet]) => {
+    elements[group].options.addEventListener('change', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') return;
+      const value = target.getAttribute('data-value');
+      if (!value) return;
+      toggleArrayValue(group, value);
+      fetchResults(true);
+    });
+  });
+
+  elements.skillsCloud.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+    const target = event.target.closest('[data-skill]');
+    if (!target) return;
+    toggleArrayValue('skills', target.getAttribute('data-skill'));
+    fetchResults(true);
+  });
+
+  elements.activeFilters.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+    const target = event.target.closest('[data-remove-group]');
+    if (!target) return;
+    const group = target.getAttribute('data-remove-group');
+    const value = target.getAttribute('data-remove-value');
+
+    if (group === 'q') {
+      state.q = '';
+      elements.search.value = '';
+    } else if (group && value) {
+      state[group] = (state[group] || []).filter((item) => String(item) !== value);
+    }
+
+    fetchResults(true);
+  });
+
+  elements.clearAll.addEventListener('click', () => {
+    state.q = '';
+    state.faculty = [];
+    state.year = [];
+    state.skills = [];
+    state.location = [];
+    state.company = [];
+    state.availability = [];
+    state.sort = 'name';
+    state.page = 1;
+    elements.location.search.value = '';
+    elements.company.search.value = '';
+    fetchResults(true);
+  });
+
+  elements.search.addEventListener('input', () => debouncedSearch());
+  elements.sort.addEventListener('change', () => fetchResults(true));
+
+  Object.keys(elements.availability).forEach((key) => {
+    elements.availability[key].checked = state.availability.includes(key);
+    elements.availability[key].addEventListener('change', () => {
+      toggleArrayValue('availability', key);
+      fetchResults(true);
+    });
+  });
+
+  elements.prev.addEventListener('click', () => {
+    if ((state.page || 1) > 1) {
+      state.page = (state.page || 1) - 1;
+      fetchResults(false);
     }
   });
-  
-  nextBtn?.addEventListener('click', () => {
-    const totalPages = Math.ceil(filteredAlumni.length / itemsPerPage);
-    if (currentPage < totalPages) {
-      currentPage++;
-      updateDisplay();
+
+  elements.next.addEventListener('click', () => {
+    if ((state.page || 1) < (resultState.data.totalPages || 1)) {
+      state.page = (state.page || 1) + 1;
+      fetchResults(false);
     }
   });
-  
-  // Initialize display
-  updateDisplay();
+
+  elements.location.search.addEventListener('input', () => {
+    renderMultiSelectOptions('location', 'locations', elements.location.search.value || '');
+  });
+  elements.company.search.addEventListener('input', () => {
+    renderMultiSelectOptions('company', 'companies', elements.company.search.value || '');
+  });
+
+  function wireDropdown(key) {
+    const { toggle, panel } = elements[key];
+    toggle.addEventListener('click', () => {
+      ['faculty', 'year', 'location', 'company'].forEach((group) => {
+        if (group !== key) elements[group].panel.classList.add('hidden');
+      });
+      panel.classList.toggle('hidden');
+    });
+  }
+
+  ['faculty', 'year', 'location', 'company'].forEach(wireDropdown);
+
+  document.addEventListener('click', (event) => {
+    ['faculty', 'year', 'location', 'company'].forEach((key) => {
+      const { toggle, panel } = elements[key];
+      if (!panel.contains(event.target) && !toggle.contains(event.target)) {
+        panel.classList.add('hidden');
+      }
+    });
+  });
+
+  renderCards();
+  renderPagination();
+  renderAllControls();
 </script>
 
 <style>
-  /* Container for search input to position icon */
-.search-wrapper {
-  position: relative;
-  width: 100%;
-}
+  .filter-toggle {
+    width: 100%;
+    border: 1px solid #d4d4d8;
+    border-radius: 0.75rem;
+    background: white;
+    padding: 0.625rem 0.75rem;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #404040;
+  }
 
-/* Search icon */
-.search-wrapper .search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af; /* Tailwind text-accent-400 */
-  pointer-events: none;
-  width: 20px;
-  height: 20px;
-}
+  .selected-count {
+    color: #2563eb;
+    font-weight: 600;
+  }
 
-/* Search input styling */
-#search {
-  width: 100%;
-  padding-left: 40px; /* space for icon */
-  padding-right: 12px;
-  height: 40px;
-  border: 1.5px solid #d1d5db; /* Tailwind border-accent-300 */
-  border-radius: 12px;
-  font-size: 1rem;
-  color: #374151; /* Tailwind text-accent-700 */
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  outline-offset: 2px;
-  outline-color: transparent;
-  box-shadow: none;
-  background-color: #fff;
-}
+  .filter-panel {
+    position: absolute;
+    z-index: 40;
+    margin-top: 0.5rem;
+    width: 100%;
+    min-width: 220px;
+    padding: 0.75rem;
+    border: 1px solid #e4e4e7;
+    border-radius: 0.75rem;
+    background: #fff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  }
 
-#search::placeholder {
-  color: #9ca3af; /* Tailwind text-accent-400 */
-}
-
-#search:hover {
-  border-color: #6b7280; /* Tailwind text-accent-500 */
-}
-
-#search:focus {
-  border-color: #2563eb; /* Tailwind blue-600 */
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); /* subtle blue focus ring */
-  outline-color: transparent;
-}
+  .chip {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 9999px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
 </style>
