@@ -396,7 +396,7 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
   </section>
 </Layout>
 
-<script id="alumni-initial-data" type="application/json">{JSON.stringify(initialPayload)}</script>
+<script id="alumni-initial-data" type="application/json" set:html={JSON.stringify(initialPayload)}></script>
 
 <script>
   const payloadEl = document.getElementById('alumni-initial-data');
