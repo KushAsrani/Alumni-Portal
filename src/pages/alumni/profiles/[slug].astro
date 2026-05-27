@@ -1,19 +1,106 @@
 ---
+export const prerender = false;
+
 import Layout from '@/layouts/Layout.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import { getCollection } from 'astro:content';
 import Icon from '../../../components/Icon.astro';
+import { connectToDatabase } from '../../../lib/mongodb';
+import { getCollection } from 'astro:content';
 
-export async function getStaticPaths() {
-  const alumni = await getCollection('alumni');
-  return alumni.map(a => ({ params: { slug: a.data.slug }, props: { alum: a.data } }));
+const { slug } = Astro.params;
+
+function generateSlug(name: string): string {
+  return (name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
 }
 
-const { alum } = Astro.props as { alum: any };
+function toStringArray(value: unknown) {
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  if (typeof value === 'string') return value.split(',').map((item) => item.trim()).filter(Boolean);
+  return [];
+}
+
+let alum: any = null;
+
+if (slug) {
+  try {
+    const { db } = await connectToDatabase();
+    const collection = db.collection('alumni_registrations');
+    const allApproved = await collection.find({ status: 'approved' }).toArray();
+
+    const found = allApproved.find((entry: any) => {
+      const entrySlug = generateSlug(entry?.name || '');
+      const entryId = entry?._id?.toString?.();
+      return entrySlug === slug || entryId === slug;
+    });
+
+    if (found) {
+      const normalizedSkills = toStringArray(found.skills);
+      const normalizedInterests = toStringArray(found.interests);
+      alum = {
+        ...found,
+        slug: found.slug || generateSlug(found.name || ''),
+        skills: normalizedSkills,
+        interests: normalizedInterests,
+        photo: found.photo_blob_url || found.photo || null,
+        short_bio: found.short_bio || '',
+        long_bio: found.long_bio || found.short_bio || '',
+        social: {
+          linkedin: found.linkedin || null,
+          github: found.github || null,
+          twitter: found.twitter || null,
+          portfolio: found.portfolio || null,
+        },
+        position: found.job_designation || found.position || null,
+        work_experience: found.work_experience
+          ? (typeof found.work_experience === 'string'
+              ? [
+                  {
+                    company: found.company || 'N/A',
+                    position: found.job_designation || found.position || 'N/A',
+                    duration: `${found.year || ''} - Present`,
+                    description: found.work_experience,
+                  },
+                ]
+              : found.work_experience)
+          : [],
+        education: found.education || (found.university
+          ? [
+              {
+                degree: `${found.degree || 'Degree'} ${found.faculty || ''}`.trim(),
+                institution: found.university,
+                year: found.year,
+                gpa: found.gpa || null,
+              },
+            ]
+          : []),
+      };
+    }
+  } catch {
+    // handled by fallback below
+  }
+}
+
+if (!alum && slug) {
+  try {
+    const allAlumni = await getCollection('alumni');
+    const entry = allAlumni.find((item) => item.data.slug === slug);
+    if (entry) alum = entry.data;
+  } catch {
+    // no-op
+  }
+}
+
+if (!alum) {
+  return Astro.redirect('/404');
+}
 
 const breadcrumbItems = [
   { label: 'Home', href: '/' },
-  { label: 'Profiles', href: '/alumni' },
+  { label: 'Profiles', href: '/alumni/profiles' },
   { label: alum.name },
 ];
 
@@ -28,10 +115,10 @@ const socials = alum.social || {};
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Sidebar -->
         <aside class="lg:col-span-1 bg-white shadow-md rounded-2xl p-6 text-center">
-          <img 
-            src={alum.photo || '/logo.svg'} 
-            alt={alum.name} 
-            class="w-36 h-36 sm:w-40 sm:h-40 rounded-full object-cover border mx-auto mb-4" 
+          <img
+            src={alum.photo || '/logo.svg'}
+            alt={alum.name}
+            class="w-36 h-36 sm:w-40 sm:h-40 rounded-full object-cover border mx-auto mb-4"
           />
           <h1 class="text-2xl font-bold">{alum.name}</h1>
           <p class="text-primary-600 mt-1">{alum.faculty}, {alum.year}</p>
@@ -42,7 +129,7 @@ const socials = alum.social || {};
             {alum.location && <p><strong>Location:</strong> {alum.location}</p>}
             {alum.email && (
               <p>
-                <strong>Email:</strong> 
+                <strong>Email:</strong>
                 <a href={`mailto:${alum.email}`} class="text-primary-600 hover:underline ml-1">
                   {alum.email}
                 </a>
@@ -106,9 +193,9 @@ const socials = alum.social || {};
                     <h3 class="font-semibold">{project.name}</h3>
                     <p class="text-gray-700 text-sm">{project.description}</p>
                     {project.url && (
-                      <a 
-                        href={project.url} 
-                        target="_blank" 
+                      <a
+                        href={project.url}
+                        target="_blank"
                         class="text-primary-600 text-sm hover:underline"
                       >
                         View Project
@@ -173,7 +260,6 @@ const socials = alum.social || {};
               </div>
             </section>
           )}
-
         </main>
       </div>
     </div>

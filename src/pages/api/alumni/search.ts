@@ -25,6 +25,12 @@ const AVAILABILITY_FIELD_MAP: Record<string, string> = {
 };
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const generateSlug = (name: string) =>
+  (name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
 
 function parseCsvParam(params: URLSearchParams, key: string) {
   const value = params.get(key);
@@ -226,7 +232,11 @@ export const GET: APIRoute = async ({ url }) => {
       const [facetData] = await collection.aggregate(buildFacetPipeline(query)).toArray();
 
       return {
-        alumni: alumniDocs.map((alum: any) => ({ ...alum, _id: alum._id?.toString?.() })),
+        alumni: alumniDocs.map((alum: any) => ({
+          ...alum,
+          slug: alum.slug || generateSlug(alum.name || ''),
+          _id: alum._id?.toString?.(),
+        })),
         total,
         page,
         totalPages,

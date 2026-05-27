@@ -144,16 +144,31 @@ ${socialSection}`.trim() + '\n';
     const filePath = path.join(alumniDir, fileName);
 
     if (fs.existsSync(filePath)) {
+      await collection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { slug, profile_generated: true, updated_at: new Date() } }
+      );
+
       return new Response(
         JSON.stringify({
           success: false,
-          message: 'Profile already exists for this alumni'
+          message: 'Profile already exists for this alumni',
+          data: {
+            fileName,
+            slug,
+            path: `/alumni/profiles/${slug}`
+          }
         }),
         { status: 409, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     fs.writeFileSync(filePath, yamlContent, 'utf8');
+
+    await collection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { slug, profile_generated: true, updated_at: new Date() } }
+    );
 
     return new Response(
       JSON.stringify({

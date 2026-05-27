@@ -23,6 +23,12 @@ const parseCsvParam = (params: URLSearchParams, key: string) =>
     .filter(Boolean);
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const generateSlug = (name: string) =>
+  (name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
 const normalizeSkills = (value: unknown) => {
   if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
   if (typeof value === 'string') return value.split(',').map((item) => item.trim()).filter(Boolean);
@@ -181,9 +187,9 @@ const total = initialResponse?.total || 0;
 const totalPages = initialResponse?.totalPages || 1;
 const page = initialResponse?.page || 1;
 const facets = initialResponse?.facets || { faculties: [], skills: [], locations: [], companies: [], years: [] };
-
-const allFaculties = [...new Set(contentAlumni.map((entry) => entry.data.faculty).filter(Boolean))];
-const allYears = [...new Set(contentAlumni.map((entry) => entry.data.year).filter(Boolean))].sort((a, b) => Number(b) - Number(a));
+const statsTotalAlumni = total;
+const statsFaculties = (facets.faculties || []).length;
+const statsYears = (facets.years || []).length;
 
 const initialPayload = {
   state: queryState,
@@ -225,21 +231,21 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
           <div class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="mdi:account-group" class="w-8 h-8 text-white" />
           </div>
-          <h3 class="text-2xl font-bold text-primary-900">{contentAlumni.length}</h3>
+          <h3 class="text-2xl font-bold text-primary-900">{statsTotalAlumni}</h3>
           <p class="text-primary-700">Total Alumni</p>
         </div>
         <div class="bg-gradient-to-br from-secondary-50 to-secondary-100 p-6 rounded-2xl text-center">
           <div class="w-16 h-16 bg-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="mdi:school" class="w-8 h-8 text-white" />
           </div>
-          <h3 class="text-2xl font-bold text-secondary-900">{allFaculties.length}</h3>
+          <h3 class="text-2xl font-bold text-secondary-900">{statsFaculties}</h3>
           <p class="text-secondary-700">Faculties</p>
         </div>
         <div class="bg-gradient-to-br from-accent-50 to-accent-100 p-6 rounded-2xl text-center">
           <div class="w-16 h-16 bg-accent-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="mdi:calendar" class="w-8 h-8 text-white" />
           </div>
-          <h3 class="text-2xl font-bold text-accent-900">{allYears.length}</h3>
+          <h3 class="text-2xl font-bold text-accent-900">{statsYears}</h3>
           <p class="text-accent-700">Graduation Years</p>
         </div>
       </div>
@@ -369,8 +375,8 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
 
             <div class="flex items-center justify-between text-sm text-accent-500">
               <span>Class of {alum.year || '—'}</span>
-              {alum.slug ? (
-                <a href={`/alumni/profiles/${alum.slug}`} class="text-primary-600 hover:text-primary-700 font-medium">View Profile →</a>
+              {(alum.slug || generateSlug(alum.name || '')) ? (
+                <a href={`/alumni/profiles/${alum.slug || generateSlug(alum.name || '')}`} class="text-primary-600 hover:text-primary-700 font-medium">View Profile →</a>
               ) : (
                 <span class="text-accent-400">Profile unavailable</span>
               )}
@@ -469,6 +475,11 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  const generateSlug = (name) => (name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
 
   function formatMultiSelectLabel(values, singular) {
     return values.length ? `(${values.length})` : '';
@@ -545,6 +556,7 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
             const initials = esc(String(alum.name || '').split(' ').map((part) => part[0]).join('').toUpperCase());
             const photo = alum.photo || alum.photo_blob_url;
             const skills = normalizeSkills(alum.skills).slice(0, 3);
+            const profileSlug = alum.slug || generateSlug(alum.name);
             const skillBadges = skills
               .map((skill) => {
                 const readiness = alum.skill_readiness?.[skill];
@@ -566,7 +578,7 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
               ${alum.open_to_mentorship ? '<span class="inline-block text-xs px-2 py-1 mb-3 rounded-full bg-secondary-100 text-secondary-800">Open to Mentor 🤝</span>' : ''}
               <div class="flex items-center justify-between text-sm text-accent-500">
                 <span>Class of ${esc(alum.year || '—')}</span>
-                ${alum.slug ? `<a href="/alumni/profiles/${encodeURIComponent(alum.slug)}" class="text-primary-600 hover:text-primary-700 font-medium">View Profile →</a>` : '<span class="text-accent-400">Profile unavailable</span>'}
+                ${profileSlug ? `<a href="/alumni/profiles/${encodeURIComponent(profileSlug)}" class="text-primary-600 hover:text-primary-700 font-medium">View Profile →</a>` : '<span class="text-accent-400">Profile unavailable</span>'}
               </div>
             </div>`;
           })
