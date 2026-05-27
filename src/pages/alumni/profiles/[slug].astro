@@ -23,6 +23,25 @@ function toStringArray(value: unknown) {
   return [];
 }
 
+function toProjectsArray(value: unknown) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === 'object') return [parsed];
+    } catch {
+      return [];
+    }
+    return [];
+  }
+
+  if (typeof value === 'object') return [value];
+  return [];
+}
+
 let alum: any = null;
 
 if (slug) {
@@ -45,6 +64,7 @@ if (slug) {
         slug: found.slug || generateSlug(found.name || ''),
         skills: normalizedSkills,
         interests: normalizedInterests,
+        projects: toProjectsArray(found.projects),
         photo: found.photo_blob_url || found.photo || null,
         short_bio: found.short_bio || '',
         long_bio: found.long_bio || found.short_bio || '',
@@ -92,6 +112,13 @@ if (!alum && slug) {
   } catch {
     // no-op
   }
+}
+
+if (alum) {
+  alum = {
+    ...alum,
+    projects: toProjectsArray(alum.projects),
+  };
 }
 
 if (!alum) {
@@ -184,7 +211,7 @@ const socials = alum.social || {};
           )}
 
           <!-- Projects -->
-          {alum.projects?.length > 0 && (
+          {Array.isArray(alum.projects) && alum.projects.length > 0 && (
             <section class="bg-white shadow-md rounded-2xl p-6">
               <h2 class="text-xl font-semibold mb-3">Projects</h2>
               <div class="space-y-4">
