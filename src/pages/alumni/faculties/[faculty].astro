@@ -19,6 +19,27 @@ const breadcrumbItems = [
   { label: 'Faculties', href: '/alumni/faculties' },
   { label: facultyName },
 ];
+const calcCompleteness = (alum: any): number => {
+  const fields = ['photo', 'faculty', 'year', 'short_bio', 'long_bio', 'location', 'company', 'position', 'skills', 'linkedin'];
+  const filled = fields.filter((field) => {
+    const value = alum[field];
+    if (field === 'skills') {
+      return Array.isArray(value) ? value.length > 0 : typeof value === 'string' && value.trim().length > 0;
+    }
+    return Boolean(value);
+  });
+  return Math.round((filled.length / fields.length) * 100);
+};
+const completenessColor = (pct: number) => (pct >= 70 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444');
+const isRecentlyActive = (alum: any): boolean => {
+  const rawDate = alum.updated_at || alum.createdAt || alum.created_at;
+  if (!rawDate) return false;
+  const parsed = new Date(rawDate);
+  if (Number.isNaN(parsed.getTime())) return false;
+  const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+  const age = Date.now() - parsed.getTime();
+  return age >= 0 && age <= ninetyDaysMs;
+};
 ---
 
 <Layout title={facultyName}>
@@ -26,28 +47,69 @@ const breadcrumbItems = [
   <section class="section">
     <div class="container-custom">
       <h1 class="text-3xl font-bold mb-6">{facultyName}</h1>
-            <!-- Alumni Grid -->
       {alumni.length > 0 ? (
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {alumni.map(a => (
-          <a href={`/alumni/profiles/${a.data.slug}`} class="card card-hover block">
-            <div class="p-6">
-              <div class="flex items-center gap-4 mb-4">
-                <img src={a.data.photo || '/logo.svg'} alt={a.data.name} class="w-16 h-16 rounded-full object-cover border" />
-                <div>
-                  <h3 class="text-lg font-semibold">{a.data.name}</h3>
-                  <p class="text-sm text-primary-600">{a.data.faculty}, {a.data.year}</p>
-                </div>
-              </div>
-              <p class="text-gray-600 text-sm">{a.data.short_bio}</p>
-            </div>
-          </a>
-        ))}
-      </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {alumni.map(a => {
+            const profileCompleteness = calcCompleteness(a.data);
+            const profileCompletenessColor = completenessColor(profileCompleteness);
+            const allSkills = Array.isArray(a.data.skills)
+              ? a.data.skills
+              : typeof a.data.skills === 'string'
+                ? a.data.skills.split(',').map((skill) => skill.trim()).filter(Boolean)
+                : [];
+            const latestWork = Array.isArray(a.data.work_experience) ? a.data.work_experience[0] : null;
+            const recentlyActive = isRecentlyActive(a.data);
 
-  ) : (
- <div class="text-center py-12">
+            return (
+              <a href={`/alumni/profiles/${a.data.slug}`} class="card card-hover block profile-card">
+                <div class="p-6 relative z-10">
+                  <div class="flex items-center gap-4 mb-4">
+                    <img src={a.data.photo || '/logo.svg'} alt={a.data.name} class="w-16 h-16 rounded-full object-cover border" />
+                    <div>
+                      <h3 class="text-lg font-semibold">
+                        {a.data.name}
+                        {recentlyActive && <span class="recently-active-badge">🟢 Recently Active</span>}
+                      </h3>
+                      <p class="text-sm text-primary-600">{a.data.faculty}, {a.data.year}</p>
+                    </div>
+                  </div>
+
+                  <div class="completeness-bar-container" title={`Profile ${profileCompleteness}% complete`}>
+                    <div class="completeness-bar-track">
+                      <div class="completeness-bar-fill" style={`width: ${profileCompleteness}%; background-color: ${profileCompletenessColor};`}></div>
+                    </div>
+                    <span class="completeness-label">{profileCompleteness}% complete</span>
+                  </div>
+
+                  <p class="text-gray-600 text-sm">{a.data.short_bio}</p>
+
+                  <div class="card-hover-panel">
+                    <div class="card-hover-content">
+                      {latestWork && (latestWork.position || latestWork.company || latestWork.duration) && (
+                        <div class="hover-section">
+                          <p class="hover-section-title">Latest Role</p>
+                          <p class="hover-role">{latestWork.position || 'Role'} at {latestWork.company || 'Company'}</p>
+                          {latestWork.duration && <p class="hover-duration">{latestWork.duration}</p>}
+                        </div>
+                      )}
+                      {allSkills.length > 0 && (
+                        <div class="hover-section">
+                          <p class="hover-section-title">All Skills</p>
+                          <div class="hover-skills-cloud">
+                            {allSkills.map((skill) => <span class="hover-skill-tag">{skill}</span>)}
+                          </div>
+                        </div>
+                      )}
+                      <a href={`/alumni/profiles/${a.data.slug}`} class="hover-cta-btn">View Full Profile →</a>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="text-center py-12">
           <div class="mb-6">
             <svg class="w-16 h-16 text-primary-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -59,7 +121,133 @@ const breadcrumbItems = [
             Browse All Alumni
           </a>
         </div>
-  )}
-      </div>
+      )}
+    </div>
   </section>
 </Layout>
+
+<style>
+  .profile-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .completeness-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .completeness-bar-track {
+    flex: 1;
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .completeness-bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.4s ease;
+  }
+
+  .completeness-label {
+    font-size: 0.65rem;
+    color: #6b7280;
+    white-space: nowrap;
+  }
+
+  .recently-active-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    color: #15803d;
+    background: #dcfce7;
+    border-radius: 9999px;
+    padding: 0.1rem 0.45rem;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+  }
+
+  .card-hover-panel {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.92);
+    color: white;
+    border-radius: inherit;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1rem;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  .profile-card:hover .card-hover-panel,
+  .profile-card:focus-within .card-hover-panel {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .card-hover-content {
+    overflow-y: auto;
+    max-height: 100%;
+  }
+
+  .hover-section {
+    margin-bottom: 0.6rem;
+  }
+
+  .hover-section-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    margin-bottom: 0.2rem;
+  }
+
+  .hover-role {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .hover-duration {
+    font-size: 0.7rem;
+    color: #cbd5e1;
+  }
+
+  .hover-skills-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+
+  .hover-skill-tag {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+  }
+
+  .hover-cta-btn {
+    display: block;
+    margin-top: 0.6rem;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    background: #2563eb;
+    border-radius: 0.5rem;
+    color: white;
+    text-decoration: none;
+  }
+</style>

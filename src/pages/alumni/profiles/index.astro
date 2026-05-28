@@ -212,6 +212,27 @@ const skillReadinessColor: Record<string, string> = {
 };
 
 const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
+const calcCompleteness = (alum: any): number => {
+  const fields = ['photo', 'faculty', 'year', 'short_bio', 'long_bio', 'location', 'company', 'position', 'skills', 'linkedin'];
+  const filled = fields.filter((field) => {
+    const value = alum[field];
+    if (field === 'skills') {
+      return Array.isArray(value) ? value.length > 0 : typeof value === 'string' && value.trim().length > 0;
+    }
+    return Boolean(value);
+  });
+  return Math.round((filled.length / fields.length) * 100);
+};
+const completenessColor = (pct: number) => (pct >= 70 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444');
+const isRecentlyActive = (alum: any): boolean => {
+  const rawDate = alum.updated_at || alum.createdAt || alum.created_at;
+  if (!rawDate) return false;
+  const parsed = new Date(rawDate);
+  if (Number.isNaN(parsed.getTime())) return false;
+  const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+  const age = Date.now() - parsed.getTime();
+  return age >= 0 && age <= ninetyDaysMs;
+};
 ---
 
 <Layout title="Alumni Directory" description="Browse alumni by faculty, year, and search.">
@@ -327,62 +348,111 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
       </p>
 
       <div id="alumni-grid" class="grid-responsive-lg mb-8">
-        {alumni.map((alum: any) => (
-          <div class="profile-card">
-            <div class="relative">
-              {alum.photo || alum.photo_blob_url ? (
-                <img src={alum.photo || alum.photo_blob_url} alt={alum.name} class="profile-avatar" loading="lazy" />
-              ) : (
-                <div class="profile-avatar-placeholder">
-                  {String(alum.name || '')
-                    .split(' ')
-                    .map((part: string) => part[0])
-                    .join('')
-                    .toUpperCase()}
+        {alumni.map((alum: any) => {
+          const profileCompleteness = calcCompleteness(alum);
+          const profileCompletenessColor = completenessColor(profileCompleteness);
+          const allSkills = normalizeSkills(alum.skills);
+          const topSkills = allSkills.slice(0, 3);
+          const latestWork = Array.isArray(alum.work_experience) ? alum.work_experience[0] : null;
+          const profileSlug = alum.slug || generateSlug(alum.name || '');
+          const recentlyActive = isRecentlyActive(alum);
+
+          return (
+            <div class="profile-card">
+              <div class="relative">
+                {alum.photo || alum.photo_blob_url ? (
+                  <img src={alum.photo || alum.photo_blob_url} alt={alum.name} class="profile-avatar" loading="lazy" />
+                ) : (
+                  <div class="profile-avatar-placeholder">
+                    {String(alum.name || '')
+                      .split(' ')
+                      .map((part: string) => part[0])
+                      .join('')
+                      .toUpperCase()}
+                  </div>
+                )}
+                <div class="absolute top-0 right-0">
+                  <span class="badge badge-primary">{alum.faculty || 'Alumni'}</span>
+                </div>
+              </div>
+
+              <h3 class="text-xl font-semibold text-accent-900 mb-1">
+                {alum.name}
+                {recentlyActive && <span class="recently-active-badge">🟢 Recently Active</span>}
+              </h3>
+
+              <div class="completeness-bar-container" title={`Profile ${profileCompleteness}% complete`}>
+                <div class="completeness-bar-track">
+                  <div class="completeness-bar-fill" style={`width: ${profileCompleteness}%; background-color: ${profileCompletenessColor};`} />
+                </div>
+                <span class="completeness-label">{profileCompleteness}% complete</span>
+              </div>
+
+              <p class="text-accent-600 mb-3 line-clamp-2">{alum.short_bio || 'No bio available'}</p>
+
+              {topSkills.length > 0 && (
+                <div class="flex flex-wrap gap-2 mb-3">
+                  {topSkills.map((skill) => {
+                    const readiness = alum.skill_readiness?.[skill];
+                    return (
+                      <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-primary-50 text-primary-700">
+                        {readiness && (
+                          <span style={`width: 8px; height: 8px; border-radius: 9999px; background-color: ${skillReadinessColor[readiness] || '#9ca3af'};`} />
+                        )}
+                        {skill}
+                      </span>
+                    );
+                  })}
                 </div>
               )}
-              <div class="absolute top-0 right-0">
-                <span class="badge badge-primary">{alum.faculty || 'Alumni'}</span>
-              </div>
-            </div>
 
-            <h3 class="text-xl font-semibold text-accent-900 mb-1">{alum.name}</h3>
-            <p class="text-accent-600 mb-3 line-clamp-2">{alum.short_bio || 'No bio available'}</p>
-
-            {getSkills(alum).length > 0 && (
-              <div class="flex flex-wrap gap-2 mb-3">
-                {getSkills(alum).map((skill) => {
-                  const readiness = alum.skill_readiness?.[skill];
-                  return (
-                    <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-primary-50 text-primary-700">
-                      {readiness && (
-                        <span style={`width: 8px; height: 8px; border-radius: 9999px; background-color: ${skillReadinessColor[readiness] || '#9ca3af'};`} />
-                      )}
-                      {skill}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-
-            {(alum.company || alum.job_designation || alum.position) && (
-              <p class="text-sm text-accent-700 mb-1">{alum.company || 'Company'}{alum.job_designation || alum.position ? ` • ${alum.job_designation || alum.position}` : ''}</p>
-            )}
-            {alum.location && <p class="text-sm text-accent-600 mb-2">📍 {alum.location}</p>}
-            {alum.open_to_mentorship && (
-              <span class="inline-block text-xs px-2 py-1 mb-3 rounded-full bg-secondary-100 text-secondary-800">Open to Mentor ��</span>
-            )}
-
-            <div class="flex items-center justify-between text-sm text-accent-500">
-              <span>Class of {alum.year || '—'}</span>
-              {(alum.slug || generateSlug(alum.name || '')) ? (
-                <a href={`/alumni/profiles/${alum.slug || generateSlug(alum.name || '')}`} class="text-primary-600 hover:text-primary-700 font-medium">View Profile →</a>
-              ) : (
-                <span class="text-accent-400">Profile unavailable</span>
+              {(alum.company || alum.job_designation || alum.position) && (
+                <p class="text-sm text-accent-700 mb-1">{alum.company || 'Company'}{alum.job_designation || alum.position ? ` • ${alum.job_designation || alum.position}` : ''}</p>
               )}
+              {alum.location && <p class="text-sm text-accent-600 mb-2">📍 {alum.location}</p>}
+              {alum.open_to_mentorship && (
+                <span class="inline-block text-xs px-2 py-1 mb-3 rounded-full bg-secondary-100 text-secondary-800">Open to Mentor 🤝</span>
+              )}
+
+              <div class="flex items-center justify-between text-sm text-accent-500">
+                <span>Class of {alum.year || '—'}</span>
+                {profileSlug ? (
+                  <a href={`/alumni/profiles/${profileSlug}`} class="text-primary-600 hover:text-primary-700 font-medium">View Profile →</a>
+                ) : (
+                  <span class="text-accent-400">Profile unavailable</span>
+                )}
+              </div>
+
+              <div class="card-hover-panel">
+                <div class="card-hover-content">
+                  {latestWork && (latestWork.position || latestWork.company || latestWork.duration) && (
+                    <div class="hover-section">
+                      <p class="hover-section-title">Latest Role</p>
+                      <p class="hover-role">{latestWork.position || 'Role'} at {latestWork.company || 'Company'}</p>
+                      {latestWork.duration && <p class="hover-duration">{latestWork.duration}</p>}
+                    </div>
+                  )}
+
+                  {allSkills.length > 0 && (
+                    <div class="hover-section">
+                      <p class="hover-section-title">All Skills</p>
+                      <div class="hover-skills-cloud">
+                        {allSkills.map((skill) => <span class="hover-skill-tag">{skill}</span>)}
+                      </div>
+                    </div>
+                  )}
+
+                  <div class="hover-section">
+                    <p class="hover-section-title">Graduation Year</p>
+                    <p class="hover-role">Class of {alum.year || '—'}</p>
+                  </div>
+
+                  {profileSlug && <a href={`/alumni/profiles/${profileSlug}`} class="hover-cta-btn">View Full Profile →</a>}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div class="flex items-center justify-center space-x-2" id="pagination-controls">
@@ -480,6 +550,25 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-');
+  const calcCompleteness = (alum) => {
+    const fields = ['photo', 'faculty', 'year', 'short_bio', 'long_bio', 'location', 'company', 'position', 'skills', 'linkedin'];
+    const filled = fields.filter((field) => {
+      const value = alum[field];
+      if (field === 'skills') return Array.isArray(value) ? value.length > 0 : typeof value === 'string' && value.trim().length > 0;
+      return Boolean(value);
+    });
+    return Math.round((filled.length / fields.length) * 100);
+  };
+  const completenessColor = (pct) => (pct >= 70 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444');
+  const isRecentlyActive = (alum) => {
+    const rawDate = alum.updated_at || alum.createdAt || alum.created_at;
+    if (!rawDate) return false;
+    const parsed = new Date(rawDate);
+    if (Number.isNaN(parsed.getTime())) return false;
+    const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+    const age = Date.now() - parsed.getTime();
+    return age >= 0 && age <= ninetyDaysMs;
+  };
 
   function formatMultiSelectLabel(values, singular) {
     return values.length ? `(${values.length})` : '';
@@ -555,8 +644,15 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
           .map((alum) => {
             const initials = esc(String(alum.name || '').split(' ').map((part) => part[0]).join('').toUpperCase());
             const photo = alum.photo || alum.photo_blob_url;
-            const skills = normalizeSkills(alum.skills).slice(0, 3);
+            const allSkills = normalizeSkills(alum.skills);
+            const skills = allSkills.slice(0, 3);
             const profileSlug = alum.slug || generateSlug(alum.name);
+            const profileUrl = profileSlug ? `/alumni/profiles/${encodeURIComponent(profileSlug)}` : '';
+            const profileCompleteness = calcCompleteness(alum);
+            const profileCompletenessColor = completenessColor(profileCompleteness);
+            const recentlyActive = isRecentlyActive(alum);
+            const workExperience = Array.isArray(alum.work_experience) ? alum.work_experience : [];
+            const latestWork = workExperience[0];
             const skillBadges = skills
               .map((skill) => {
                 const readiness = alum.skill_readiness?.[skill];
@@ -564,13 +660,27 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
                 return `<span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-primary-50 text-primary-700">${color ? `<span style="width:8px;height:8px;border-radius:9999px;background:${color};"></span>` : ''}${esc(skill)}</span>`;
               })
               .join('');
+            const hoverSkills = allSkills.map((skill) => `<span class="hover-skill-tag">${esc(skill)}</span>`).join('');
+            const latestRole = latestWork && (latestWork.position || latestWork.company || latestWork.duration)
+              ? `<div class="hover-section">
+                  <p class="hover-section-title">Latest Role</p>
+                  <p class="hover-role">${esc(latestWork.position || 'Role')} at ${esc(latestWork.company || 'Company')}</p>
+                  ${latestWork.duration ? `<p class="hover-duration">${esc(latestWork.duration)}</p>` : ''}
+                </div>`
+              : '';
 
             return `<div class="profile-card">
               <div class="relative">
                 ${photo ? `<img src="${esc(photo)}" alt="${esc(alum.name)}" class="profile-avatar" loading="lazy" />` : `<div class="profile-avatar-placeholder">${initials}</div>`}
                 <div class="absolute top-0 right-0"><span class="badge badge-primary">${esc(alum.faculty || 'Alumni')}</span></div>
               </div>
-              <h3 class="text-xl font-semibold text-accent-900 mb-1">${esc(alum.name)}</h3>
+              <h3 class="text-xl font-semibold text-accent-900 mb-1">${esc(alum.name)}${recentlyActive ? ' <span class="recently-active-badge">🟢 Recently Active</span>' : ''}</h3>
+              <div class="completeness-bar-container" title="Profile ${profileCompleteness}% complete">
+                <div class="completeness-bar-track">
+                  <div class="completeness-bar-fill" style="width:${profileCompleteness}%;background-color:${profileCompletenessColor};"></div>
+                </div>
+                <span class="completeness-label">${profileCompleteness}% complete</span>
+              </div>
               <p class="text-accent-600 mb-3 line-clamp-2">${esc(alum.short_bio || 'No bio available')}</p>
               ${skillBadges ? `<div class="flex flex-wrap gap-2 mb-3">${skillBadges}</div>` : ''}
               ${alum.company || alum.job_designation || alum.position ? `<p class="text-sm text-accent-700 mb-1">${esc(alum.company || 'Company')}${alum.job_designation || alum.position ? ` • ${esc(alum.job_designation || alum.position)}` : ''}</p>` : ''}
@@ -578,7 +688,21 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
               ${alum.open_to_mentorship ? '<span class="inline-block text-xs px-2 py-1 mb-3 rounded-full bg-secondary-100 text-secondary-800">Open to Mentor 🤝</span>' : ''}
               <div class="flex items-center justify-between text-sm text-accent-500">
                 <span>Class of ${esc(alum.year || '—')}</span>
-                ${profileSlug ? `<a href="/alumni/profiles/${encodeURIComponent(profileSlug)}" class="text-primary-600 hover:text-primary-700 font-medium">View Profile →</a>` : '<span class="text-accent-400">Profile unavailable</span>'}
+                ${profileUrl ? `<a href="${profileUrl}" class="text-primary-600 hover:text-primary-700 font-medium">View Profile →</a>` : '<span class="text-accent-400">Profile unavailable</span>'}
+              </div>
+              <div class="card-hover-panel">
+                <div class="card-hover-content">
+                  ${latestRole}
+                  ${hoverSkills ? `<div class="hover-section">
+                    <p class="hover-section-title">All Skills</p>
+                    <div class="hover-skills-cloud">${hoverSkills}</div>
+                  </div>` : ''}
+                  <div class="hover-section">
+                    <p class="hover-section-title">Graduation Year</p>
+                    <p class="hover-role">Class of ${esc(alum.year || '—')}</p>
+                  </div>
+                  ${profileUrl ? `<a href="${profileUrl}" class="hover-cta-btn">View Full Profile →</a>` : ''}
+                </div>
               </div>
             </div>`;
           })
@@ -860,5 +984,133 @@ const getSkills = (alum: any) => normalizeSkills(alum.skills).slice(0, 3);
     background: #eff6ff;
     color: #1d4ed8;
     border: 1px solid #bfdbfe;
+  }
+
+  .profile-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .completeness-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .completeness-bar-track {
+    flex: 1;
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .completeness-bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.4s ease;
+  }
+
+  .completeness-label {
+    font-size: 0.65rem;
+    color: #6b7280;
+    white-space: nowrap;
+  }
+
+  .recently-active-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    color: #15803d;
+    background: #dcfce7;
+    border-radius: 9999px;
+    padding: 0.1rem 0.45rem;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+  }
+
+  .card-hover-panel {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.92);
+    color: #fff;
+    border-radius: inherit;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1rem;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+  }
+
+  .profile-card:hover .card-hover-panel,
+  .profile-card:focus-within .card-hover-panel {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .card-hover-content {
+    overflow-y: auto;
+    max-height: 100%;
+  }
+
+  .hover-section {
+    margin-bottom: 0.6rem;
+  }
+
+  .hover-section-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    margin-bottom: 0.2rem;
+  }
+
+  .hover-role {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .hover-duration {
+    font-size: 0.7rem;
+    color: #cbd5e1;
+  }
+
+  .hover-skills-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+
+  .hover-skill-tag {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+  }
+
+  .hover-cta-btn {
+    display: block;
+    margin-top: 0.6rem;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    background: #2563eb;
+    border-radius: 0.5rem;
+    color: white;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .hover-cta-btn:hover {
+    background: #1d4ed8;
   }
 </style>
