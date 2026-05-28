@@ -22,6 +22,10 @@ CORS(app)
 from events_api import events_bp  # noqa: E402
 app.register_blueprint(events_bp)
 
+# Register AI alumni blueprint
+from ai_alumni_api import ai_alumni_bp  # noqa: E402
+app.register_blueprint(ai_alumni_bp)
+
 # ---------------------------------------------------------------------------
 # Constants & keyword lists
 # ---------------------------------------------------------------------------

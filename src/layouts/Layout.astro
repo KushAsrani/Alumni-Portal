@@ -2,6 +2,7 @@
 import { getSiteConfig } from '../utils/config';
 import Navigation from '../components/Navigation.astro';
 import Footer from '../components/Footer.astro';
+import AlumniChatbot from '../components/AlumniChatbot.astro';
 import '../styles/global.css';
 
 export interface Props {
@@ -13,6 +14,7 @@ export interface Props {
 
 const { title, description, image, canonical } = Astro.props;
 const config = getSiteConfig();
+const showAlumniChatbot = Astro.url.pathname.startsWith('/alumni');
 
 const pageTitle = title === 'Home' ? config.site.name : config.seo.title_template.replace('%s', title);
 const pageDescription = description || config.seo.default_description;
@@ -69,6 +71,8 @@ const pageImage = image || config.seo.og_image;
       <main class="flex-grow">
         <slot />
       </main>
+
+      {showAlumniChatbot && <AlumniChatbot />}
       
       <Footer />
     </div>

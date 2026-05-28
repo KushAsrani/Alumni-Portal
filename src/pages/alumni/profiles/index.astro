@@ -267,6 +267,24 @@ const isRecentlyActive = (alum: any): boolean => {
       </div>
 
       <div class="bg-white rounded-2xl shadow-sm border border-accent-100 p-6 mb-8 space-y-5">
+        <div class="space-y-3">
+          <button id="nl-toggle" type="button" class="btn btn-outline btn-sm">🔍 Ask in plain English</button>
+          <div id="nl-panel" class="hidden bg-primary-50 border border-primary-100 rounded-xl p-4 space-y-3">
+            <input id="nl-query" type="text" class="input input-bordered w-full" placeholder="e.g. Find alumni working in fintech in Mumbai with Python skills" />
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="nl-submit" type="button" class="btn btn-primary btn-sm">Apply AI Search</button>
+              <span id="nl-loading" class="hidden text-sm text-primary-700 inline-flex items-center gap-2">
+                <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"></circle>
+                  <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="3"></path>
+                </svg>
+                Parsing your query...
+              </span>
+              <span id="nl-message" class="text-sm text-amber-700"></span>
+            </div>
+          </div>
+        </div>
+
         <div>
           <label for="search" class="block text-sm font-medium text-accent-700 mb-2">🔍 Search</label>
           <input id="search" type="text" class="input input-bordered w-full" placeholder="Search by name, faculty, bio, skills, location, company..." value={queryState.q} />
@@ -371,6 +389,7 @@ const isRecentlyActive = (alum: any): boolean => {
                 {alum.name}
                 {recent && <span class="recently-active-badge">🟢 Active</span>}
               </h3>
+              {alum.bio_category && <span class="bio-category-badge">{alum.bio_category}</span>}
 
               <div class="completeness-bar-wrap mb-2" title={`Profile ${pct}% complete`}>
                 <div class="completeness-bar-track">
@@ -492,6 +511,12 @@ const isRecentlyActive = (alum: any): boolean => {
     prev: document.getElementById('prev-page'),
     next: document.getElementById('next-page'),
     pageNumbers: document.getElementById('page-numbers'),
+    nlToggle: document.getElementById('nl-toggle'),
+    nlPanel: document.getElementById('nl-panel'),
+    nlQuery: document.getElementById('nl-query'),
+    nlSubmit: document.getElementById('nl-submit'),
+    nlLoading: document.getElementById('nl-loading'),
+    nlMessage: document.getElementById('nl-message'),
     faculty: { toggle: document.getElementById('faculty-toggle'), panel: document.getElementById('faculty-panel'), options: document.getElementById('faculty-options'), count: document.getElementById('faculty-selected-count') },
     year: { toggle: document.getElementById('year-toggle'), panel: document.getElementById('year-panel'), options: document.getElementById('year-options'), count: document.getElementById('year-selected-count') },
     location: { toggle: document.getElementById('location-toggle'), panel: document.getElementById('location-panel'), options: document.getElementById('location-options'), search: document.getElementById('location-search'), count: document.getElementById('location-selected-count') },
@@ -669,6 +694,7 @@ const isRecentlyActive = (alum: any): boolean => {
               <div class="absolute top-3 right-3"><span class="badge badge-primary text-xs">${esc(alum.faculty || 'Alumni')}</span></div>
               <div class="mb-3">${avatarHtml}</div>
               <h3 class="text-lg font-semibold text-accent-900 mb-1">${esc(alum.name)}${recent ? '<span class="recently-active-badge">🟢 Active</span>' : ''}</h3>
+              ${alum.bio_category ? `<span class="bio-category-badge">${esc(alum.bio_category)}</span>` : ''}
               <div class="completeness-bar-wrap mb-2" title="Profile ${pct}% complete">
                 <div class="completeness-bar-track"><div class="completeness-bar-fill" style="width:${pct}%;background-color:${barColor};"></div></div>
                 <span class="completeness-pct">${pct}%</span>
@@ -814,6 +840,51 @@ const isRecentlyActive = (alum: any): boolean => {
 
   const debouncedSearch = debounce(() => fetchResults(true), 300);
 
+  async function runNaturalLanguageSearch() {
+    const query = (elements.nlQuery?.value || '').trim();
+    if (!query) {
+      if (elements.nlMessage) elements.nlMessage.textContent = 'Please enter a natural language query.';
+      return;
+    }
+
+    if (elements.nlMessage) elements.nlMessage.textContent = '';
+    elements.nlLoading?.classList.remove('hidden');
+
+    try {
+      const response = await fetch('/api/ai/nl-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      const data = await response.json();
+
+      if (!data?.success || !data?.filters) {
+        if (elements.nlMessage) {
+          elements.nlMessage.textContent = /OPENAI_API_KEY|AI configuration/i.test(data?.message || '')
+            ? 'Natural language search requires AI configuration'
+            : (data?.message || 'Unable to parse your query.');
+        }
+        return;
+      }
+
+      const filters = data.filters;
+      state.q = String(filters.q || '').trim();
+      state.faculty = Array.isArray(filters.faculty) ? filters.faculty.map(String) : [];
+      state.skills = Array.isArray(filters.skills) ? filters.skills.map(String) : [];
+      state.location = Array.isArray(filters.location) ? filters.location.map(String) : [];
+      state.company = Array.isArray(filters.company) ? filters.company.map(String) : [];
+      state.year = Array.isArray(filters.year) ? filters.year.map(String) : [];
+      state.page = 1;
+
+      elements.search.value = state.q;
+      await fetchResults(true);
+    } catch {
+      if (elements.nlMessage) elements.nlMessage.textContent = 'Unable to parse your query right now.';
+    } finally {
+      elements.nlLoading?.classList.add('hidden');
+    }
+  }
+
   [['faculty', 'faculties'], ['year', 'years'], ['location', 'locations'], ['company', 'companies']].forEach(([group, facet]) => {
     elements[group].options.addEventListener('change', (event) => {
       const target = event.target;
@@ -867,6 +938,14 @@ const isRecentlyActive = (alum: any): boolean => {
 
   elements.search.addEventListener('input', () => debouncedSearch());
   elements.sort.addEventListener('change', () => fetchResults(true));
+  elements.nlToggle?.addEventListener('click', () => elements.nlPanel?.classList.toggle('hidden'));
+  elements.nlSubmit?.addEventListener('click', () => runNaturalLanguageSearch());
+  elements.nlQuery?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      runNaturalLanguageSearch();
+    }
+  });
 
   Object.keys(elements.availability).forEach((key) => {
     elements.availability[key].checked = state.availability.includes(key);
@@ -1006,6 +1085,19 @@ const isRecentlyActive = (alum: any): boolean => {
     margin-left: 0.35rem;
     vertical-align: middle;
     font-weight: 500;
+  }
+
+  .bio-category-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.65rem;
+    color: #5b21b6;
+    background: #ede9fe;
+    border: 1px solid #c4b5fd;
+    border-radius: 9999px;
+    padding: 0.15rem 0.5rem;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
   }
 
   /* Mentor badge */

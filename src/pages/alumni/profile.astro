@@ -77,6 +77,74 @@ const skills = alumni?.skills
 const interests = alumni?.interests
   ? alumni.interests.split(',').map((s) => s.trim()).filter(Boolean)
   : [];
+
+function toArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  if (typeof value === 'string') return value.split(',').map((item) => item.trim()).filter(Boolean);
+  return [];
+}
+
+const aiSuggestedSkills = toArray((alumni as any)?.ai_suggested_skills);
+const aiEnrichedBio = typeof (alumni as any)?.ai_enriched_bio === 'string' ? (alumni as any).ai_enriched_bio.trim() : '';
+let bioKeywords = toArray((alumni as any)?.bio_keywords);
+
+let similarAlumni: Array<any> = [];
+let similarMessage = '';
+let completeness = { score: 0, missing_fields: [] as string[], suggestions: [] as string[] };
+
+if (alumni?._id) {
+  const alumniId = alumni._id.toString();
+  const baseUrl = Astro.url.origin;
+
+  try {
+    const completenessRes = await fetch(`${baseUrl}/api/ai/profile-completeness?alumni_id=${encodeURIComponent(alumniId)}`);
+    if (completenessRes.ok) {
+      const data = await completenessRes.json();
+      completeness = {
+        score: Number(data?.score || 0),
+        missing_fields: Array.isArray(data?.missing_fields) ? data.missing_fields : [],
+        suggestions: Array.isArray(data?.suggestions) ? data.suggestions : [],
+      };
+    }
+  } catch (error) {
+    console.error('Profile completeness fetch failed:', error);
+  }
+
+  if (alumni.status === 'approved') {
+    try {
+      const similarRes = await fetch(`${baseUrl}/api/ai/similar-alumni`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alumni_id: alumniId }),
+      });
+      if (similarRes.ok) {
+        const data = await similarRes.json();
+        similarAlumni = Array.isArray(data?.alumni) ? data.alumni : [];
+        similarMessage = data?.message || '';
+      }
+    } catch (error) {
+      console.error('Similar alumni fetch failed:', error);
+    }
+  }
+
+  if (!bioKeywords.length && alumni.short_bio) {
+    try {
+      const bioRes = await fetch(`${baseUrl}/api/ai/analyze-bio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alumni_id: alumniId }),
+      });
+      if (bioRes.ok) {
+        const data = await bioRes.json();
+        bioKeywords = Array.isArray(data?.keywords) ? data.keywords : bioKeywords;
+      }
+    } catch (error) {
+      console.error('Bio analysis failed:', error);
+    }
+  }
+}
+
+const completenessColor = completeness.score >= 80 ? '#16a34a' : completeness.score >= 50 ? '#eab308' : '#dc2626';
 ---
 
 <Layout title={`${alumni?.name ?? 'My Profile'} | Alumni Portal`}>
@@ -209,6 +277,39 @@ const interests = alumni?.interests
 
             <!-- Left column -->
             <div class="info-left">
+
+              <!-- Profile Completeness -->
+              <div class="info-card">
+                <h2 class="info-card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20V10"></path>
+                    <path d="M18 20V4"></path>
+                    <path d="M6 20v-6"></path>
+                  </svg>
+                  Profile Completeness
+                </h2>
+                <div class="completeness-card">
+                  <div class="completeness-circle" style={`--completion:${completeness.score}; --completion-color:${completenessColor};`}>
+                    <span>{completeness.score}%</span>
+                  </div>
+                  {completeness.missing_fields.length > 0 ? (
+                    <ul class="missing-list">
+                      {completeness.missing_fields.slice(0, 5).map((field) => (
+                        <li>{field}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p class="completeness-note">Great job! Your profile is complete.</p>
+                  )}
+                </div>
+                {completeness.suggestions.length > 0 && (
+                  <ul class="suggestion-list">
+                    {completeness.suggestions.slice(0, 3).map((suggestion) => (
+                      <li>{suggestion}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               <!-- Personal Information -->
               <div class="info-card">
@@ -420,8 +521,17 @@ const interests = alumni?.interests
                 </div>
               )}
 
+              {aiEnrichedBio && (
+                <div class="info-card">
+                  <details class="ai-bio-details">
+                    <summary>AI-Enhanced Bio</summary>
+                    <p class="bio-text">{aiEnrichedBio}</p>
+                  </details>
+                </div>
+              )}
+
               <!-- Skills & Interests -->
-              {(skills.length > 0 || interests.length > 0) && (
+              {(skills.length > 0 || interests.length > 0 || aiSuggestedSkills.length > 0 || bioKeywords.length > 0) && (
                 <div class="info-card">
                   <h2 class="info-card-title">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -435,6 +545,26 @@ const interests = alumni?.interests
                       <div class="tags-list">
                         {skills.map((skill) => (
                           <span class="tag tag-skill">{skill}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {aiSuggestedSkills.length > 0 && (
+                    <div class="tags-section">
+                      <h3 class="tags-label">AI Suggested</h3>
+                      <div class="tags-list">
+                        {aiSuggestedSkills.map((skill) => (
+                          <span class="tag tag-ai">{skill}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {bioKeywords.length > 0 && (
+                    <div class="tags-section">
+                      <h3 class="tags-label">Personality Keywords</h3>
+                      <div class="tags-list">
+                        {bioKeywords.map((keyword) => (
+                          <span class="tag tag-keyword">{keyword}</span>
                         ))}
                       </div>
                     </div>
@@ -483,6 +613,30 @@ const interests = alumni?.interests
             </div><!-- /info-right -->
 
           </div><!-- /info-grid -->
+
+          {alumni.status === 'approved' && (
+            <div class="similar-section">
+              <h2 class="similar-title">Similar Alumni</h2>
+              {similarAlumni.length > 0 ? (
+                <div class="similar-row">
+                  {similarAlumni.map((item) => (
+                    <article class="similar-card">
+                      {item.photo_blob_url ? (
+                        <img src={item.photo_blob_url} alt={item.name} class="similar-avatar" />
+                      ) : (
+                        <div class="similar-avatar similar-avatar-placeholder">{getInitials(item.name || 'A')}</div>
+                      )}
+                      <h3>{item.name}</h3>
+                      <p>{item.faculty || 'Alumni'}</p>
+                      <a href={`/alumni/profiles/${item.slug}`} class="similar-link">View Profile</a>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p class="similar-empty">{similarMessage || 'No similar alumni found yet.'}</p>
+              )}
+            </div>
+          )}
 
           <!-- Edit Profile placeholder section -->
           <div id="edit" class="edit-placeholder">
@@ -823,6 +977,60 @@ const interests = alumni?.interests
     margin: 0;
   }
 
+  .completeness-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    align-items: center;
+  }
+
+  .completeness-circle {
+    --completion: 0;
+    --completion-color: #ef4444;
+    width: 112px;
+    height: 112px;
+    border-radius: 9999px;
+    display: grid;
+    place-items: center;
+    background: conic-gradient(var(--completion-color) calc(var(--completion) * 1%), #e2e8f0 0);
+    position: relative;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .completeness-circle::after {
+    content: '';
+    position: absolute;
+    inset: 9px;
+    background: white;
+    border-radius: 9999px;
+  }
+
+  .completeness-circle span {
+    position: relative;
+    z-index: 1;
+  }
+
+  .missing-list,
+  .suggestion-list {
+    margin: 0;
+    padding-left: 1rem;
+    color: #475569;
+    font-size: 0.85rem;
+  }
+
+  .missing-list li,
+  .suggestion-list li {
+    margin-bottom: 0.35rem;
+  }
+
+  .completeness-note {
+    margin: 0;
+    color: #166534;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
   /* ── Skills / Interests tags ── */
   .tags-section {
     margin-bottom: 1rem;
@@ -866,6 +1074,104 @@ const interests = alumni?.interests
     background: #eff6ff;
     color: #1e40af;
     border: 1px solid #bfdbfe;
+  }
+
+  .tag-ai {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+  }
+
+  .tag-keyword {
+    background: #ede9fe;
+    color: #5b21b6;
+    border: 1px solid #c4b5fd;
+  }
+
+  .ai-bio-details summary {
+    cursor: pointer;
+    color: #2e4096;
+    font-weight: 600;
+    margin-bottom: 0.7rem;
+  }
+
+  .similar-section {
+    margin-top: 1.5rem;
+    background: white;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    padding: 1.25rem;
+  }
+
+  .similar-title {
+    margin: 0 0 1rem;
+    color: #0f172a;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .similar-row {
+    display: flex;
+    gap: 0.9rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+
+  .similar-card {
+    min-width: 180px;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.85rem;
+    padding: 0.9rem;
+    background: #f8fafc;
+    text-align: center;
+  }
+
+  .similar-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 9999px;
+    object-fit: cover;
+    margin: 0 auto 0.5rem;
+  }
+
+  .similar-avatar-placeholder {
+    display: grid;
+    place-items: center;
+    background: #2e4096;
+    color: white;
+    font-weight: 700;
+  }
+
+  .similar-card h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 0.92rem;
+  }
+
+  .similar-card p {
+    margin: 0.25rem 0 0.65rem;
+    color: #64748b;
+    font-size: 0.8rem;
+  }
+
+  .similar-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.38rem 0.62rem;
+    border-radius: 0.5rem;
+    background: #2e4096;
+    color: white;
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .similar-empty {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.9rem;
   }
 
   /* ── Edit placeholder ── */
