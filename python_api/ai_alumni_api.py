@@ -105,8 +105,8 @@ def openai_json_call(system_prompt: str, user_prompt: str, temperature: float = 
         if parsed is None:
             return None, "Model returned invalid JSON"
         return parsed, None
-    except Exception as exc:
-        return None, str(exc)
+    except Exception:
+        return None, "OpenAI request failed"
 
 
 def profile_text(record: Dict[str, Any]) -> str:
@@ -235,8 +235,8 @@ def similar_alumni():
             )
 
         return jsonify({"alumni": result}), 200
-    except Exception as exc:
-        return jsonify({"success": False, "message": "Failed to fetch similar alumni", "error": str(exc)}), 500
+    except Exception:
+        return jsonify({"success": False, "message": "Failed to fetch similar alumni"}), 500
 
 
 @ai_alumni_bp.route("/api/ai/nl-search", methods=["POST"])
@@ -260,7 +260,7 @@ def nl_search():
 
         parsed, error = openai_json_call(system_prompt, user_prompt, temperature=0.0, max_tokens=400)
         if error or parsed is None:
-            return jsonify({"success": False, "message": f"Failed to parse NL search query: {error or 'unknown error'}"}), 500
+            return jsonify({"success": False, "message": "Failed to parse NL search query"}), 500
 
         filters = {
             "q": str(parsed.get("q") or "").strip(),
@@ -272,8 +272,8 @@ def nl_search():
         }
 
         return jsonify({"success": True, "filters": filters}), 200
-    except Exception as exc:
-        return jsonify({"success": False, "message": "Failed to parse natural language query", "error": str(exc)}), 500
+    except Exception:
+        return jsonify({"success": False, "message": "Failed to parse natural language query"}), 500
 
 
 @ai_alumni_bp.route("/api/ai/enrich-profile", methods=["POST"])
@@ -318,7 +318,7 @@ def enrich_profile():
 
         parsed, error = openai_json_call(system_prompt, user_prompt, temperature=0.3, max_tokens=500)
         if error or parsed is None:
-            return jsonify({"success": False, "message": f"Failed to enrich profile: {error or 'unknown error'}"}), 500
+            return jsonify({"success": False, "message": "Failed to enrich profile"}), 500
 
         suggested_skills = []
         for item in parsed.get("suggested_skills") or []:
@@ -342,8 +342,8 @@ def enrich_profile():
         )
 
         return jsonify({"success": True, "suggested_skills": suggested_skills, "enriched_bio": enriched_bio}), 200
-    except Exception as exc:
-        return jsonify({"success": False, "message": "Failed to enrich profile", "error": str(exc)}), 500
+    except Exception:
+        return jsonify({"success": False, "message": "Failed to enrich profile"}), 500
 
 
 def mentorship_reason(goals: str, skills_wanted: List[str], mentor: Dict[str, Any]) -> Optional[str]:
@@ -434,8 +434,8 @@ def mentorship_match():
             response_mentors.append(result)
 
         return jsonify({"mentors": response_mentors}), 200
-    except Exception as exc:
-        return jsonify({"success": False, "message": "Failed to match mentors", "error": str(exc)}), 500
+    except Exception:
+        return jsonify({"success": False, "message": "Failed to match mentors"}), 500
 
 
 @ai_alumni_bp.route("/api/ai/chat", methods=["POST"])
@@ -511,8 +511,8 @@ def ai_chat():
         ]
 
         return jsonify({"success": True, "response": answer.strip(), "suggestions": suggestions}), 200
-    except Exception as exc:
-        return jsonify({"success": False, "message": "Failed to generate chat response", "error": str(exc)}), 500
+    except Exception:
+        return jsonify({"success": False, "message": "Failed to generate chat response"}), 500
 
 
 def default_profile_suggestion(field: str) -> str:
@@ -607,8 +607,8 @@ def profile_completeness():
                 "suggestions": suggestions,
             }
         ), 200
-    except Exception as exc:
-        return jsonify({"success": False, "message": "Failed to calculate profile completeness", "error": str(exc)}), 500
+    except Exception:
+        return jsonify({"success": False, "message": "Failed to calculate profile completeness"}), 500
 
 
 @ai_alumni_bp.route("/api/ai/analyze-bio", methods=["POST"])
@@ -681,5 +681,5 @@ def analyze_bio():
         )
 
         return jsonify({"category": category, "keywords": keywords, "confidence": round(float(confidence), 2)}), 200
-    except Exception as exc:
-        return jsonify({"success": False, "message": "Failed to analyze bio", "error": str(exc)}), 500
+    except Exception:
+        return jsonify({"success": False, "message": "Failed to analyze bio"}), 500
