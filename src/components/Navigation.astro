@@ -85,7 +85,7 @@ const config = getSiteConfig();
                     
                     <!-- Quick Actions -->
                     <div class="mt-6 xl:mt-8 pt-4 xl:pt-6 border-t border-accent-100">
-                      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                         <a href="/alumni" class="btn btn-primary btn-sm w-full justify-center">
                           <Icon name="mdi:account-search" class="w-4 h-4 mr-2" />
                           <span class="hidden sm:inline">View All Alumni</span>
@@ -100,6 +100,11 @@ const config = getSiteConfig();
                           <Icon name="mdi:school-outline" class="w-4 h-4 mr-2" />
                           <span class="hidden sm:inline">Browse by Faculty</span>
                           <span class="sm:hidden">By Faculty</span>
+                        </a>
+                        <a href="/alumni/mentorship-match" class="btn btn-outline btn-sm w-full justify-center">
+                          <Icon name="mdi:handshake-outline" class="w-4 h-4 mr-2" />
+                          <span class="hidden sm:inline">Mentorship Match</span>
+                          <span class="sm:hidden">Mentorship</span>
                         </a>
                       </div>
                     </div>
@@ -214,9 +219,12 @@ const config = getSiteConfig();
                   </div>
                   
                   <!-- Quick Actions -->
-                  <div class="pt-4 border-t border-accent-100 mt-4">
+                  <div class="pt-4 border-t border-accent-100 mt-4 space-y-2">
                     <a href="/alumni" class="block w-full text-center btn btn-primary btn-sm">
                       View All Alumni
+                    </a>
+                    <a href="/alumni/mentorship-match" class="block w-full text-center btn btn-outline btn-sm">
+                      Mentorship Match
                     </a>
                   </div>
                 </div>

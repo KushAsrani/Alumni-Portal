@@ -1,0 +1,120 @@
+<div id="alumni-chatbot" class="chatbot-root">
+  <button id="chatbot-toggle" class="chatbot-toggle" type="button" aria-label="Open alumni assistant">
+    🤖 Alumni AI
+  </button>
+
+  <div id="chatbot-drawer" class="chatbot-drawer hidden" aria-live="polite">
+    <div class="chatbot-header">
+      <h3>Alumni Assistant</h3>
+      <button id="chatbot-close" type="button" aria-label="Close chatbot">✕</button>
+    </div>
+
+    <div id="chatbot-messages" class="chatbot-messages">
+      <div class="chat-msg assistant">Hi! Ask me about alumni trends and directory insights.</div>
+    </div>
+
+    <div id="chatbot-suggestions" class="chatbot-suggestions"></div>
+
+    <form id="chatbot-form" class="chatbot-input-row">
+      <input id="chatbot-input" type="text" placeholder="Ask something about alumni..." autocomplete="off" />
+      <button id="chatbot-send" type="submit">Send</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const root = document.getElementById('alumni-chatbot');
+  if (root) {
+    const toggle = document.getElementById('chatbot-toggle');
+    const closeBtn = document.getElementById('chatbot-close');
+    const drawer = document.getElementById('chatbot-drawer');
+    const form = document.getElementById('chatbot-form');
+    const input = document.getElementById('chatbot-input');
+    const messages = document.getElementById('chatbot-messages');
+    const suggestions = document.getElementById('chatbot-suggestions');
+
+    const history = [];
+
+    const appendMessage = (role, content) => {
+      const div = document.createElement('div');
+      div.className = `chat-msg ${role === 'user' ? 'user' : 'assistant'}`;
+      div.textContent = content;
+      messages?.appendChild(div);
+      messages?.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    };
+
+    const setSuggestions = (items = []) => {
+      if (!suggestions) return;
+      suggestions.innerHTML = '';
+      items.forEach((item) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chat-suggestion';
+        btn.textContent = item;
+        btn.addEventListener('click', () => {
+          if (input) input.value = item;
+          form?.requestSubmit();
+        });
+        suggestions.appendChild(btn);
+      });
+    };
+
+    const sendMessage = async (message) => {
+      appendMessage('user', message);
+      history.push({ role: 'user', content: message });
+
+      try {
+        const response = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, conversation_history: history.slice(-10) }),
+        });
+
+        const data = await response.json();
+
+        if (!data?.success) {
+          appendMessage('assistant', data?.message || 'Chatbot requires AI configuration');
+          return;
+        }
+
+        appendMessage('assistant', data.response || 'No response available.');
+        history.push({ role: 'assistant', content: data.response || '' });
+        setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
+      } catch {
+        appendMessage('assistant', 'Unable to connect to the chatbot right now.');
+      }
+    };
+
+    toggle?.addEventListener('click', () => drawer?.classList.toggle('hidden'));
+    closeBtn?.addEventListener('click', () => drawer?.classList.add('hidden'));
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const message = input?.value?.trim();
+      if (!message) return;
+      if (input) input.value = '';
+      await sendMessage(message);
+    });
+
+    setSuggestions(['Who works at Google?', 'Alumni with Python skills']);
+  }
+</script>
+
+<style>
+  .chatbot-root { position: fixed; right: 1rem; bottom: 1rem; z-index: 60; }
+  .chatbot-toggle { background: #2e4096; color: white; border: none; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.875rem; font-weight: 600; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2); }
+  .chatbot-drawer { width: min(360px, calc(100vw - 2rem)); height: 500px; background: white; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2); margin-top: 0.75rem; display: flex; flex-direction: column; overflow: hidden; }
+  .chatbot-header { background: #2e4096; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; }
+  .chatbot-header h3 { margin: 0; font-size: 0.95rem; font-weight: 700; }
+  .chatbot-header button { background: transparent; border: none; color: white; font-size: 1rem; cursor: pointer; }
+  .chatbot-messages { flex: 1; padding: 0.75rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; background: #f8fafc; }
+  .chat-msg { padding: 0.6rem 0.75rem; border-radius: 0.75rem; font-size: 0.85rem; line-height: 1.4; max-width: 85%; }
+  .chat-msg.user { background: #2e4096; color: white; align-self: flex-end; }
+  .chat-msg.assistant { background: white; color: #1e293b; border: 1px solid #e2e8f0; align-self: flex-start; }
+  .chatbot-suggestions { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.6rem 0.75rem 0; background: #f8fafc; }
+  .chat-suggestion { border: 1px solid #cbd5e1; background: white; border-radius: 9999px; font-size: 0.75rem; padding: 0.25rem 0.6rem; color: #334155; cursor: pointer; }
+  .chatbot-input-row { display: flex; gap: 0.5rem; padding: 0.75rem; border-top: 1px solid #e2e8f0; }
+  .chatbot-input-row input { flex: 1; border: 1px solid #cbd5e1; border-radius: 0.6rem; padding: 0.5rem 0.6rem; font-size: 0.85rem; }
+  .chatbot-input-row button { border: none; background: #2e4096; color: white; border-radius: 0.6rem; padding: 0.5rem 0.8rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  .hidden { display: none; }
+</style>
