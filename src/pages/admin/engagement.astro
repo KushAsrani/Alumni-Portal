@@ -1,0 +1,329 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { isAuthenticated, getCurrentUser } from '../../lib/auth';
+
+if (!isAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/admin/login');
+}
+
+const currentUser = getCurrentUser(Astro.cookies);
+---
+
+<Layout title="Admin Engagement Dashboard | Alumni Portal">
+  <main class="dashboard-page">
+    <div class="container">
+      <div class="top-bar">
+        <div class="user-info">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span>Logged in as <strong>{currentUser}</strong></span>
+        </div>
+        <form action="/api/auth/logout" method="POST" style="display: inline;">
+          <button type="submit" class="logout-btn">Logout</button>
+        </form>
+      </div>
+
+      <header class="dashboard-header">
+        <div>
+          <h1>Alumni Engagement Dashboard</h1>
+          <p>Track profile views, connections, mentorship activity, and engagement trends.</p>
+        </div>
+        <nav class="dashboard-nav">
+          <a href="/admin/dashboard" class="nav-link">Dashboard</a>
+          <a href="/admin/registrations" class="nav-link">Registrations</a>
+          <a href="/admin/scraper-dashboard" class="nav-link">Job Scraper</a>
+          <a href="/admin/events" class="nav-link">Events</a>
+          <a href="/admin/engagement" class="nav-link active">Engagement</a>
+        </nav>
+      </header>
+
+      <div id="loading-state" class="section-card loading-state">
+        <div class="spinner"></div>
+        <span>Loading engagement analytics...</span>
+      </div>
+
+      <div id="empty-state" class="section-card empty-state hidden">
+        No engagement data yet. Engagement events will appear here as alumni use the portal.
+      </div>
+
+      <div id="dashboard-content" class="hidden">
+        <section class="stats-section">
+          <div class="stats-grid stats-grid-6">
+            <div class="stat-card stat-blue">
+              <div class="stat-content"><p class="stat-label">Total Profile Views</p><p id="totalProfileViews" class="stat-value">0</p></div>
+            </div>
+            <div class="stat-card stat-yellow">
+              <div class="stat-content"><p class="stat-label">Connection Requests</p><p id="totalConnectionRequests" class="stat-value">0</p></div>
+            </div>
+            <div class="stat-card stat-green">
+              <div class="stat-content"><p class="stat-label">Mentorship Bookings</p><p id="totalMentorshipBookings" class="stat-value">0</p></div>
+            </div>
+            <div class="stat-card stat-purple">
+              <div class="stat-content"><p class="stat-label">Active Alumni (30d)</p><p id="activeAlumniLast30Days" class="stat-value">0</p></div>
+            </div>
+            <div class="stat-card stat-orange">
+              <div class="stat-content"><p class="stat-label">Profile Updates</p><p id="totalProfileUpdates" class="stat-value">0</p></div>
+            </div>
+            <div class="stat-card stat-teal">
+              <div class="stat-content"><p class="stat-label">Total Logins</p><p id="totalLogins" class="stat-value">0</p></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card">
+          <h2>Engagement Trend (Last 6 Months)</h2>
+          <div id="trend-chart" class="trend-grid"></div>
+        </section>
+
+        <div class="bottom-grid">
+          <section class="section-card">
+            <h2>Top Viewed Profiles</h2>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead><tr><th>Rank</th><th>Name</th><th>Profile Views</th><th></th></tr></thead>
+                <tbody id="topViewedProfilesBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="section-card">
+            <h2>Top Mentors</h2>
+            <div id="topMentorsList" class="mentor-list"></div>
+          </section>
+        </div>
+
+        <section class="section-card">
+          <h2>Connection Request Stats</h2>
+          <div class="stats-grid connection-grid">
+            <div class="stat-mini"><span>Total Requests</span><strong id="connectionTotal">0</strong></div>
+            <div class="stat-mini"><span>Pending</span><strong id="connectionPending">0</strong></div>
+            <div class="stat-mini"><span>Accepted</span><strong id="connectionAccepted">0</strong></div>
+            <div class="stat-mini"><span>Last 30 Days</span><strong id="connection30">0</strong></div>
+          </div>
+        </section>
+
+        <section class="section-card">
+          <h2>Recent Activity Feed</h2>
+          <div id="activityFeed" class="activity-feed"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  const formatRelative = (value) => {
+    const date = new Date(value);
+    const diffMs = Date.now() - date.getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days === 1 ? '' : 's'} ago`;
+  };
+
+  const eventText = (event) => {
+    const alumniName = event.alumniName || 'An alumni';
+    const targetName = event.targetAlumniName || 'another alumni';
+
+    if (event.type === 'profile_view') return `${alumniName} viewed ${targetName}'s profile`;
+    if (event.type === 'connection_request') return `${alumniName} requested connection with ${targetName}`;
+    if (event.type === 'mentorship_booking') return `${alumniName} booked mentorship with ${targetName}`;
+    if (event.type === 'login') return `${alumniName} logged in`;
+    if (event.type === 'profile_update') return `${alumniName} updated profile details`;
+    return `${alumniName} performed an activity`;
+  };
+
+  const renderTrend = (monthly) => {
+    const chart = $('trend-chart');
+    const maxValue = Math.max(1, ...monthly.flatMap((m) => [m.profileViews, m.connections, m.mentorships]));
+
+    chart.innerHTML = monthly.map((item) => {
+      const viewsHeight = Math.round((item.profileViews / maxValue) * 100);
+      const connHeight = Math.round((item.connections / maxValue) * 100);
+      const mentorHeight = Math.round((item.mentorships / maxValue) * 100);
+      return `
+        <div class="month-group">
+          <div class="bars">
+            <div class="bar bar-blue" style="height:${viewsHeight}%" title="Profile Views: ${item.profileViews}"></div>
+            <div class="bar bar-yellow" style="height:${connHeight}%" title="Connections: ${item.connections}"></div>
+            <div class="bar bar-green" style="height:${mentorHeight}%" title="Mentorships: ${item.mentorships}"></div>
+          </div>
+          <p>${item.month}</p>
+        </div>
+      `;
+    }).join('');
+  };
+
+  const renderTopViewed = (items) => {
+    $('topViewedProfilesBody').innerHTML = items.map((item, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${item.alumniName || 'Unknown Alumni'}</td>
+        <td>${item.views || 0}</td>
+        <td><a class="table-link" href="/alumni/profiles">View Profile</a></td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" class="text-muted">No profile views yet.</td></tr>';
+  };
+
+  const renderTopMentors = (items) => {
+    const maxCount = Math.max(1, ...items.map((i) => i.sessionCount || 0));
+    $('topMentorsList').innerHTML = items.map((item, index) => {
+      const pct = Math.round(((item.sessionCount || 0) / maxCount) * 100);
+      return `
+        <div class="mentor-item">
+          <div class="mentor-row"><span>#${index + 1} ${item.alumniName || 'Unknown Mentor'}</span><strong>${item.sessionCount || 0}</strong></div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>
+      `;
+    }).join('') || '<p class="text-muted">No mentorship bookings yet.</p>';
+  };
+
+  const renderFeed = (feed) => {
+    $('activityFeed').innerHTML = feed.map((event) => `
+      <div class="activity-item">
+        <div>
+          <p class="activity-text">${eventText(event)}</p>
+          <p class="text-muted">${formatRelative(event.createdAt)}</p>
+        </div>
+      </div>
+    `).join('') || '<p class="text-muted">No recent activity.</p>';
+  };
+
+  const loadDashboard = async () => {
+    try {
+      const [statsRes, feedRes] = await Promise.all([
+        fetch('/api/admin/engagement-stats', { cache: 'no-store' }),
+        fetch('/api/admin/engagement-stats?feed=true', { cache: 'no-store' }),
+      ]);
+
+      if (!statsRes.ok || !feedRes.ok) throw new Error('Failed to load engagement data');
+
+      const stats = await statsRes.json();
+      const feedPayload = await feedRes.json();
+      const feed = Array.isArray(feedPayload.feed) ? feedPayload.feed : [];
+
+      $('totalProfileViews').textContent = String(stats.totalProfileViews || 0);
+      $('totalConnectionRequests').textContent = String(stats.totalConnectionRequests || 0);
+      $('totalMentorshipBookings').textContent = String(stats.totalMentorshipBookings || 0);
+      $('activeAlumniLast30Days').textContent = String(stats.activeAlumniLast30Days || 0);
+      $('totalProfileUpdates').textContent = String(stats.totalProfileUpdates || 0);
+      $('totalLogins').textContent = String(stats.totalLogins || 0);
+
+      $('connectionTotal').textContent = String(stats.totalConnectionRequests || 0);
+      $('connectionPending').textContent = String(stats.connectionRequestsPending || 0);
+      $('connectionAccepted').textContent = String(stats.connectionRequestsAccepted || 0);
+      $('connection30').textContent = String(stats.connectionRequestsLast30Days || 0);
+
+      renderTrend(Array.isArray(stats.engagementByMonth) ? stats.engagementByMonth : []);
+      renderTopViewed(Array.isArray(stats.topViewedProfiles) ? stats.topViewedProfiles : []);
+      renderTopMentors(Array.isArray(stats.topMentors) ? stats.topMentors : []);
+      renderFeed(feed);
+
+      const noData = (stats.totalProfileViews || 0) === 0
+        && (stats.totalConnectionRequests || 0) === 0
+        && (stats.totalMentorshipBookings || 0) === 0
+        && (stats.totalLogins || 0) === 0
+        && (stats.totalProfileUpdates || 0) === 0
+        && feed.length === 0;
+
+      if (noData) $('empty-state')?.classList.remove('hidden');
+      $('dashboard-content')?.classList.remove('hidden');
+    } catch (error) {
+      $('empty-state').textContent = 'Unable to load engagement data right now. Please refresh and try again.';
+      $('empty-state')?.classList.remove('hidden');
+    } finally {
+      $('loading-state')?.classList.add('hidden');
+    }
+  };
+
+  loadDashboard();
+</script>
+
+<style>
+  .dashboard-page { min-height: 100vh; background: #f9fafb; padding: 2rem 0; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+  .top-bar, .section-card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .top-bar { display:flex; justify-content:space-between; align-items:center; padding:1rem 1.5rem; margin-bottom:1.5rem; }
+  .user-info { display:flex; align-items:center; gap:0.5rem; color:#374151; font-size:0.875rem; }
+  .logout-btn { background:#fee2e2; color:#991b1b; border:none; border-radius:0.5rem; padding:0.5rem 1rem; font-weight:500; cursor:pointer; }
+  .dashboard-header { display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:2rem; }
+  .dashboard-header h1 { margin:0 0 0.5rem 0; color:#1f2937; }
+  .dashboard-header p { margin:0; color:#6b7280; }
+  .dashboard-nav { display:flex; gap:0.5rem; flex-wrap:wrap; }
+  .nav-link { padding:0.5rem 1rem; border-radius:0.5rem; color:#6b7280; text-decoration:none; font-weight:500; font-size:0.875rem; }
+  .nav-link.active { background:#4f46e5; color:white; }
+
+  .loading-state { margin-bottom:1.5rem; padding:2rem; display:flex; justify-content:center; align-items:center; gap:0.75rem; }
+  .spinner { width:1.25rem; height:1.25rem; border-radius:9999px; border:2px solid #4f46e5; border-top-color:transparent; animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display:none; }
+  .stats-section { margin-bottom:1.5rem; }
+  .stats-grid { display:grid; gap:1rem; }
+  .stats-grid-6 { grid-template-columns: repeat(3, 1fr); }
+  .stat-card { background:white; border-left:4px solid transparent; border-radius:0.75rem; padding:1rem 1.25rem; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+  .stat-blue { border-left-color:#3b82f6; }
+  .stat-yellow { border-left-color:#f59e0b; }
+  .stat-green { border-left-color:#10b981; }
+  .stat-purple { border-left-color:#8b5cf6; }
+  .stat-orange { border-left-color:#f97316; }
+  .stat-teal { border-left-color:#14b8a6; }
+  .stat-label { margin:0 0 0.25rem 0; color:#6b7280; text-transform:uppercase; font-size:0.75rem; letter-spacing:0.04em; }
+  .stat-value { margin:0; color:#1f2937; font-size:1.75rem; font-weight:700; }
+
+  .section-card { padding:1.5rem; margin-bottom:1.5rem; }
+  .section-card h2 { margin:0 0 1rem 0; color:#1f2937; }
+  .empty-state { color:#6b7280; text-align:center; }
+
+  .trend-grid { display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:0.75rem; align-items:end; min-height:220px; }
+  .month-group { display:flex; flex-direction:column; align-items:center; gap:0.5rem; }
+  .bars { width:100%; height:180px; display:flex; align-items:flex-end; justify-content:center; gap:4px; }
+  .bar { width:20px; border-radius:6px 6px 0 0; min-height:2px; }
+  .bar-blue { background:#60a5fa; }
+  .bar-yellow { background:#fbbf24; }
+  .bar-green { background:#34d399; }
+  .month-group p { margin:0; font-size:0.75rem; color:#6b7280; text-align:center; }
+
+  .bottom-grid { display:grid; grid-template-columns: 3fr 2fr; gap:1.5rem; margin-bottom:1.5rem; }
+  .table-wrapper { overflow-x:auto; }
+  .data-table { width:100%; border-collapse:collapse; }
+  .data-table th, .data-table td { padding:0.6rem 0.5rem; border-bottom:1px solid #f3f4f6; font-size:0.875rem; text-align:left; }
+  .data-table th { font-size:0.75rem; text-transform:uppercase; color:#6b7280; letter-spacing:0.05em; }
+  .table-link { color:#4f46e5; text-decoration:none; font-weight:500; }
+
+  .mentor-list { display:flex; flex-direction:column; gap:0.75rem; }
+  .mentor-item { background:#f9fafb; border-radius:0.5rem; padding:0.75rem; }
+  .mentor-row { display:flex; justify-content:space-between; margin-bottom:0.35rem; color:#374151; font-size:0.875rem; }
+  .progress-track { background:#e5e7eb; height:8px; border-radius:9999px; overflow:hidden; }
+  .progress-fill { background:#10b981; height:100%; }
+
+  .connection-grid { grid-template-columns: repeat(4, 1fr); }
+  .stat-mini { background:#f9fafb; border-radius:0.5rem; padding:0.9rem; display:flex; flex-direction:column; gap:0.2rem; }
+  .stat-mini span { color:#6b7280; font-size:0.78rem; }
+  .stat-mini strong { color:#1f2937; font-size:1.35rem; }
+
+  .activity-feed { display:flex; flex-direction:column; gap:0.75rem; }
+  .activity-item { background:#f9fafb; border-radius:0.5rem; padding:0.75rem 0.9rem; border-left:3px solid #4f46e5; }
+  .activity-text { margin:0 0 0.25rem 0; color:#374151; font-size:0.9rem; }
+  .text-muted { margin:0; color:#6b7280; font-size:0.78rem; }
+
+  @media (max-width: 1024px) {
+    .stats-grid-6 { grid-template-columns: repeat(2, 1fr); }
+    .bottom-grid { grid-template-columns:1fr; }
+    .trend-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  }
+  @media (max-width: 768px) {
+    .container { padding:0 1rem; }
+    .connection-grid, .stats-grid-6, .trend-grid { grid-template-columns:1fr; }
+    .bars { width:90px; }
+  }
+</style>
