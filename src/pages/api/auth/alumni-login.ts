@@ -2,6 +2,7 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { authenticateAlumni, setAlumniAuthCookie } from '../../../lib/alumni-auth';
+import { connectToDatabase } from '../../../lib/mongodb';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -34,6 +35,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       alumni.name,
       alumni.photo_blob_url
     );
+
+    // Fire-and-forget login engagement tracking
+    try {
+      const { db } = await connectToDatabase();
+      const engagementCol = db.collection('alumni_engagement');
+      await engagementCol.insertOne({
+        type: 'login',
+        alumniId: alumni._id.toString(),
+        alumniName: alumni.name,
+        status: 'completed',
+        createdAt: new Date(),
+      });
+    } catch {
+      // silently ignore - tracking must never break main functionality
+    }
     
     return new Response(
       JSON.stringify({

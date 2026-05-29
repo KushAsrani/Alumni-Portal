@@ -1,0 +1,266 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
+import { connectToDatabase } from '../../lib/mongodb';
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login?redirect=/alumni/mentorship');
+}
+
+const session = getCurrentAlumni(Astro.cookies)!;
+const preselectedMentorId = Astro.url.searchParams.get('mentor') || '';
+
+// Fetch mentors from MongoDB
+let mentors: any[] = [];
+try {
+  const { db } = await connectToDatabase();
+  const col = db.collection('alumni_registrations');
+  const raw = await col
+    .find({ open_to_mentorship: true, status: 'approved' })
+    .sort({ name: 1 })
+    .toArray();
+
+  mentors = raw.map((m: any) => ({
+    _id: m._id.toString(),
+    name: m.name || '',
+    faculty: m.faculty || '',
+    year: m.year || '',
+    company: m.company || '',
+    designation: m.job_designation || m.position || '',
+    photo: m.photo_blob_url || m.photo || null,
+    skills: Array.isArray(m.skills)
+      ? m.skills.slice(0, 3)
+      : typeof m.skills === 'string'
+        ? m.skills.split(',').map((s: string) => s.trim()).filter(Boolean).slice(0, 3)
+        : [],
+    short_bio: (m.short_bio || '').substring(0, 120),
+  }));
+} catch {
+  // mentors stays empty
+}
+---
+
+<Layout title="Request Mentorship">
+  <section class="section py-12">
+    <div class="container mx-auto px-4">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Find a Mentor</h1>
+        <p class="text-gray-500 mt-1">Connect with experienced alumni for guidance and career support.</p>
+      </div>
+
+      {mentors.length === 0 && (
+        <div class="text-center py-20 text-gray-400">
+          <p class="text-lg">No mentors available at the moment. Check back soon!</p>
+        </div>
+      )}
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="mentor-grid">
+        {mentors.map((mentor) => (
+          <div class="bg-white shadow-md rounded-2xl p-6 flex flex-col gap-3">
+            <div class="flex items-center gap-4">
+              <img
+                src={mentor.photo || '/logo.svg'}
+                alt={mentor.name}
+                class="w-16 h-16 rounded-full object-cover border border-gray-200 flex-shrink-0"
+              />
+              <div class="min-w-0">
+                <h3 class="font-semibold text-gray-900 truncate">{mentor.name}</h3>
+                <p class="text-sm text-primary-600 truncate">{mentor.faculty}{mentor.year ? `, ${mentor.year}` : ''}</p>
+                {(mentor.designation || mentor.company) && (
+                  <p class="text-xs text-gray-500 truncate">
+                    {mentor.designation}{mentor.company ? ` @ ${mentor.company}` : ''}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {mentor.skills.length > 0 && (
+              <div class="flex flex-wrap gap-1">
+                {mentor.skills.map((skill: string) => (
+                  <span class="badge badge-primary text-xs">{skill}</span>
+                ))}
+              </div>
+            )}
+
+            {mentor.short_bio && (
+              <p class="text-sm text-gray-600 line-clamp-2">{mentor.short_bio}{mentor.short_bio.length >= 120 ? '…' : ''}</p>
+            )}
+
+            <button
+              class="btn btn-primary btn-sm mt-auto"
+              data-mentor-id={mentor._id}
+              data-mentor-name={mentor.name}
+              onclick="openMentorshipModal(this)"
+            >
+              Request Mentorship
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal -->
+  <div id="mentorship-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 px-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8 relative">
+      <button
+        onclick="closeMentorshipModal()"
+        class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors"
+        aria-label="Close"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <h2 class="text-xl font-bold mb-1">Request Mentorship</h2>
+      <p class="text-sm text-gray-500 mb-6">Sending request to <strong id="modal-mentor-name"></strong></p>
+
+      <form id="mentorship-form" class="space-y-4">
+        <input type="hidden" id="modal-mentor-id" />
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="goal">Goal <span class="text-red-500">*</span></label>
+          <textarea
+            id="goal"
+            name="goal"
+            rows="3"
+            required
+            placeholder="What do you want to achieve through this mentorship?"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="topic">Topic <span class="text-red-500">*</span></label>
+          <input
+            id="topic"
+            name="topic"
+            type="text"
+            required
+            placeholder="e.g. Career transitions, Technical skills, Interview prep"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="duration">Session Duration <span class="text-red-500">*</span></label>
+          <select
+            id="duration"
+            name="duration"
+            required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Select duration…</option>
+            <option value="30 mins">30 mins</option>
+            <option value="1 hour">1 hour</option>
+            <option value="1.5 hours">1.5 hours</option>
+            <option value="2 hours">2 hours</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="msg">Personal Message</label>
+          <textarea
+            id="msg"
+            name="message"
+            rows="3"
+            placeholder="Introduce yourself and explain why you chose this mentor…"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+          ></textarea>
+        </div>
+
+        <div id="form-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" onclick="closeMentorshipModal()" class="btn btn-outline btn-sm">Cancel</button>
+          <button type="submit" id="submit-btn" class="btn btn-primary btn-sm">Send Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3">
+    <span id="toast-icon" class="text-xl"></span>
+    <p id="toast-msg" class="text-sm text-gray-800"></p>
+  </div>
+</Layout>
+
+<script define:vars={{ preselectedMentorId }}>
+  function openMentorshipModal(btn) {
+    const mentorId = btn.getAttribute('data-mentor-id');
+    const mentorName = btn.getAttribute('data-mentor-name');
+    document.getElementById('modal-mentor-id').value = mentorId;
+    document.getElementById('modal-mentor-name').textContent = mentorName;
+    document.getElementById('mentorship-form').reset();
+    document.getElementById('modal-mentor-id').value = mentorId;
+    document.getElementById('form-error').classList.add('hidden');
+    document.getElementById('mentorship-modal').classList.remove('hidden');
+  }
+
+  function closeMentorshipModal() {
+    document.getElementById('mentorship-modal').classList.add('hidden');
+  }
+
+  function showToast(message, success) {
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+    const toastIcon = document.getElementById('toast-icon');
+    toastMsg.textContent = message;
+    toastIcon.textContent = success ? '✅' : '❌';
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 4000);
+  }
+
+  document.getElementById('mentorship-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById('form-error');
+    const submitBtn = document.getElementById('submit-btn');
+    errorEl.classList.add('hidden');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
+
+    const mentorId = document.getElementById('modal-mentor-id').value;
+    const mentorName = document.getElementById('modal-mentor-name').textContent;
+    const goal = document.getElementById('goal').value.trim();
+    const topic = document.getElementById('topic').value.trim();
+    const duration = document.getElementById('duration').value;
+    const message = document.getElementById('msg').value.trim();
+
+    try {
+      const res = await fetch('/api/mentorship/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mentorId, goal, topic, duration, message }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeMentorshipModal();
+        showToast(`Mentorship request sent to ${mentorName}!`, true);
+      } else {
+        errorEl.textContent = data.message || 'Failed to send request.';
+        errorEl.classList.remove('hidden');
+      }
+    } catch {
+      errorEl.textContent = 'Network error. Please try again.';
+      errorEl.classList.remove('hidden');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Send Request';
+    }
+  });
+
+  // Auto-open modal if ?mentor= is set
+  if (preselectedMentorId) {
+    const btn = document.querySelector(`[data-mentor-id="${preselectedMentorId}"]`);
+    if (btn) openMentorshipModal(btn);
+  }
+
+  // Close on backdrop click
+  document.getElementById('mentorship-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeMentorshipModal();
+  });
+</script>

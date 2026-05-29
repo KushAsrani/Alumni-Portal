@@ -99,6 +99,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Fire-and-forget profile update engagement tracking
+    try {
+      const engagementCol = db.collection('alumni_engagement');
+      await engagementCol.insertOne({
+        type: 'profile_update',
+        alumniId: session.alumniId,
+        alumniName: session.name,
+        status: 'completed',
+        createdAt: new Date(),
+      });
+    } catch {
+      // silently ignore - tracking must never break main functionality
+    }
+
     return new Response(
       JSON.stringify({ success: true, message: 'Profile updated successfully' }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
