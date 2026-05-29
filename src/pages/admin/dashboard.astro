@@ -121,6 +121,7 @@ function formatDate(date: Date | string | undefined) {
           <a href="/admin/registrations" class="nav-link">Registrations</a>
           <a href="/admin/scraper-dashboard" class="nav-link">Job Scraper</a>
           <a href="/admin/events" class="nav-link">Events</a>
+          <a href="/admin/engagement" class="nav-link">Engagement</a>
         </nav>
       </header>
 
@@ -237,6 +238,78 @@ function formatDate(date: Date | string | undefined) {
               </svg>
               <span>Export Alumni Registrations to CSV</span>
             </button>
+
+            <a href="/admin/engagement" class="action-card action-orange">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              <span>Alumni Engagement Dashboard</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="actions-section">
+        <div class="section-card">
+          <div class="engagement-section-header">
+            <div>
+              <h2>Alumni Engagement Overview</h2>
+              <p class="section-subtitle">Live engagement metrics from the last 30 days</p>
+            </div>
+            <a href="/admin/engagement" class="view-all-link">View Engagement Dashboard</a>
+          </div>
+          <div class="stats-grid engagement-grid">
+            <div class="stat-card stat-blue">
+              <div class="stat-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <p class="stat-label">Profile Views (30d)</p>
+                <p class="stat-value" id="engagementProfileViews30d">—</p>
+              </div>
+            </div>
+            <div class="stat-card stat-yellow">
+              <div class="stat-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 11v6"></path>
+                  <path d="M20 14h6"></path>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <p class="stat-label">Connection Requests (30d)</p>
+                <p class="stat-value" id="engagementConnections30d">—</p>
+              </div>
+            </div>
+            <div class="stat-card stat-green">
+              <div class="stat-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 1 7 0l2 2a3 3 0 1 1-4 4l-2-2"></path>
+                  <path d="M14 11a5 5 0 0 0-7 0l-2 2a3 3 0 1 0 4 4l2-2"></path>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <p class="stat-label">Mentorship Bookings (30d)</p>
+                <p class="stat-value" id="engagementMentorship30d">—</p>
+              </div>
+            </div>
+            <div class="stat-card stat-purple">
+              <div class="stat-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <p class="stat-label">Active Alumni (30d)</p>
+                <p class="stat-value" id="engagementActiveAlumni30d">—</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -329,6 +402,26 @@ function formatDate(date: Date | string | undefined) {
 </Layout>
 
 <script define:vars={{ adminApiKey }}>
+  const updateEngagementOverview = async () => {
+    try {
+      const response = await fetch('/api/admin/engagement-stats', { cache: 'no-store' });
+      if (!response.ok) return;
+      const data = await response.json();
+      const setValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(value ?? 0);
+      };
+      setValue('engagementProfileViews30d', data.profileViewsLast30Days);
+      setValue('engagementConnections30d', data.connectionRequestsLast30Days);
+      setValue('engagementMentorship30d', data.mentorshipLast30Days);
+      setValue('engagementActiveAlumni30d', data.activeAlumniLast30Days);
+    } catch (error) {
+      console.error('Failed to load engagement overview:', error);
+    }
+  };
+
+  updateEngagementOverview();
+
   document.getElementById('exportCsvBtn')?.addEventListener('click', async () => {
     try {
       const response = await fetch('/api/export-csv', {
@@ -598,6 +691,7 @@ function formatDate(date: Date | string | undefined) {
   .action-indigo { background: #eef2ff; color: #4338ca; }
   .action-green  { background: #ecfdf5; color: #065f46; }
   .action-gray   { background: #f9fafb; color: #374151; }
+  .action-orange { background: #fff7ed; color: #c2410c; }
 
   .action-badge {
     position: absolute;
@@ -632,6 +726,37 @@ function formatDate(date: Date | string | undefined) {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.25rem;
+  }
+
+  .engagement-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .section-subtitle {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  .engagement-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (max-width: 1024px) {
+    .engagement-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .engagement-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .section-header h2 {
