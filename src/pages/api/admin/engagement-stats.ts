@@ -1,8 +1,8 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
-import { connectToDatabase } from '../../../../lib/mongodb';
-import { isAuthenticated } from '../../../../lib/auth';
+import { connectToDatabase } from '../../../lib/mongodb';
+import { isAuthenticated } from '../../../lib/auth';
 
 type EngagementType = 'profile_view' | 'connection_request' | 'mentorship_booking' | 'login' | 'profile_update';
 
