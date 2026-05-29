@@ -4,6 +4,7 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { getSiteConfig } from '../../utils/config';
 import { authenticateAlumni, setAlumniAuthCookie, isAlumniAuthenticated } from '../../lib/alumni-auth';
+import { connectToDatabase } from '../../lib/mongodb';
 
 const config = getSiteConfig();
 let errorMessage = '';
@@ -58,6 +59,22 @@ if (Astro.request.method === 'POST') {
           alumni.name,
           alumni.photo_blob_url
         );
+
+        // Fire-and-forget login engagement tracking
+        try {
+          const { db } = await connectToDatabase();
+          const engagementCol = db.collection('alumni_engagement');
+          await engagementCol.insertOne({
+            type: 'login',
+            alumniId: alumni._id.toString(),
+            alumniName: alumni.name,
+            status: 'completed',
+            createdAt: new Date(),
+          });
+        } catch {
+          // silently ignore - tracking must never break main functionality
+        }
+
         return Astro.redirect(safeRedirect);
       } else {
         errorMessage = result.message || 'Invalid credentials';

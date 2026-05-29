@@ -6,6 +6,7 @@ import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import Icon from '../../../components/Icon.astro';
 import { connectToDatabase } from '../../../lib/mongodb';
 import { getCollection } from 'astro:content';
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../../lib/alumni-auth';
 
 const { slug } = Astro.params;
 
@@ -132,6 +133,13 @@ const breadcrumbItems = [
 ];
 
 const socials = alum.social || {};
+
+// Check if viewer is logged in and is not viewing their own profile
+const viewerSession = getCurrentAlumni(Astro.cookies);
+const viewerAlumniId = viewerSession?.alumniId || '';
+const targetAlumniId = alum._id?.toString() || '';
+const targetAlumniName = alum.name || '';
+const showNetworkButtons = viewerSession !== null && viewerAlumniId !== targetAlumniId;
 ---
 
 <Layout title={alum.name} description={alum.short_bio}>
@@ -186,6 +194,28 @@ const socials = alum.social || {};
                   <Icon name="mdi:web" class="w-6 h-6" />
                 </a>
               )}
+            </div>
+          )}
+
+          {showNetworkButtons && (
+            <div class="mt-6 flex flex-col gap-2">
+              {alum.open_to_mentorship && (
+                <a
+                  href={`/alumni/mentorship?mentor=${targetAlumniId}`}
+                  class="btn btn-primary btn-sm w-full justify-center"
+                >
+                  <Icon name="mdi:handshake-outline" class="w-4 h-4 mr-1" />
+                  Request Mentorship
+                </a>
+              )}
+              <button
+                id="connect-btn"
+                class="btn btn-outline btn-sm w-full justify-center"
+                onclick="sendConnectionRequest()"
+              >
+                <Icon name="mdi:account-plus-outline" class="w-4 h-4 mr-1" />
+                Connect
+              </button>
             </div>
           )}
         </aside>
@@ -291,4 +321,103 @@ const socials = alum.social || {};
       </div>
     </div>
   </section>
+
+  <!-- Toast -->
+  <div id="profile-toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3">
+    <span id="profile-toast-icon" class="text-xl"></span>
+    <p id="profile-toast-msg" class="text-sm text-gray-800"></p>
+  </div>
 </Layout>
+
+<script define:vars={{ targetAlumniId, targetAlumniName, viewerAlumniId, showNetworkButtons }}>
+  function showToast(message, success) {
+    const toast = document.getElementById('profile-toast');
+    document.getElementById('profile-toast-msg').textContent = message;
+    document.getElementById('profile-toast-icon').textContent = success ? '✅' : '❌';
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 4000);
+  }
+
+  // Profile view tracking (fire-and-forget)
+  if (viewerAlumniId && viewerAlumniId !== targetAlumniId) {
+    (async () => {
+      try {
+        const sessionRes = await fetch('/api/auth/alumni-session');
+        const sessionData = await sessionRes.json();
+        if (sessionData.authenticated) {
+          await fetch('/api/admin/track-engagement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'profile_view',
+              alumniId: viewerAlumniId,
+              alumniName: sessionData.data?.name || '',
+              targetAlumniId,
+              targetAlumniName,
+              status: 'completed',
+            }),
+          });
+        }
+      } catch {
+        // silently ignore
+      }
+    })();
+  }
+
+  // Connect button logic
+  async function sendConnectionRequest() {
+    const btn = document.getElementById('connect-btn');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    try {
+      const res = await fetch('/api/connections/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetId: targetAlumniId, message: '' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        btn.textContent = 'Request Sent ✓';
+        btn.className = 'btn btn-sm w-full justify-center bg-green-50 text-green-700 border border-green-200 cursor-default';
+        showToast('Connection request sent!', true);
+      } else if (res.status === 409) {
+        btn.textContent = 'Connected ✓';
+        btn.className = 'btn btn-sm w-full justify-center bg-green-50 text-green-700 border border-green-200 cursor-default';
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Connect';
+        showToast(data.message || 'Failed to send request.', false);
+      }
+    } catch {
+      btn.disabled = false;
+      btn.textContent = 'Connect';
+      showToast('Network error. Please try again.', false);
+    }
+  }
+
+  // Check if already connected
+  if (showNetworkButtons) {
+    (async () => {
+      try {
+        const res = await fetch('/api/connections/my-connections');
+        const data = await res.json();
+        if (data.success) {
+          const isConnected = data.connections.some(
+            (c) => c.requesterId === targetAlumniId || c.targetId === targetAlumniId
+          );
+          const isPending = data.pendingIncoming.some((c) => c.requesterId === targetAlumniId);
+          const btn = document.getElementById('connect-btn');
+          if (btn && (isConnected || isPending)) {
+            btn.textContent = isConnected ? 'Connected ✓' : 'Request Pending';
+            btn.className = 'btn btn-sm w-full justify-center bg-green-50 text-green-700 border border-green-200 cursor-default';
+            btn.disabled = true;
+          }
+        }
+      } catch {
+        // silently ignore
+      }
+    })();
+  }
+</script>

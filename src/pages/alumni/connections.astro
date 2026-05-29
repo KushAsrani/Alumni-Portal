@@ -1,0 +1,168 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login?redirect=/alumni/connections');
+}
+
+const session = getCurrentAlumni(Astro.cookies)!;
+---
+
+<Layout title="My Connections">
+  <section class="section py-12">
+    <div class="container mx-auto px-4">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">My Connections</h1>
+        <p class="text-gray-500 mt-1">Manage your alumni network connections.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-gray-200 mb-6 gap-0">
+        <button
+          id="tab-connections"
+          onclick="switchTab('connections')"
+          class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-primary-600 text-primary-600 transition-colors"
+        >
+          My Connections
+        </button>
+        <button
+          id="tab-pending"
+          onclick="switchTab('pending')"
+          class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          Pending Requests
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading" class="text-center py-12 text-gray-400">Loading…</div>
+
+      <!-- My Connections panel -->
+      <div id="panel-connections" class="hidden space-y-4"></div>
+
+      <!-- Pending panel -->
+      <div id="panel-pending" class="hidden space-y-4"></div>
+    </div>
+  </section>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3">
+    <span id="toast-icon" class="text-xl"></span>
+    <p id="toast-msg" class="text-sm text-gray-800"></p>
+  </div>
+</Layout>
+
+<script define:vars={{ currentAlumniId: session.alumniId }}>
+  let currentTab = 'connections';
+
+  function showToast(message, success) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = message;
+    document.getElementById('toast-icon').textContent = success ? '✅' : '❌';
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 4000);
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function renderConnectionCard(conn) {
+    const isRequester = conn.requesterId === currentAlumniId;
+    const otherName = isRequester ? conn.targetName : conn.requesterName;
+    return `
+      <div class="bg-white shadow-md rounded-2xl p-6 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg flex-shrink-0">
+          ${(otherName || '?')[0].toUpperCase()}
+        </div>
+        <div class="min-w-0 flex-1">
+          <h3 class="font-semibold text-gray-900 truncate">${otherName || 'Unknown'}</h3>
+          <p class="text-xs text-gray-400">Connected ${formatDate(conn.updatedAt || conn.createdAt)}</p>
+        </div>
+        <span class="badge bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full">Connected ✓</span>
+      </div>`;
+  }
+
+  function renderPendingCard(req) {
+    return `
+      <div class="bg-white shadow-md rounded-2xl p-6">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg flex-shrink-0">
+              ${(req.requesterName || '?')[0].toUpperCase()}
+            </div>
+            <div class="min-w-0">
+              <h3 class="font-semibold text-gray-900 truncate">${req.requesterName || 'Unknown'}</h3>
+              ${req.message ? `<p class="text-sm text-gray-500 mt-1">${req.message}</p>` : ''}
+              <p class="text-xs text-gray-400 mt-1">${formatDate(req.createdAt)}</p>
+            </div>
+          </div>
+          <span class="badge bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-1 rounded-full shrink-0">Pending</span>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button onclick="respond('${req._id}','accept')" class="btn btn-primary btn-sm">Accept</button>
+          <button onclick="respond('${req._id}','decline')" class="btn btn-outline btn-sm text-red-600 border-red-300 hover:bg-red-50">Decline</button>
+        </div>
+      </div>`;
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    ['connections', 'pending'].forEach((t) => {
+      document.getElementById(`tab-${t}`).className =
+        t === tab
+          ? 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-primary-600 text-primary-600 transition-colors'
+          : 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors';
+      document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+    });
+  }
+
+  async function respond(requestId, action) {
+    try {
+      const res = await fetch('/api/connections/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Request ${action}ed.`, true);
+        await loadConnections();
+      } else {
+        showToast(data.message || 'Failed to respond.', false);
+      }
+    } catch {
+      showToast('Network error. Please try again.', false);
+    }
+  }
+
+  async function loadConnections() {
+    try {
+      const res = await fetch('/api/connections/my-connections');
+      const data = await res.json();
+      if (data.success) {
+        const connPanel = document.getElementById('panel-connections');
+        const pendingPanel = document.getElementById('panel-pending');
+
+        connPanel.innerHTML = data.connections.length
+          ? data.connections.map(renderConnectionCard).join('')
+          : '<p class="text-center text-gray-400 py-12">No connections yet. Start networking!</p>';
+
+        pendingPanel.innerHTML = data.pendingIncoming.length
+          ? data.pendingIncoming.map(renderPendingCard).join('')
+          : '<p class="text-center text-gray-400 py-12">No pending requests.</p>';
+      }
+    } catch {
+      document.getElementById('panel-connections').innerHTML = '<p class="text-center text-red-400 py-12">Failed to load connections.</p>';
+    } finally {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById(`panel-${currentTab}`).classList.remove('hidden');
+    }
+  }
+
+  loadConnections();
+</script>

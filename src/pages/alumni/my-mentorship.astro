@@ -1,0 +1,181 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login?redirect=/alumni/my-mentorship');
+}
+
+const session = getCurrentAlumni(Astro.cookies)!;
+---
+
+<Layout title="My Mentorship">
+  <section class="section py-12">
+    <div class="container mx-auto px-4">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">My Mentorship</h1>
+        <p class="text-gray-500 mt-1">Track mentorship requests you've sent and received.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-gray-200 mb-6 gap-0">
+        <button
+          id="tab-sent"
+          onclick="switchTab('sent')"
+          class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-primary-600 text-primary-600 transition-colors"
+        >
+          My Requests
+        </button>
+        <button
+          id="tab-received"
+          onclick="switchTab('received')"
+          class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          Mentorship Offers
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading" class="text-center py-12 text-gray-400">Loading…</div>
+
+      <!-- Sent Requests -->
+      <div id="panel-sent" class="hidden space-y-4"></div>
+
+      <!-- Received Requests -->
+      <div id="panel-received" class="hidden space-y-4"></div>
+    </div>
+  </section>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3">
+    <span id="toast-icon" class="text-xl"></span>
+    <p id="toast-msg" class="text-sm text-gray-800"></p>
+  </div>
+</Layout>
+
+<script define:vars={{ currentAlumniId: session.alumniId }}>
+  let currentTab = 'sent';
+  let allRequests = [];
+
+  const STATUS_BADGE = {
+    pending: 'bg-yellow-100 text-yellow-700',
+    accepted: 'bg-green-100 text-green-700',
+    declined: 'bg-red-100 text-red-700',
+    completed: 'bg-blue-100 text-blue-700',
+    cancelled: 'bg-gray-100 text-gray-600',
+  };
+
+  function showToast(message, success) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = message;
+    document.getElementById('toast-icon').textContent = success ? '✅' : '❌';
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 4000);
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function renderCard(req, isIncoming) {
+    const badge = STATUS_BADGE[req.status] || 'bg-gray-100 text-gray-600';
+    const otherName = isIncoming ? req.menteeName : req.mentorName;
+    const label = isIncoming ? 'From' : 'To';
+
+    const respondButtons = isIncoming && req.status === 'pending' ? `
+      <div class="flex gap-2 mt-3">
+        <textarea id="resp-${req._id}" placeholder="Optional response message…" rows="2"
+          class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
+        <div class="flex flex-col gap-2">
+          <button onclick="respond('${req._id}','accept')" class="btn btn-primary btn-sm whitespace-nowrap">Accept</button>
+          <button onclick="respond('${req._id}','decline')" class="btn btn-outline btn-sm whitespace-nowrap text-red-600 border-red-300 hover:bg-red-50">Decline</button>
+        </div>
+      </div>` : '';
+
+    const mentorResp = req.mentorResponse ? `<p class="text-sm text-gray-500 mt-1 italic">"${req.mentorResponse}"</p>` : '';
+    const scheduled = req.scheduledAt ? `<p class="text-xs text-gray-400 mt-1">Scheduled: ${formatDate(req.scheduledAt)}</p>` : '';
+
+    return `
+      <div class="bg-white shadow-md rounded-2xl p-6">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="text-xs text-gray-400 uppercase tracking-wide font-medium">${label} Mentor</p>
+            <h3 class="font-semibold text-gray-900">${otherName}</h3>
+            <p class="text-sm text-gray-600 mt-1"><strong>Topic:</strong> ${req.topic}</p>
+            <p class="text-sm text-gray-600"><strong>Goal:</strong> ${req.goal}</p>
+            <p class="text-sm text-gray-600"><strong>Duration:</strong> ${req.duration}</p>
+            ${req.message ? `<p class="text-sm text-gray-500 mt-1">${req.message}</p>` : ''}
+            ${mentorResp}
+            ${scheduled}
+            <p class="text-xs text-gray-400 mt-2">${formatDate(req.createdAt)}</p>
+          </div>
+          <span class="badge text-xs font-medium px-2 py-1 rounded-full shrink-0 ${badge} capitalize">${req.status}</span>
+        </div>
+        ${respondButtons}
+      </div>`;
+  }
+
+  function renderPanel(panelId, requests, isIncoming) {
+    const panel = document.getElementById(panelId);
+    if (requests.length === 0) {
+      panel.innerHTML = '<p class="text-center text-gray-400 py-12">No requests here yet.</p>';
+    } else {
+      panel.innerHTML = requests.map((r) => renderCard(r, isIncoming)).join('');
+    }
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    ['sent', 'received'].forEach((t) => {
+      document.getElementById(`tab-${t}`).className =
+        t === tab
+          ? 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-primary-600 text-primary-600 transition-colors'
+          : 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors';
+      document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+    });
+  }
+
+  async function respond(requestId, action) {
+    const responseText = document.getElementById(`resp-${requestId}`)?.value || '';
+    try {
+      const res = await fetch('/api/mentorship/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action, response: responseText }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Request ${action}ed successfully.`, true);
+        await loadRequests();
+      } else {
+        showToast(data.message || 'Failed to respond.', false);
+      }
+    } catch {
+      showToast('Network error. Please try again.', false);
+    }
+  }
+
+  async function loadRequests() {
+    try {
+      const res = await fetch('/api/mentorship/my-requests');
+      const data = await res.json();
+      if (data.success) {
+        allRequests = data.requests;
+        const sent = allRequests.filter((r) => r.menteeId === currentAlumniId);
+        const received = allRequests.filter((r) => r.mentorId === currentAlumniId);
+        renderPanel('panel-sent', sent, false);
+        renderPanel('panel-received', received, true);
+      }
+    } catch {
+      document.getElementById('panel-sent').innerHTML = '<p class="text-center text-red-400 py-12">Failed to load requests.</p>';
+    } finally {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById(`panel-${currentTab}`).classList.remove('hidden');
+    }
+  }
+
+  loadRequests();
+</script>
