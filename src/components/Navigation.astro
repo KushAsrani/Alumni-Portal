@@ -85,11 +85,16 @@ const config = getSiteConfig();
                     
                     <!-- Quick Actions -->
                     <div class="mt-6 xl:mt-8 pt-4 xl:pt-6 border-t border-accent-100">
-                      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
                         <a href="/alumni" class="btn btn-primary btn-sm w-full justify-center">
                           <Icon name="mdi:account-search" class="w-4 h-4 mr-2" />
                           <span class="hidden sm:inline">View All Alumni</span>
                           <span class="sm:hidden">All Alumni</span>
+                        </a>
+                        <a href="/alumni/analytics" class="btn btn-outline btn-sm w-full justify-center">
+                          <iconify-icon icon="mdi:chart-bar" class="w-4 h-4 mr-2"></iconify-icon>
+                          <span class="hidden sm:inline">Analytics</span>
+                          <span class="sm:hidden">Analytics</span>
                         </a>
                         <a href="/alumni/years" class="btn btn-outline btn-sm w-full justify-center">
                           <Icon name="mdi:calendar-multiple" class="w-4 h-4 mr-2" />
@@ -222,6 +227,9 @@ const config = getSiteConfig();
                   <div class="pt-4 border-t border-accent-100 mt-4 space-y-2">
                     <a href="/alumni" class="block w-full text-center btn btn-primary btn-sm">
                       View All Alumni
+                    </a>
+                    <a href="/alumni/analytics" class="block w-full text-center btn btn-outline btn-sm">
+                      Analytics
                     </a>
                     <a href="/alumni/mentorship-match" class="block w-full text-center btn btn-outline btn-sm">
                       Mentorship Match

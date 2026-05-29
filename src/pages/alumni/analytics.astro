@@ -1,0 +1,293 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Alumni Analytics">
+  <section class="py-10 md:py-14 bg-gray-50 min-h-screen">
+    <div class="container-custom space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-bold text-accent-900">Alumni Analytics</h1>
+          <p class="text-accent-600 mt-2">Live insights from approved alumni profiles.</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="last-updated" class="text-sm text-accent-500">Last updated: --</span>
+          <button
+            id="refresh-btn"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+            type="button"
+          >
+            <iconify-icon icon="mdi:refresh" width="18" height="18"></iconify-icon>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div id="loading-state" class="rounded-xl border border-gray-100 bg-white shadow-sm p-8 flex items-center justify-center gap-3">
+        <div class="w-5 h-5 rounded-full border-2 border-primary-600 border-t-transparent animate-spin"></div>
+        <span class="text-accent-600">Loading analytics...</span>
+      </div>
+
+      <div id="error-state" class="hidden rounded-xl border border-red-100 bg-red-50 text-red-700 p-6 shadow-sm"></div>
+
+      <div id="dashboard-content" class="hidden space-y-6">
+        <section>
+          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <p class="text-xs uppercase tracking-wide text-accent-500">Total Alumni</p>
+              <p id="total-alumni" class="mt-2 text-2xl font-bold text-accent-900">0</p>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <p class="text-xs uppercase tracking-wide text-accent-500">Faculties Represented</p>
+              <p id="total-faculties" class="mt-2 text-2xl font-bold text-accent-900">0</p>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <p class="text-xs uppercase tracking-wide text-accent-500">Graduation Years</p>
+              <p id="total-years" class="mt-2 text-2xl font-bold text-accent-900">0</p>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <p class="text-xs uppercase tracking-wide text-accent-500">Open to Mentor</p>
+              <p id="open-mentor" class="mt-2 text-2xl font-bold text-accent-900">0</p>
+              <p id="open-mentor-pct" class="text-xs text-accent-500"></p>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <p class="text-xs uppercase tracking-wide text-accent-500">Open to Work</p>
+              <p id="open-work" class="mt-2 text-2xl font-bold text-accent-900">0</p>
+              <p id="open-work-pct" class="text-xs text-accent-500"></p>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <p class="text-xs uppercase tracking-wide text-accent-500">Recently Joined</p>
+              <p id="recently-joined" class="mt-2 text-2xl font-bold text-accent-900">0</p>
+              <p class="text-xs text-accent-500">Last 30 days</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <h2 class="text-lg font-semibold text-accent-900 mb-4">Top Skills Across Alumni</h2>
+          <div id="skills-cloud" class="flex flex-wrap items-center gap-3"></div>
+        </section>
+
+        <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h2 class="text-lg font-semibold text-accent-900 mb-4">Alumni by Faculty</h2>
+            <div id="faculty-chart" class="space-y-3"></div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h2 class="text-lg font-semibold text-accent-900 mb-4">Alumni by Graduation Year</h2>
+            <div id="year-chart" class="h-72 border border-gray-100 rounded-lg p-3 flex items-end gap-2 overflow-x-auto"></div>
+          </div>
+        </section>
+
+        <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h2 class="text-lg font-semibold text-accent-900 mb-4">Top Companies / Industries</h2>
+            <div id="companies-list" class="space-y-3"></div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h2 class="text-lg font-semibold text-accent-900 mb-4">Alumni by Location</h2>
+            <div id="locations-list" class="space-y-3"></div>
+          </div>
+        </section>
+
+        <section>
+          <h2 class="text-lg font-semibold text-accent-900 mb-4">Profile Completeness Stats</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <p class="text-sm text-accent-600">Profiles with Photo</p>
+              <p id="profiles-photo" class="mt-2 text-2xl font-bold text-accent-900">0</p>
+              <p id="profiles-photo-pct" class="text-xs text-accent-500"></p>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <p class="text-sm text-accent-600">Profiles with LinkedIn</p>
+              <p id="profiles-linkedin" class="mt-2 text-2xl font-bold text-accent-900">0</p>
+              <p id="profiles-linkedin-pct" class="text-xs text-accent-500"></p>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <p class="text-sm text-accent-600">Mentorship Available</p>
+              <p id="profiles-mentorship" class="mt-2 text-2xl font-bold text-accent-900">0</p>
+              <p id="profiles-mentorship-pct" class="text-xs text-accent-500"></p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const loadingState = $('loading-state');
+    const errorState = $('error-state');
+    const dashboardContent = $('dashboard-content');
+    const refreshButton = $('refresh-btn');
+    const lastUpdated = $('last-updated');
+
+    const formatCount = (value) => Number(value || 0).toLocaleString();
+    const formatPercent = (value, total) => {
+      if (!total) return '0% of total';
+      return `${((value / total) * 100).toFixed(1)}% of total`;
+    };
+
+    const escapeHtml = (value) =>
+      String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+
+    const showLoading = (isLoading) => {
+      loadingState?.classList.toggle('hidden', !isLoading);
+      if (isLoading) {
+        errorState?.classList.add('hidden');
+        dashboardContent?.classList.add('hidden');
+      }
+    };
+
+    const renderRankedList = (items, key, mountId) => {
+      const mount = $(mountId);
+      if (!mount) return;
+      const maxCount = Math.max(...items.map((item) => item.count || 0), 1);
+      mount.innerHTML = items
+        .map((item, index) => {
+          const width = ((item.count || 0) / maxCount) * 100;
+          return `
+            <div class="rounded-lg border border-gray-100 p-3">
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-sm text-accent-700 truncate"><span class="font-semibold text-primary-700">#${index + 1}</span> ${escapeHtml(item[key])}</p>
+                <span class="px-2 py-1 text-xs rounded-full bg-primary-50 text-primary-700 font-medium">${formatCount(item.count)}</span>
+              </div>
+              <div class="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-primary-600 transition-all duration-700" style="width: 0%" data-width="${width}"></div>
+              </div>
+            </div>`;
+        })
+        .join('');
+      requestAnimationFrame(() => {
+        mount.querySelectorAll('[data-width]').forEach((bar) => {
+          bar.style.width = `${bar.getAttribute('data-width')}%`;
+        });
+      });
+    };
+
+    const renderData = (data) => {
+      const totalAlumni = Number(data.totalAlumni || 0);
+
+      $('total-alumni').textContent = formatCount(totalAlumni);
+      $('total-faculties').textContent = formatCount(data.totalFaculties);
+      $('total-years').textContent = formatCount(data.totalGraduationYears);
+      $('open-mentor').textContent = formatCount(data.mentorshipAvailable);
+      $('open-mentor-pct').textContent = formatPercent(data.mentorshipAvailable || 0, totalAlumni);
+      $('open-work').textContent = formatCount(data.openToWork);
+      $('open-work-pct').textContent = formatPercent(data.openToWork || 0, totalAlumni);
+      $('recently-joined').textContent = formatCount(data.recentlyJoined);
+
+      const skills = Array.isArray(data.topSkills) ? data.topSkills : [];
+      const maxSkill = Math.max(...skills.map((item) => item.count || 0), 1);
+      $('skills-cloud').innerHTML = skills.length
+        ? skills
+            .map((item) => {
+              const ratio = (item.count || 0) / maxSkill;
+              const fontSize = 0.75 + ratio * 0.9;
+              const paddingY = 0.3 + ratio * 0.25;
+              const paddingX = 0.55 + ratio * 0.4;
+              return `<span title="${formatCount(item.count)} alumni" class="inline-flex items-start gap-1 rounded-full border border-primary-100 bg-primary-50 text-primary-700" style="font-size:${fontSize}rem;padding:${paddingY}rem ${paddingX}rem;">
+                  ${escapeHtml(item.skill)}<sup class="text-[10px] opacity-70">${formatCount(item.count)}</sup>
+                </span>`;
+            })
+            .join('')
+        : '<p class="text-sm text-accent-500">No skills data available.</p>';
+
+      const facultyData = [...(data.facultyDistribution || [])].sort((a, b) => (b.count || 0) - (a.count || 0));
+      const facultyMax = Math.max(...facultyData.map((item) => item.count || 0), 1);
+      $('faculty-chart').innerHTML = facultyData.length
+        ? facultyData
+            .map((item) => {
+              const width = ((item.count || 0) / facultyMax) * 100;
+              return `<div class="space-y-1">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-accent-700 truncate pr-2">${escapeHtml(item.faculty)}</span>
+                  <span class="text-accent-500">${formatCount(item.count)}</span>
+                </div>
+                <div class="h-2.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div class="h-full bg-primary-600 transition-all duration-700" style="width: 0%" data-width="${width}"></div>
+                </div>
+              </div>`;
+            })
+            .join('')
+        : '<p class="text-sm text-accent-500">No faculty distribution data available.</p>';
+      requestAnimationFrame(() => {
+        $('faculty-chart')?.querySelectorAll('[data-width]').forEach((bar) => {
+          bar.style.width = `${bar.getAttribute('data-width')}%`;
+        });
+      });
+
+      const yearData = data.yearDistribution || [];
+      const yearMax = Math.max(...yearData.map((item) => item.count || 0), 1);
+      $('year-chart').innerHTML = yearData.length
+        ? yearData
+            .map((item) => {
+              const height = ((item.count || 0) / yearMax) * 100;
+              return `<div class="min-w-[46px] flex-1 flex flex-col items-center justify-end gap-1">
+                <span class="text-[11px] text-accent-600">${formatCount(item.count)}</span>
+                <div class="w-8 bg-primary-500 rounded-t-md transition-all duration-700" style="height:0%" data-height="${height}"></div>
+                <span class="text-[11px] text-accent-500">${escapeHtml(item.year)}</span>
+              </div>`;
+            })
+            .join('')
+        : '<p class="text-sm text-accent-500">No graduation year data available.</p>';
+      requestAnimationFrame(() => {
+        $('year-chart')?.querySelectorAll('[data-height]').forEach((bar) => {
+          bar.style.height = `${bar.getAttribute('data-height')}%`;
+        });
+      });
+
+      renderRankedList(data.industryDistribution || [], 'company', 'companies-list');
+      renderRankedList(data.locationDistribution || [], 'location', 'locations-list');
+
+      $('profiles-photo').textContent = formatCount(data.profilesWithPhoto);
+      $('profiles-photo-pct').textContent = formatPercent(data.profilesWithPhoto || 0, totalAlumni);
+      $('profiles-linkedin').textContent = formatCount(data.profilesWithLinkedIn);
+      $('profiles-linkedin-pct').textContent = formatPercent(data.profilesWithLinkedIn || 0, totalAlumni);
+      $('profiles-mentorship').textContent = formatCount(data.mentorshipAvailable);
+      $('profiles-mentorship-pct').textContent = formatPercent(data.mentorshipAvailable || 0, totalAlumni);
+
+      lastUpdated.textContent = `Last updated: just now (${new Date().toLocaleTimeString()})`;
+      dashboardContent?.classList.remove('hidden');
+    };
+
+    const fetchStats = async () => {
+      showLoading(true);
+      refreshButton?.setAttribute('disabled', 'true');
+      refreshButton?.classList.add('opacity-70', 'cursor-not-allowed');
+
+      try {
+        const response = await fetch('/api/alumni/stats', { cache: 'no-store' });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload?.message || payload?.error || 'Unable to load analytics right now.');
+        }
+
+        renderData(payload);
+      } catch (error) {
+        errorState.textContent = error?.message || 'Unable to load analytics right now. Please try again.';
+        errorState?.classList.remove('hidden');
+      } finally {
+        showLoading(false);
+        refreshButton?.removeAttribute('disabled');
+        refreshButton?.classList.remove('opacity-70', 'cursor-not-allowed');
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchStats();
+      refreshButton?.addEventListener('click', fetchStats);
+    });
+  </script>
+</Layout>
