@@ -198,6 +198,58 @@ try {
             </div>
           </div>
 
+          <!-- Availability & Preferences -->
+          <div class="form-section">
+            <h2 class="form-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+              Availability & Preferences
+            </h2>
+            <div class="space-y-4">
+              <label class="preference-toggle" for="open_to_mentorship">
+                <div>
+                  <span class="preference-toggle-title">Open to Mentorship</span>
+                  <p class="preference-toggle-description">Allow other alumni and students to send you mentorship requests</p>
+                </div>
+                <input
+                  id="open_to_mentorship"
+                  name="open_to_mentorship"
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-accent-300 text-primary-600 focus:ring-primary-500"
+                  checked={Boolean(alumni.open_to_mentorship)}
+                />
+              </label>
+              <label class="preference-toggle" for="open_to_work">
+                <div>
+                  <span class="preference-toggle-title">Open to Work</span>
+                  <p class="preference-toggle-description">Show that you're open to new job opportunities</p>
+                </div>
+                <input
+                  id="open_to_work"
+                  name="open_to_work"
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-accent-300 text-primary-600 focus:ring-primary-500"
+                  checked={Boolean(alumni.open_to_work)}
+                />
+              </label>
+              <label class="preference-toggle" for="open_to_referral">
+                <div>
+                  <span class="preference-toggle-title">Open to Referrals</span>
+                  <p class="preference-toggle-description">Allow others to request job referrals from you</p>
+                </div>
+                <input
+                  id="open_to_referral"
+                  name="open_to_referral"
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-accent-300 text-primary-600 focus:ring-primary-500"
+                  checked={Boolean(alumni.open_to_referral)}
+                />
+              </label>
+            </div>
+          </div>
+
           <!-- Social Links -->
           <div class="form-section">
             <h2 class="form-section-title">
@@ -314,7 +366,7 @@ try {
       submitBtn.textContent = 'Saving…';
     }
 
-    const data: Record<string, string | number | null> = {};
+    const data: Record<string, string | number | boolean | null> = {};
     const formData = new FormData(form!);
 
     for (const [key, value] of formData.entries()) {
@@ -324,6 +376,10 @@ try {
       } else {
         data[key] = str || null;
       }
+    }
+
+    for (const field of ['open_to_mentorship', 'open_to_work', 'open_to_referral']) {
+      data[field] = (document.getElementById(field) as HTMLInputElement | null)?.checked ?? false;
     }
 
     try {
@@ -434,5 +490,31 @@ try {
     border-radius: 0.625rem;
     font-size: 0.875rem;
     font-weight: 500;
+  }
+
+  .preference-toggle {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.125rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.875rem;
+    background: #f8fafc;
+    cursor: pointer;
+  }
+
+  .preference-toggle-title {
+    display: block;
+    color: #0f172a;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .preference-toggle-description {
+    margin: 0.25rem 0 0;
+    color: #64748b;
+    font-size: 0.875rem;
+    line-height: 1.5;
   }
 </style>
