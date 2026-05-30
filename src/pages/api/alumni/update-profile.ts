@@ -29,6 +29,9 @@ const ALLOWED_FIELDS = [
   'work_experience',
   'interests',
   'short_bio',
+  'open_to_mentorship',
+  'open_to_work',
+  'open_to_referral',
 ];
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -56,6 +59,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   for (const field of ALLOWED_FIELDS) {
     if (field in body) {
       updateData[field] = body[field];
+    }
+  }
+
+  const booleanFields = ['open_to_mentorship', 'open_to_work', 'open_to_referral'];
+  for (const field of booleanFields) {
+    if (field in body) {
+      updateData[field] = body[field] === true || body[field] === 'true' || body[field] === 1;
     }
   }
 
