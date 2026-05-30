@@ -15,7 +15,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const session = getCurrentAlumni(cookies)!;
 
-  let body: { mentorId?: string; goal?: string; topic?: string; duration?: string; message?: string };
+  let body: {
+    mentorId?: string;
+    goal?: string;
+    topic?: string;
+    duration?: string;
+    message?: string;
+    mode?: string;
+    sessions?: string;
+    preferredSchedule?: string;
+    background?: string;
+    focusSkills?: string[];
+  };
   try {
     body = await request.json();
   } catch {
@@ -25,11 +36,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 
-  const { mentorId, goal, topic, duration, message } = body;
+  const { mentorId, goal, topic, duration, message, mode, sessions, preferredSchedule, background, focusSkills } = body;
 
-  if (!mentorId || !goal || !topic || !duration) {
+  if (!mentorId || !goal || !topic || !duration || !mode || !sessions) {
     return new Response(
-      JSON.stringify({ success: false, message: 'mentorId, goal, topic, and duration are required' }),
+      JSON.stringify({ success: false, message: 'mentorId, goal, topic, duration, mode, and sessions are required' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (goal.trim().length < 30) {
+    return new Response(
+      JSON.stringify({ success: false, message: 'Goal must be at least 30 characters long' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if ((message || '').trim().length > 500) {
+    return new Response(
+      JSON.stringify({ success: false, message: 'Personal message cannot exceed 500 characters' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -82,6 +107,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       goal,
       topic,
       duration,
+      mode,
+      sessions,
+      preferredSchedule: (preferredSchedule || '').trim(),
+      background: (background || '').trim(),
+      focusSkills: Array.isArray(focusSkills) ? focusSkills.filter(Boolean).slice(0, 20) : [],
       message: message || '',
       status: 'pending',
       createdAt: now,

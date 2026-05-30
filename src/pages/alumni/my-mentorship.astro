@@ -15,43 +15,62 @@ const session = getCurrentAlumni(Astro.cookies)!;
   <div id="my-mentorship-root" data-alumni-id={session.alumniId}>
     <section class="section py-12">
       <div class="container mx-auto px-4">
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">My Mentorship</h1>
-        <p class="text-gray-500 mt-1">Track mentorship requests you've sent and received.</p>
-      </div>
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-gray-900">My Mentorship</h1>
+          <p class="text-gray-500 mt-1">Track mentorship requests you've sent and received.</p>
+        </div>
 
-      <!-- Tabs -->
-      <div class="flex border-b border-gray-200 mb-6 gap-0">
-        <button
-          id="tab-sent"
-          onclick="switchTab('sent')"
-          class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-primary-600 text-primary-600 transition-colors"
-        >
-          My Requests
-        </button>
-        <button
-          id="tab-received"
-          onclick="switchTab('received')"
-          class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors"
-        >
-          Mentorship Offers
-        </button>
-      </div>
+        <div class="flex border-b border-gray-200 mb-6 gap-0">
+          <button
+            id="tab-sent"
+            onclick="switchTab('sent')"
+            class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-primary-600 text-primary-600 transition-colors"
+          >
+            My Requests
+          </button>
+          <button
+            id="tab-received"
+            onclick="switchTab('received')"
+            class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Mentorship Offers
+          </button>
+        </div>
 
-      <!-- Loading -->
-      <div id="loading" class="text-center py-12 text-gray-400">Loading…</div>
-
-      <!-- Sent Requests -->
-      <div id="panel-sent" class="hidden space-y-4"></div>
-
-      <!-- Received Requests -->
-      <div id="panel-received" class="hidden space-y-4"></div>
+        <div id="loading" class="text-center py-12 text-gray-400">Loading…</div>
+        <div id="panel-sent" class="hidden space-y-4"></div>
+        <div id="panel-received" class="hidden space-y-4"></div>
       </div>
     </section>
 
-    <!-- Toast -->
-    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3">
-      <span id="toast-icon" class="text-xl"></span>
+    <div id="respond-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4" role="dialog" aria-modal="true" aria-labelledby="respond-confirm-title">
+      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+        <h3 id="respond-confirm-title" class="text-lg font-semibold text-gray-900"></h3>
+        <p id="respond-confirm-body" class="mt-2 text-sm text-gray-600"></p>
+        <div class="mt-6 flex justify-end gap-3">
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('respond-confirm-modal')">Cancel</button>
+          <button type="button" id="respond-confirm-action" class="btn btn-primary btn-sm" onclick="confirmRespond()"></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="respond-result-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4" role="dialog" aria-modal="true" aria-labelledby="respond-result-title">
+      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+        <div class="flex items-center gap-2">
+          <span id="respond-result-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          </span>
+          <h3 id="respond-result-title" class="text-lg font-semibold text-gray-900"></h3>
+        </div>
+        <p id="respond-result-body" class="mt-2 text-sm text-gray-600"></p>
+        <div class="mt-6 text-right">
+          <button type="button" id="respond-result-close-btn" class="btn btn-outline btn-sm" onclick="closeModal('respond-result-modal')">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3" role="status" aria-live="polite">
+      <span id="toast-icon"></span>
       <p id="toast-msg" class="text-sm text-gray-800"></p>
     </div>
   </div>
@@ -61,6 +80,8 @@ const session = getCurrentAlumni(Astro.cookies)!;
   const currentAlumniId = document.getElementById('my-mentorship-root')?.dataset.alumniId || '';
   let currentTab = 'sent';
   let allRequests = [];
+  let pendingRespondAction = null;
+  const modalState = { activeId: null, lastFocus: null };
 
   const STATUS_BADGE = {
     pending: 'bg-yellow-100 text-yellow-700',
@@ -70,47 +91,126 @@ const session = getCurrentAlumni(Astro.cookies)!;
     cancelled: 'bg-gray-100 text-gray-600',
   };
 
-  function showToast(message, success) {
+  function getFocusable(modal) {
+    return Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter((el) => !el.hasAttribute('disabled'));
+  }
+
+  function trapFocus(modal, event) {
+    if (event.key !== 'Tab') return;
+    const focusables = getFocusable(modal);
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  window.openModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modalState.lastFocus = document.activeElement;
+    modalState.activeId = modalId;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    const focusables = getFocusable(modal);
+    if (focusables.length) {
+      focusables[0].focus();
+    }
+  };
+
+  window.closeModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (modalState.activeId === modalId) {
+      modalState.activeId = null;
+      if (modalState.lastFocus && typeof modalState.lastFocus.focus === 'function') {
+        modalState.lastFocus.focus();
+      }
+    }
+  };
+
+  document.addEventListener('keydown', (event) => {
+    if (!modalState.activeId) return;
+    const modal = document.getElementById(modalState.activeId);
+    if (!modal) return;
+    if (event.key === 'Escape') {
+      window.closeModal(modalState.activeId);
+      return;
+    }
+    trapFocus(modal, event);
+  });
+
+  ['respond-confirm-modal', 'respond-result-modal'].forEach((modalId) => {
+    document.getElementById(modalId)?.addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) {
+        window.closeModal(modalId);
+      }
+    });
+  });
+
+  window.showToast = function(message, success) {
     const toast = document.getElementById('toast');
     document.getElementById('toast-msg').textContent = message;
-    document.getElementById('toast-icon').textContent = success ? '✅' : '❌';
+    document.getElementById('toast-icon').innerHTML = success
+      ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>'
+      : '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
     toast.classList.remove('hidden');
     setTimeout(() => toast.classList.add('hidden'), 4000);
-  }
+  };
 
   function formatDate(iso) {
     if (!iso) return '';
     return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getRequestById(requestId) {
+    return allRequests.find((request) => request._id === requestId);
+  }
+
   function renderCard(req, isIncoming) {
     const badge = STATUS_BADGE[req.status] || 'bg-gray-100 text-gray-600';
-    const otherName = isIncoming ? req.menteeName : req.mentorName;
-    const label = isIncoming ? 'From' : 'To';
+    const otherName = escapeHtml(isIncoming ? req.menteeName : req.mentorName);
+    const label = isIncoming ? 'From Mentee' : 'To Mentor';
 
     const respondButtons = isIncoming && req.status === 'pending' ? `
       <div class="flex gap-2 mt-3">
         <textarea id="resp-${req._id}" placeholder="Optional response message…" rows="2"
           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
         <div class="flex flex-col gap-2">
-          <button onclick="respond('${req._id}','accept')" class="btn btn-primary btn-sm whitespace-nowrap">Accept</button>
-          <button onclick="respond('${req._id}','decline')" class="btn btn-outline btn-sm whitespace-nowrap text-red-600 border-red-300 hover:bg-red-50">Decline</button>
+          <button onclick="openRespondConfirm('${escapeHtml(req._id)}','accept')" class="btn btn-primary btn-sm whitespace-nowrap">Accept</button>
+          <button onclick="openRespondConfirm('${escapeHtml(req._id)}','decline')" class="btn btn-outline btn-sm whitespace-nowrap text-red-600 border-red-300 hover:bg-red-50">Decline</button>
         </div>
       </div>` : '';
 
-    const mentorResp = req.mentorResponse ? `<p class="text-sm text-gray-500 mt-1 italic">"${req.mentorResponse}"</p>` : '';
+    const mentorResp = req.mentorResponse ? `<p class="text-sm text-gray-500 mt-1 italic">"${escapeHtml(req.mentorResponse)}"</p>` : '';
     const scheduled = req.scheduledAt ? `<p class="text-xs text-gray-400 mt-1">Scheduled: ${formatDate(req.scheduledAt)}</p>` : '';
 
     return `
       <div class="bg-white shadow-md rounded-2xl p-6">
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0">
-            <p class="text-xs text-gray-400 uppercase tracking-wide font-medium">${label} Mentor</p>
+            <p class="text-xs text-gray-400 uppercase tracking-wide font-medium">${label}</p>
             <h3 class="font-semibold text-gray-900">${otherName}</h3>
-            <p class="text-sm text-gray-600 mt-1"><strong>Topic:</strong> ${req.topic}</p>
-            <p class="text-sm text-gray-600"><strong>Goal:</strong> ${req.goal}</p>
-            <p class="text-sm text-gray-600"><strong>Duration:</strong> ${req.duration}</p>
-            ${req.message ? `<p class="text-sm text-gray-500 mt-1">${req.message}</p>` : ''}
+            <p class="text-sm text-gray-600 mt-1"><strong>Topic:</strong> ${escapeHtml(req.topic || '')}</p>
+            <p class="text-sm text-gray-600"><strong>Goal:</strong> ${escapeHtml(req.goal || '')}</p>
+            <p class="text-sm text-gray-600"><strong>Duration:</strong> ${escapeHtml(req.duration || '')}</p>
+            ${req.message ? `<p class="text-sm text-gray-500 mt-1">${escapeHtml(req.message)}</p>` : ''}
             ${mentorResp}
             ${scheduled}
             <p class="text-xs text-gray-400 mt-2">${formatDate(req.createdAt)}</p>
@@ -141,23 +241,73 @@ const session = getCurrentAlumni(Astro.cookies)!;
     });
   };
 
-  window.respond = async function(requestId, action) {
+  window.openRespondConfirm = function(requestId, action) {
+    const request = getRequestById(requestId);
+    if (!request) {
+      window.showToast('Request details not found.', false);
+      return;
+    }
+
+    pendingRespondAction = { requestId, action };
+    const isAccept = action === 'accept';
+
+    document.getElementById('respond-confirm-title').textContent = isAccept ? 'Accept Mentorship Request?' : 'Decline Mentorship Request?';
+    document.getElementById('respond-confirm-action').textContent = isAccept ? 'Accept Request' : 'Decline Request';
+    document.getElementById('respond-confirm-action').className = isAccept ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm text-red-600 border-red-300 hover:bg-red-50';
+
+    document.getElementById('respond-confirm-body').innerHTML = isAccept
+      ? `You are about to accept a mentorship request from <strong>${escapeHtml(request.menteeName || 'the mentee')}</strong>. Topic: <strong>${escapeHtml(request.topic || 'N/A')}</strong>. Duration: <strong>${escapeHtml(request.duration || 'N/A')}</strong>. By accepting, you commit to scheduling and conducting this mentorship session. The mentee will be notified.`
+      : `You are about to decline the mentorship request from <strong>${escapeHtml(request.menteeName || 'the mentee')}</strong>. The mentee will be notified that their request was not accepted this time. You can always accept future requests.`;
+
+    window.openModal('respond-confirm-modal');
+  };
+
+  window.confirmRespond = async function() {
+    if (!pendingRespondAction) return;
+    const { requestId, action } = pendingRespondAction;
     const responseText = document.getElementById(`resp-${requestId}`)?.value || '';
+    const confirmBtn = document.getElementById('respond-confirm-action');
+
     try {
+      confirmBtn.disabled = true;
       const res = await fetch('/api/mentorship/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestId, action, response: responseText }),
       });
       const data = await res.json();
-      if (data.success) {
-        showToast(`Request ${action}ed successfully.`, true);
-        await loadRequests();
-      } else {
-        showToast(data.message || 'Failed to respond.', false);
+      if (!data.success) {
+        window.showToast(data.message || 'Failed to respond.', false);
+        return;
       }
+
+      const request = getRequestById(requestId);
+      const menteeName = escapeHtml(request?.menteeName || 'the mentee');
+      const menteeEmail = escapeHtml(request?.menteeEmail || 'their shared contact details');
+      const iconEl = document.getElementById('respond-result-icon');
+      const closeBtnEl = document.getElementById('respond-result-close-btn');
+
+      document.getElementById('respond-result-title').textContent = action === 'accept' ? 'Request Accepted!' : 'Request Declined';
+      document.getElementById('respond-result-body').innerHTML = action === 'accept'
+        ? `You have accepted the mentorship request from <strong>${menteeName}</strong>. Please reach out to them at <strong>${menteeEmail}</strong> to schedule your session. You can find all your mentorship details in this page.`
+        : `You have declined the mentorship request from <strong>${menteeName}</strong>. They will be notified. If you change your mind, please contact the alumni office.`;
+      if (iconEl) {
+        iconEl.innerHTML = action === 'accept'
+          ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>'
+          : '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+      }
+      if (closeBtnEl) {
+        closeBtnEl.textContent = action === 'accept' ? 'Got it' : 'Close';
+      }
+
+      window.closeModal('respond-confirm-modal');
+      window.openModal('respond-result-modal');
+      await loadRequests();
     } catch {
-      showToast('Network error. Please try again.', false);
+      window.showToast('Network error. Please try again.', false);
+    } finally {
+      confirmBtn.disabled = false;
+      pendingRespondAction = null;
     }
   };
 
