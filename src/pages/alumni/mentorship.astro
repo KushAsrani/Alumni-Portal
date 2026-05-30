@@ -22,21 +22,31 @@ try {
     .sort({ name: 1 })
     .toArray();
 
-  mentors = raw.map((m: any) => ({
-    _id: m._id.toString(),
-    name: m.name || '',
-    faculty: m.faculty || '',
-    year: m.year || '',
-    company: m.company || '',
-    designation: m.job_designation || m.position || '',
-    photo: m.photo_blob_url || m.photo || null,
-    skills: Array.isArray(m.skills)
-      ? m.skills.slice(0, 3)
+  const filteredRaw = raw.filter((m: any) => {
+    const mId = m._id?.toString();
+    return mId !== session.alumniId && m.username !== session.username && m.email !== session.username;
+  });
+
+  mentors = filteredRaw.map((m: any) => {
+    const skills = Array.isArray(m.skills)
+      ? m.skills.map((s: string) => String(s).trim()).filter(Boolean)
       : typeof m.skills === 'string'
-        ? m.skills.split(',').map((s: string) => s.trim()).filter(Boolean).slice(0, 3)
-        : [],
-    short_bio: (m.short_bio || '').substring(0, 120),
-  }));
+        ? m.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+
+    return {
+      _id: m._id.toString(),
+      name: m.name || '',
+      faculty: m.faculty || '',
+      year: m.year || '',
+      company: m.company || '',
+      designation: m.job_designation || m.position || '',
+      photo: m.photo_blob_url || m.photo || null,
+      skills,
+      previewSkills: skills.slice(0, 3),
+      short_bio: (m.short_bio || '').substring(0, 120),
+    };
+  });
 } catch {
   // mentors stays empty
 }
@@ -66,194 +76,263 @@ try {
 ---
 
 <Layout title="Request Mentorship">
-  <div id="mentorship-page-root" data-preselected-mentor={preselectedMentorId}>
+  <div id="mentorship-page-root" data-preselected-mentor={preselectedMentorId} data-alumni-id={session.alumniId}>
     <section class="section py-12">
       <div class="container mx-auto px-4">
-      <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+        <div class="mb-8">
           <h1 class="text-3xl font-bold text-gray-900">Find a Mentor</h1>
           <p class="text-gray-500 mt-1">Connect with experienced alumni for guidance and career support.</p>
         </div>
-        <a
-          href="/alumni/mentorship-match"
-          class="inline-flex items-center gap-2 self-start rounded-lg border border-primary-600 px-4 py-2 text-sm font-medium text-primary-600 transition-colors hover:bg-primary-50 whitespace-nowrap"
-        >
-          <iconify-icon icon="mdi:robot-outline" width="18" height="18"></iconify-icon>
-          Try AI Mentor Matching
-        </a>
-      </div>
 
-      <div class="mb-8 bg-white rounded-2xl border border-gray-100 shadow-sm p-6" id="availability-card">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-semibold text-gray-900">Your Availability</h2>
-            <p class="text-sm text-gray-500 mt-0.5">Let others know what you're open to. Changes are saved instantly.</p>
-          </div>
-          <div class="flex flex-wrap gap-4">
-            <label class="flex items-center gap-2 cursor-pointer select-none">
-              <span class="text-sm font-medium text-gray-700">Mentor Others</span>
-              <button
-                type="button"
-                role="switch"
-                id="toggle-mentorship"
-                aria-checked={myAvailability.open_to_mentorship ? 'true' : 'false'}
-                class={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${myAvailability.open_to_mentorship ? 'bg-primary-600' : 'bg-gray-300'}`}
-                onclick="toggleAvailability('open_to_mentorship', this)"
-              >
-                <span class={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${myAvailability.open_to_mentorship ? 'translate-x-6' : 'translate-x-1'}`}></span>
-              </button>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer select-none">
-              <span class="text-sm font-medium text-gray-700">Open to Work</span>
-              <button
-                type="button"
-                role="switch"
-                id="toggle-work"
-                aria-checked={myAvailability.open_to_work ? 'true' : 'false'}
-                class={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${myAvailability.open_to_work ? 'bg-primary-600' : 'bg-gray-300'}`}
-                onclick="toggleAvailability('open_to_work', this)"
-              >
-                <span class={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${myAvailability.open_to_work ? 'translate-x-6' : 'translate-x-1'}`}></span>
-              </button>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer select-none">
-              <span class="text-sm font-medium text-gray-700">Open to Referrals</span>
-              <button
-                type="button"
-                role="switch"
-                id="toggle-referral"
-                aria-checked={myAvailability.open_to_referral ? 'true' : 'false'}
-                class={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${myAvailability.open_to_referral ? 'bg-primary-600' : 'bg-gray-300'}`}
-                onclick="toggleAvailability('open_to_referral', this)"
-              >
-                <span class={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${myAvailability.open_to_referral ? 'translate-x-6' : 'translate-x-1'}`}></span>
-              </button>
-            </label>
+        <div class="mb-8 bg-white rounded-2xl border border-gray-100 shadow-sm p-6" id="availability-card">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900">Your Availability</h2>
+              <p class="text-sm text-gray-500 mt-0.5">Let others know what you're open to.</p>
+            </div>
+            <div class="flex flex-wrap gap-4">
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <span class="text-sm font-medium text-gray-700">Mentor Others</span>
+                <button
+                  type="button"
+                  role="switch"
+                  id="toggle-mentorship"
+                  aria-checked={myAvailability.open_to_mentorship ? 'true' : 'false'}
+                  class={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${myAvailability.open_to_mentorship ? 'bg-primary-600' : 'bg-gray-300'}`}
+                  onclick="toggleAvailability('open_to_mentorship', this)"
+                >
+                  <span class={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${myAvailability.open_to_mentorship ? 'translate-x-6' : 'translate-x-1'}`}></span>
+                </button>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <span class="text-sm font-medium text-gray-700">Open to Work</span>
+                <button
+                  type="button"
+                  role="switch"
+                  id="toggle-work"
+                  aria-checked={myAvailability.open_to_work ? 'true' : 'false'}
+                  class={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${myAvailability.open_to_work ? 'bg-primary-600' : 'bg-gray-300'}`}
+                  onclick="toggleAvailability('open_to_work', this)"
+                >
+                  <span class={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${myAvailability.open_to_work ? 'translate-x-6' : 'translate-x-1'}`}></span>
+                </button>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <span class="text-sm font-medium text-gray-700">Open to Referrals</span>
+                <button
+                  type="button"
+                  role="switch"
+                  id="toggle-referral"
+                  aria-checked={myAvailability.open_to_referral ? 'true' : 'false'}
+                  class={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${myAvailability.open_to_referral ? 'bg-primary-600' : 'bg-gray-300'}`}
+                  onclick="toggleAvailability('open_to_referral', this)"
+                >
+                  <span class={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${myAvailability.open_to_referral ? 'translate-x-6' : 'translate-x-1'}`}></span>
+                </button>
+              </label>
+            </div>
           </div>
         </div>
-      </div>
 
-      {mentors.length === 0 && (
-        <div class="text-center py-20 text-gray-400">
-          <p class="text-lg">No mentors available at the moment. Check back soon!</p>
-        </div>
-      )}
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="mentor-grid">
-        {mentors.map((mentor) => (
-          <div class="bg-white shadow-md rounded-2xl p-6 flex flex-col gap-3">
-            <div class="flex items-center gap-4">
-              <img
-                src={mentor.photo || '/logo.svg'}
-                alt={mentor.name}
-                class="w-16 h-16 rounded-full object-cover border border-gray-200 flex-shrink-0"
-              />
-              <div class="min-w-0">
-                <h3 class="font-semibold text-gray-900 truncate">{mentor.name}</h3>
-                <p class="text-sm text-primary-600 truncate">{mentor.faculty}{mentor.year ? `, ${mentor.year}` : ''}</p>
-                {(mentor.designation || mentor.company) && (
-                  <p class="text-xs text-gray-500 truncate">
-                    {mentor.designation}{mentor.company ? ` @ ${mentor.company}` : ''}
-                  </p>
-                )}
+        <section class="mb-8 rounded-2xl border border-primary-100 bg-gradient-to-r from-primary-50 to-blue-50 p-6 shadow-sm">
+          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="rounded-full bg-white/80 p-2 text-primary-700 shadow-sm" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 3.75h4.5m-7.5 4.5a6 6 0 0112 0v4.5a6 6 0 11-12 0v-4.5zm6 9v3m-3-3h6" />
+                  </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-900">AI-Powered Mentor Matching</h2>
+              </div>
+              <p class="text-sm text-gray-700 max-w-3xl">Not sure who to pick? Our AI analyses your goals, skills, and background to recommend the most compatible mentors from our alumni network.</p>
+              <div class="flex flex-wrap gap-2">
+                <span class="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-medium text-primary-700 border border-primary-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                  Skill-based matching
+                </span>
+                <span class="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-medium text-primary-700 border border-primary-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  Goal-aligned recommendations
+                </span>
+                <span class="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-medium text-primary-700 border border-primary-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.038 3.197a1 1 0 00.95.69h3.362c.969 0 1.371 1.24.588 1.81l-2.72 1.977a1 1 0 00-.364 1.118l1.039 3.197c.3.922-.755 1.688-1.54 1.118l-2.72-1.977a1 1 0 00-1.176 0l-2.72 1.977c-.784.57-1.838-.196-1.539-1.118l1.038-3.197a1 1 0 00-.364-1.118L2.11 8.624c-.783-.57-.38-1.81.588-1.81h3.362a1 1 0 00.951-.69l1.038-3.197z" /></svg>
+                  Personalised suggestions
+                </span>
               </div>
             </div>
-
-            {mentor.skills.length > 0 && (
-              <div class="flex flex-wrap gap-1">
-                {mentor.skills.map((skill: string) => (
-                  <span class="badge badge-primary text-xs">{skill}</span>
-                ))}
-              </div>
-            )}
-
-            {mentor.short_bio && (
-              <p class="text-sm text-gray-600 line-clamp-2">{mentor.short_bio}{mentor.short_bio.length >= 120 ? '…' : ''}</p>
-            )}
-
-            <button
-              class="btn btn-primary btn-sm mt-auto"
-              data-mentor-id={mentor._id}
-              data-mentor-name={mentor.name}
-              onclick="openMentorshipModal(this)"
-            >
-              Request Mentorship
-            </button>
+            <a href="/alumni/mentorship-match" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              Find My Best Match with AI
+            </a>
           </div>
-        ))}
-      </div>
+        </section>
+
+        {mentors.length === 0 && (
+          <div class="text-center py-20 text-gray-400">
+            <p class="text-lg">No mentors available at the moment. Check back soon!</p>
+          </div>
+        )}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="mentor-grid">
+          {mentors.map((mentor) => (
+            <div class="bg-white shadow-md rounded-2xl p-6 flex flex-col gap-3">
+              <div class="flex items-center gap-4">
+                <img
+                  src={mentor.photo || '/logo.svg'}
+                  alt={mentor.name}
+                  class="w-16 h-16 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                />
+                <div class="min-w-0">
+                  <h3 class="font-semibold text-gray-900 truncate">{mentor.name}</h3>
+                  <p class="text-sm text-primary-600 truncate">{mentor.faculty}{mentor.year ? `, ${mentor.year}` : ''}</p>
+                  {(mentor.designation || mentor.company) && (
+                    <p class="text-xs text-gray-500 truncate">
+                      {mentor.designation}{mentor.company ? ` @ ${mentor.company}` : ''}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {mentor.previewSkills.length > 0 && (
+                <div class="flex flex-wrap gap-1">
+                  {mentor.previewSkills.map((skill: string) => (
+                    <span class="badge badge-primary text-xs">{skill}</span>
+                  ))}
+                </div>
+              )}
+
+              {mentor.short_bio && (
+                <p class="text-sm text-gray-600 line-clamp-2">{mentor.short_bio}{mentor.short_bio.length >= 120 ? '…' : ''}</p>
+              )}
+
+              <button
+                class="btn btn-primary btn-sm mt-auto"
+                data-mentor-id={mentor._id}
+                data-mentor-name={mentor.name}
+                data-mentor-skills={mentor.skills.join('|||')}
+                onclick="openMentorshipModal(this)"
+              >
+                Request Mentorship
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <section class="mt-10 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="space-y-2">
+              <div class="flex items-center gap-3">
+                <div class="rounded-full bg-primary-50 p-2 text-primary-700" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h10M9 12h10M9 19h10M5 5h.01M5 12h.01M5 19h.01" />
+                  </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-900">Track Your Mentorship Requests</h2>
+              </div>
+              <p class="text-sm text-gray-600">Keep track of all the mentorship requests you've sent and received. View the status of your pending requests, accepted sessions, and more.</p>
+            </div>
+            <a href="/alumni/my-mentorship" class="btn btn-primary btn-sm">View My Mentorship</a>
+          </div>
+          <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <p class="text-xs uppercase tracking-wide text-gray-500">Requests Sent</p>
+              <p id="requests-sent-count" class="mt-1 text-2xl font-bold text-gray-900">…</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <p class="text-xs uppercase tracking-wide text-gray-500">Requests Received</p>
+              <p id="requests-received-count" class="mt-1 text-2xl font-bold text-gray-900">…</p>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
 
-    <!-- Modal -->
-    <div id="mentorship-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 px-4">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8 relative">
-        <button
-          onclick="closeMentorshipModal()"
-          class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors"
-          aria-label="Close"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+    <div id="mentorship-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4" role="dialog" aria-modal="true" aria-labelledby="mentorship-modal-title">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 relative max-h-[90vh] overflow-y-auto">
+        <button onclick="closeMentorshipModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors" aria-label="Close request form">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
 
-      <h2 class="text-xl font-bold mb-1">Request Mentorship</h2>
-      <p class="text-sm text-gray-500 mb-6">Sending request to <strong id="modal-mentor-name"></strong></p>
+        <h2 id="mentorship-modal-title" class="text-xl font-bold mb-1">Request Mentorship</h2>
+        <p class="text-sm text-gray-500 mb-6">Sending request to <strong id="modal-mentor-name"></strong></p>
 
         <form id="mentorship-form" class="space-y-4">
           <input type="hidden" id="modal-mentor-id" />
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="goal">Goal <span class="text-red-500">*</span></label>
-          <textarea
-            id="goal"
-            name="goal"
-            rows="3"
-            required
-            placeholder="What do you want to achieve through this mentorship?"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-          ></textarea>
-        </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="goal">Goal <span class="text-red-500">*</span></label>
+            <textarea id="goal" name="goal" rows="3" required minlength="30" placeholder="What do you want to achieve through this mentorship?" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
+            <p class="text-xs text-gray-500 mt-1"><span id="goal-count">0</span>/30 minimum characters</p>
+            <p id="error-goal" class="text-xs text-red-600 mt-1 hidden"></p>
+          </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="topic">Topic <span class="text-red-500">*</span></label>
-          <input
-            id="topic"
-            name="topic"
-            type="text"
-            required
-            placeholder="e.g. Career transitions, Technical skills, Interview prep"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="topic">Topic <span class="text-red-500">*</span></label>
+            <input id="topic" name="topic" type="text" required placeholder="e.g. Career transitions, Technical skills, Interview prep" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            <p id="error-topic" class="text-xs text-red-600 mt-1 hidden"></p>
+          </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="duration">Session Duration <span class="text-red-500">*</span></label>
-          <select
-            id="duration"
-            name="duration"
-            required
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Select duration…</option>
-            <option value="30 mins">30 mins</option>
-            <option value="1 hour">1 hour</option>
-            <option value="1.5 hours">1.5 hours</option>
-            <option value="2 hours">2 hours</option>
-          </select>
-        </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="duration">Session Duration <span class="text-red-500">*</span></label>
+              <select id="duration" name="duration" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">Select duration…</option>
+                <option value="30 mins">30 mins</option>
+                <option value="1 hour">1 hour</option>
+                <option value="1.5 hours">1.5 hours</option>
+                <option value="2 hours">2 hours</option>
+              </select>
+              <p id="error-duration" class="text-xs text-red-600 mt-1 hidden"></p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="mode">Preferred Mentorship Mode <span class="text-red-500">*</span></label>
+              <select id="mode" name="mode" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">Select mode…</option>
+                <option value="One-on-one call">One-on-one call</option>
+                <option value="Chat/messages">Chat/messages</option>
+                <option value="Email exchange">Email exchange</option>
+                <option value="Group session">Group session</option>
+              </select>
+              <p id="error-mode" class="text-xs text-red-600 mt-1 hidden"></p>
+            </div>
+          </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="msg">Personal Message</label>
-          <textarea
-            id="msg"
-            name="message"
-            rows="3"
-            placeholder="Introduce yourself and explain why you chose this mentor…"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-          ></textarea>
-        </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="availability">Preferred Schedule / Availability</label>
+              <input id="availability" name="availability" type="text" placeholder="e.g. Weekday evenings, Weekend mornings" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="sessions">Number of Sessions <span class="text-red-500">*</span></label>
+              <select id="sessions" name="sessions" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">Select option…</option>
+                <option value="1 session">1 session</option>
+                <option value="2–3 sessions">2–3 sessions</option>
+                <option value="Ongoing/monthly">Ongoing/monthly</option>
+              </select>
+              <p id="error-sessions" class="text-xs text-red-600 mt-1 hidden"></p>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="background">Your Background</label>
+            <textarea id="background" name="background" rows="2" placeholder="Briefly share your year, current role/studies, and context." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
+          </div>
+
+          <div>
+            <p class="block text-sm font-medium text-gray-700 mb-1">Specific Skills/Areas to Focus On</p>
+            <div id="skills-focus" class="flex flex-wrap gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50 text-sm text-gray-600">
+              Select a mentor to load their skills.
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="msg">Personal Message</label>
+            <textarea id="msg" name="message" rows="3" maxlength="500" placeholder="Introduce yourself and explain why you chose this mentor…" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
+            <p class="text-xs text-gray-500 mt-1"><span id="msg-count">0</span>/500</p>
+            <p id="error-msg" class="text-xs text-red-600 mt-1 hidden"></p>
+          </div>
 
           <div id="form-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
 
@@ -265,9 +344,59 @@ try {
       </div>
     </div>
 
-    <!-- Toast -->
-    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3">
-      <span id="toast-icon" class="text-xl"></span>
+    <div id="confirm-request-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/50 px-4" role="dialog" aria-modal="true" aria-labelledby="confirm-request-title">
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h3 id="confirm-request-title" class="text-lg font-semibold text-gray-900">Confirm Mentorship Request</h3>
+        <p id="confirm-request-body" class="mt-2 text-sm text-gray-600"></p>
+        <div class="mt-6 flex justify-end gap-3">
+          <button type="button" class="btn btn-outline btn-sm" onclick="cancelConfirmRequest()">Go Back</button>
+          <button type="button" id="confirm-send-btn" class="btn btn-primary btn-sm" onclick="confirmAndSendRequest()">Confirm &amp; Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="request-success-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/50 px-4" role="dialog" aria-modal="true" aria-labelledby="request-success-title">
+      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+        <div class="flex items-center gap-2 text-emerald-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          <h3 id="request-success-title" class="text-lg font-semibold text-gray-900">Request Sent Successfully!</h3>
+        </div>
+        <p id="request-success-body" class="mt-2 text-sm text-gray-600"></p>
+        <div class="mt-6 flex justify-end gap-3">
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('request-success-modal')">Close</button>
+          <a href="/alumni/my-mentorship" class="btn btn-primary btn-sm">View My Requests</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="availability-confirm-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/50 px-4" role="dialog" aria-modal="true" aria-labelledby="availability-confirm-title">
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h3 id="availability-confirm-title" class="text-lg font-semibold text-gray-900"></h3>
+        <p id="availability-confirm-body" class="mt-2 text-sm text-gray-600"></p>
+        <div class="mt-6 flex justify-end gap-3">
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('availability-confirm-modal')">Cancel</button>
+          <button type="button" id="availability-confirm-action" class="btn btn-primary btn-sm" onclick="confirmAvailabilityChange()"></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="availability-success-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/30 px-4" role="status" aria-live="polite" aria-labelledby="availability-success-title">
+      <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+        <div class="flex items-start gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          <div>
+            <h3 id="availability-success-title" class="text-base font-semibold text-gray-900">Availability Updated!</h3>
+            <p id="availability-success-body" class="mt-1 text-sm text-gray-600"></p>
+          </div>
+        </div>
+        <div class="mt-4 text-right">
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('availability-success-modal')">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3" role="status" aria-live="polite">
+      <span id="toast-icon" class="text-primary-600"></span>
       <p id="toast-msg" class="text-sm text-gray-800"></p>
     </div>
   </div>
@@ -275,20 +404,182 @@ try {
 
 <script>
   const preselectedMentorId = document.getElementById('mentorship-page-root')?.dataset.preselectedMentor || '';
+  const modalState = { activeId: null, lastFocus: null };
+  let pendingRequestPayload = null;
+  let pendingAvailabilityChange = null;
+
+  function getFocusable(modal) {
+    return Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter((el) => !el.hasAttribute('disabled'));
+  }
+
+  function trapFocus(modal, event) {
+    if (event.key !== 'Tab') return;
+    const focusables = getFocusable(modal);
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  window.openModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modalState.lastFocus = document.activeElement;
+    modalState.activeId = modalId;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    const focusables = getFocusable(modal);
+    if (focusables.length > 0) {
+      focusables[0].focus();
+    }
+  };
+
+  window.closeModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (modalState.activeId === modalId) {
+      modalState.activeId = null;
+      if (modalState.lastFocus && typeof modalState.lastFocus.focus === 'function') {
+        modalState.lastFocus.focus();
+      }
+    }
+  };
+
+  document.addEventListener('keydown', (event) => {
+    if (!modalState.activeId) return;
+    const activeModal = document.getElementById(modalState.activeId);
+    if (!activeModal) return;
+    if (event.key === 'Escape') {
+      window.closeModal(modalState.activeId);
+      return;
+    }
+    trapFocus(activeModal, event);
+  });
+
+  ['mentorship-modal', 'confirm-request-modal', 'request-success-modal', 'availability-confirm-modal', 'availability-success-modal'].forEach((modalId) => {
+    document.getElementById(modalId)?.addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) {
+        window.closeModal(modalId);
+      }
+    });
+  });
+
+  function updateToggleButton(btn, value) {
+    btn.setAttribute('aria-checked', String(value));
+    btn.classList.toggle('bg-primary-600', value);
+    btn.classList.toggle('bg-gray-300', !value);
+    const knob = btn.querySelector('span');
+    if (knob) {
+      knob.classList.toggle('translate-x-6', value);
+      knob.classList.toggle('translate-x-1', !value);
+    }
+  }
+
+  function setFieldError(field, message) {
+    const errorEl = document.getElementById(`error-${field}`);
+    if (!errorEl) return;
+    if (message) {
+      errorEl.textContent = message;
+      errorEl.classList.remove('hidden');
+    } else {
+      errorEl.textContent = '';
+      errorEl.classList.add('hidden');
+    }
+  }
+
+  function updateCounter(inputId, countId) {
+    const input = document.getElementById(inputId);
+    const counter = document.getElementById(countId);
+    if (input && counter) {
+      counter.textContent = String(input.value.trim().length);
+    }
+  }
+
+  function renderSkillOptions(skills) {
+    const container = document.getElementById('skills-focus');
+    if (!container) return;
+    if (!skills.length) {
+      container.innerHTML = '<p class="text-sm text-gray-500">This mentor has not listed specific skills yet.</p>';
+      return;
+    }
+    container.innerHTML = skills
+      .map((skill, index) => {
+        const id = `skill-focus-${index}`;
+        const safeSkill = escapeHtml(skill);
+        return `<label class="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 cursor-pointer"><input type="checkbox" name="focus-skills" value="${safeSkill}" id="${id}" class="h-3.5 w-3.5 text-primary-600 border-gray-300 rounded" />${safeSkill}</label>`;
+      })
+      .join('');
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function validateMentorshipForm() {
+    const goal = document.getElementById('goal').value.trim();
+    const topic = document.getElementById('topic').value.trim();
+    const duration = document.getElementById('duration').value;
+    const mode = document.getElementById('mode').value;
+    const sessions = document.getElementById('sessions').value;
+    const message = document.getElementById('msg').value.trim();
+
+    let isValid = true;
+    setFieldError('goal', goal.length < 30 ? 'Goal must be at least 30 characters.' : '');
+    if (goal.length < 30) isValid = false;
+
+    setFieldError('topic', topic ? '' : 'Topic is required.');
+    if (!topic) isValid = false;
+
+    setFieldError('duration', duration ? '' : 'Session duration is required.');
+    if (!duration) isValid = false;
+
+    setFieldError('mode', mode ? '' : 'Preferred mentorship mode is required.');
+    if (!mode) isValid = false;
+
+    setFieldError('sessions', sessions ? '' : 'Number of sessions is required.');
+    if (!sessions) isValid = false;
+
+    setFieldError('msg', message.length <= 500 ? '' : 'Personal message cannot exceed 500 characters.');
+    if (message.length > 500) isValid = false;
+
+    return isValid;
+  }
 
   window.openMentorshipModal = function(btn) {
-    const mentorId = btn.getAttribute('data-mentor-id');
-    const mentorName = btn.getAttribute('data-mentor-name');
+    const mentorId = btn.getAttribute('data-mentor-id') || '';
+    const mentorName = btn.getAttribute('data-mentor-name') || '';
+    const rawSkills = btn.getAttribute('data-mentor-skills') || '';
+    const mentorSkills = rawSkills ? rawSkills.split('|||').map((s) => s.trim()).filter(Boolean) : [];
+
+    const form = document.getElementById('mentorship-form');
+    form.reset();
     document.getElementById('modal-mentor-id').value = mentorId;
     document.getElementById('modal-mentor-name').textContent = mentorName;
-    document.getElementById('mentorship-form').reset();
-    document.getElementById('modal-mentor-id').value = mentorId;
     document.getElementById('form-error').classList.add('hidden');
-    document.getElementById('mentorship-modal').classList.remove('hidden');
+    ['goal', 'topic', 'duration', 'mode', 'sessions', 'msg'].forEach((field) => setFieldError(field, ''));
+    renderSkillOptions(mentorSkills);
+    updateCounter('goal', 'goal-count');
+    updateCounter('msg', 'msg-count');
+    window.openModal('mentorship-modal');
   };
 
   window.closeMentorshipModal = function() {
-    document.getElementById('mentorship-modal').classList.add('hidden');
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) submitBtn.disabled = false;
+    window.closeModal('mentorship-modal');
   };
 
   window.showToast = function(message, success) {
@@ -296,98 +587,199 @@ try {
     const toastMsg = document.getElementById('toast-msg');
     const toastIcon = document.getElementById('toast-icon');
     toastMsg.textContent = message;
-    toastIcon.textContent = success ? '✅' : '❌';
+    toastIcon.innerHTML = success
+      ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>'
+      : '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
     toast.classList.remove('hidden');
     setTimeout(() => toast.classList.add('hidden'), 4000);
   };
 
-  window.toggleAvailability = async function(field, btn) {
+  window.toggleAvailability = function(field, btn) {
     const isCurrentlyOn = btn.getAttribute('aria-checked') === 'true';
     const newValue = !isCurrentlyOn;
+    const labels = {
+      open_to_mentorship: 'Mentor Others',
+      open_to_work: 'Open to Work',
+      open_to_referral: 'Open to Referrals',
+    };
+    const audiences = {
+      open_to_mentorship: {
+        on: 'other alumni looking for mentors',
+        off: 'mentor listings',
+      },
+      open_to_work: {
+        on: 'recruiters and alumni',
+        off: 'work opportunity searches',
+      },
+      open_to_referral: {
+        on: 'alumni seeking referrals',
+        off: 'referral requests',
+      },
+    };
 
-    btn.setAttribute('aria-checked', String(newValue));
-    btn.classList.toggle('bg-primary-600', newValue);
-    btn.classList.toggle('bg-gray-300', !newValue);
-    const knob = btn.querySelector('span');
-    knob.classList.toggle('translate-x-6', newValue);
-    knob.classList.toggle('translate-x-1', !newValue);
+    pendingAvailabilityChange = { field, btn, newValue };
+    const title = `${newValue ? 'Enable' : 'Disable'} ${labels[field]}?`;
+    const body = newValue
+      ? `This will make your profile visible to ${audiences[field].on}. You can turn this off at any time.`
+      : `Your profile will no longer appear in ${audiences[field].off}. You can re-enable this at any time.`;
+
+    document.getElementById('availability-confirm-title').textContent = title;
+    document.getElementById('availability-confirm-body').textContent = body;
+    document.getElementById('availability-confirm-action').textContent = `Yes, ${newValue ? 'Enable' : 'Disable'}`;
+    window.openModal('availability-confirm-modal');
+  };
+
+  window.confirmAvailabilityChange = async function() {
+    if (!pendingAvailabilityChange) return;
+
+    const { field, btn, newValue } = pendingAvailabilityChange;
+    window.closeModal('availability-confirm-modal');
 
     try {
+      btn.disabled = true;
       const res = await fetch('/api/alumni/update-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: newValue }),
       });
       const data = await res.json();
-      if (data.success) {
-        window.showToast(newValue ? 'Preference updated!' : 'Preference turned off.', true);
-        if (field === 'open_to_mentorship') {
-          setTimeout(() => window.location.reload(), 1200);
-        }
-      } else {
-        btn.setAttribute('aria-checked', String(isCurrentlyOn));
-        btn.classList.toggle('bg-primary-600', isCurrentlyOn);
-        btn.classList.toggle('bg-gray-300', !isCurrentlyOn);
-        knob.classList.toggle('translate-x-6', isCurrentlyOn);
-        knob.classList.toggle('translate-x-1', !isCurrentlyOn);
-        window.showToast(data.message || 'Failed to update. Please try again.', false);
+      if (!data.success) {
+        window.showToast(data.message || 'Failed to update preference.', false);
+        return;
+      }
+
+      updateToggleButton(btn, newValue);
+      const labels = {
+        open_to_mentorship: 'Mentor Others',
+        open_to_work: 'Open to Work',
+        open_to_referral: 'Open to Referrals',
+      };
+      document.getElementById('availability-success-body').textContent = `Your ${labels[field]} preference has been ${newValue ? 'enabled' : 'disabled'} successfully.`;
+      window.openModal('availability-success-modal');
+      setTimeout(() => window.closeModal('availability-success-modal'), 3000);
+
+      if (field === 'open_to_mentorship' && newValue) {
+        setTimeout(() => window.location.reload(), 1500);
       }
     } catch {
-      btn.setAttribute('aria-checked', String(isCurrentlyOn));
-      btn.classList.toggle('bg-primary-600', isCurrentlyOn);
-      btn.classList.toggle('bg-gray-300', !isCurrentlyOn);
-      knob.classList.toggle('translate-x-6', isCurrentlyOn);
-      knob.classList.toggle('translate-x-1', !isCurrentlyOn);
       window.showToast('Network error. Please try again.', false);
+    } finally {
+      btn.disabled = false;
+      pendingAvailabilityChange = null;
     }
   };
 
-  document.getElementById('mentorship-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  window.confirmAndSendRequest = async function() {
+    if (!pendingRequestPayload) return;
+
+    const confirmBtn = document.getElementById('confirm-send-btn');
     const errorEl = document.getElementById('form-error');
-    const submitBtn = document.getElementById('submit-btn');
-    errorEl.classList.add('hidden');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Sending…';
-
-    const mentorId = document.getElementById('modal-mentor-id').value;
-    const mentorName = document.getElementById('modal-mentor-name').textContent;
-    const goal = document.getElementById('goal').value.trim();
-    const topic = document.getElementById('topic').value.trim();
-    const duration = document.getElementById('duration').value;
-    const message = document.getElementById('msg').value.trim();
-
     try {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Sending…';
+
       const res = await fetch('/api/mentorship/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mentorId, goal, topic, duration, message }),
+        body: JSON.stringify(pendingRequestPayload),
       });
       const data = await res.json();
-      if (data.success) {
-        window.closeMentorshipModal();
-        window.showToast(`Mentorship request sent to ${mentorName}!`, true);
-      } else {
+      if (!data.success) {
         errorEl.textContent = data.message || 'Failed to send request.';
         errorEl.classList.remove('hidden');
+        window.closeModal('confirm-request-modal');
+        window.openModal('mentorship-modal');
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = false;
+        return;
       }
+
+      window.closeModal('confirm-request-modal');
+      window.closeMentorshipModal();
+      document.getElementById('request-success-body').innerHTML = `Your mentorship request has been sent to <strong>${escapeHtml(pendingRequestPayload.mentorName)}</strong>. You can track the status of your request in <strong>My Mentorship</strong> page. The mentor will review your request and respond within a few days.`;
+      window.openModal('request-success-modal');
+      fetchMentorshipStats();
     } catch {
       errorEl.textContent = 'Network error. Please try again.';
       errorEl.classList.remove('hidden');
-    } finally {
+      window.closeModal('confirm-request-modal');
+      window.openModal('mentorship-modal');
+      const submitBtn = document.getElementById('submit-btn');
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Send Request';
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirm & Send';
     }
+  };
+
+  window.cancelConfirmRequest = function() {
+    window.closeModal('confirm-request-modal');
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = false;
+    window.openModal('mentorship-modal');
+  };
+
+  async function fetchMentorshipStats() {
+    const sentEl = document.getElementById('requests-sent-count');
+    const receivedEl = document.getElementById('requests-received-count');
+    try {
+      const res = await fetch('/api/mentorship/my-requests');
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.requests)) {
+        throw new Error('Invalid response');
+      }
+      const currentAlumniId = document.getElementById('mentorship-page-root')?.dataset?.alumniId || '';
+      const sent = data.requests.filter((r) => r.menteeId === currentAlumniId).length;
+      const received = data.requests.filter((r) => r.mentorId === currentAlumniId).length;
+      sentEl.textContent = String(sent);
+      receivedEl.textContent = String(received);
+    } catch {
+      sentEl.textContent = '--';
+      receivedEl.textContent = '--';
+    }
+  }
+
+  document.getElementById('goal').addEventListener('input', () => updateCounter('goal', 'goal-count'));
+  document.getElementById('msg').addEventListener('input', () => updateCounter('msg', 'msg-count'));
+
+  document.getElementById('mentorship-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById('form-error');
+    errorEl.classList.add('hidden');
+
+    if (!validateMentorshipForm()) {
+      return;
+    }
+
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+
+    const mentorId = document.getElementById('modal-mentor-id').value;
+    const mentorName = document.getElementById('modal-mentor-name').textContent || 'the mentor';
+    const selectedFocusSkills = Array.from(document.querySelectorAll('input[name="focus-skills"]:checked')).map((el) => el.value);
+
+    pendingRequestPayload = {
+      mentorId,
+      mentorName,
+      goal: document.getElementById('goal').value.trim(),
+      topic: document.getElementById('topic').value.trim(),
+      duration: document.getElementById('duration').value,
+      message: document.getElementById('msg').value.trim(),
+      mode: document.getElementById('mode').value,
+      preferredSchedule: document.getElementById('availability').value.trim(),
+      sessions: document.getElementById('sessions').value,
+      background: document.getElementById('background').value.trim(),
+      focusSkills: selectedFocusSkills,
+    };
+
+    document.getElementById('confirm-request-body').innerHTML = `You are about to send a mentorship request to <strong>${escapeHtml(mentorName)}</strong>. Please make sure the details are correct before proceeding.`;
+    window.openModal('confirm-request-modal');
   });
 
-  // Auto-open modal if ?mentor= is set
   if (preselectedMentorId) {
     const btn = document.querySelector(`[data-mentor-id="${preselectedMentorId}"]`);
     if (btn) window.openMentorshipModal(btn);
   }
 
-  // Close on backdrop click
-  document.getElementById('mentorship-modal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) window.closeMentorshipModal();
-  });
+  fetchMentorshipStats();
 </script>
