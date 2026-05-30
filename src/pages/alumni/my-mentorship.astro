@@ -12,8 +12,9 @@ const session = getCurrentAlumni(Astro.cookies)!;
 ---
 
 <Layout title="My Mentorship">
-  <section class="section py-12">
-    <div class="container mx-auto px-4">
+  <div id="my-mentorship-root" data-alumni-id={session.alumniId}>
+    <section class="section py-12">
+      <div class="container mx-auto px-4">
       <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900">My Mentorship</h1>
         <p class="text-gray-500 mt-1">Track mentorship requests you've sent and received.</p>
@@ -45,17 +46,19 @@ const session = getCurrentAlumni(Astro.cookies)!;
 
       <!-- Received Requests -->
       <div id="panel-received" class="hidden space-y-4"></div>
-    </div>
-  </section>
+      </div>
+    </section>
 
-  <!-- Toast -->
-  <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3">
-    <span id="toast-icon" class="text-xl"></span>
-    <p id="toast-msg" class="text-sm text-gray-800"></p>
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3">
+      <span id="toast-icon" class="text-xl"></span>
+      <p id="toast-msg" class="text-sm text-gray-800"></p>
+    </div>
   </div>
 </Layout>
 
-<script define:vars={{ currentAlumniId: session.alumniId }}>
+<script>
+  const currentAlumniId = document.getElementById('my-mentorship-root')?.dataset.alumniId || '';
   let currentTab = 'sent';
   let allRequests = [];
 
@@ -127,7 +130,7 @@ const session = getCurrentAlumni(Astro.cookies)!;
     }
   }
 
-  function switchTab(tab) {
+  window.switchTab = function(tab) {
     currentTab = tab;
     ['sent', 'received'].forEach((t) => {
       document.getElementById(`tab-${t}`).className =
@@ -136,9 +139,9 @@ const session = getCurrentAlumni(Astro.cookies)!;
           : 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors';
       document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
     });
-  }
+  };
 
-  async function respond(requestId, action) {
+  window.respond = async function(requestId, action) {
     const responseText = document.getElementById(`resp-${requestId}`)?.value || '';
     try {
       const res = await fetch('/api/mentorship/respond', {
@@ -156,7 +159,7 @@ const session = getCurrentAlumni(Astro.cookies)!;
     } catch {
       showToast('Network error. Please try again.', false);
     }
-  }
+  };
 
   async function loadRequests() {
     try {
