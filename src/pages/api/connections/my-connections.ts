@@ -13,6 +13,14 @@ function generateSlug(name: string): string {
     .replace(/\s+/g, '-');
 }
 
+function parseObjectId(id: string) {
+  try {
+    return new ObjectId(id);
+  } catch {
+    return null;
+  }
+}
+
 export const GET: APIRoute = async ({ cookies }) => {
   if (!isAlumniAuthenticated(cookies)) {
     return new Response(
@@ -28,108 +36,132 @@ export const GET: APIRoute = async ({ cookies }) => {
     const connectionsCol = db.collection('connection_requests');
     const alumniCol = db.collection('alumni_registrations');
 
-    // Accepted connections where I am requester or target
-    const accepted = await connectionsCol
-      .find({
-        $or: [
-          { requesterId: session.alumniId, status: 'accepted' },
-          { targetId: session.alumniId, status: 'accepted' },
-        ],
-      })
-      .sort({ updatedAt: -1 })
-      .toArray();
+    const [accepted, pendingIncoming, sentRequests, declinedByMe, removedConnections] = await Promise.all([
+      connectionsCol
+        .find({
+          status: 'accepted',
+          $or: [{ requesterId: session.alumniId }, { targetId: session.alumniId }],
+        })
+        .sort({ acceptedAt: -1, updatedAt: -1 })
+        .toArray(),
+      connectionsCol
+        .find({ targetId: session.alumniId, status: 'pending' })
+        .sort({ createdAt: -1 })
+        .toArray(),
+      connectionsCol
+        .find({ requesterId: session.alumniId })
+        .sort({ createdAt: -1 })
+        .toArray(),
+      connectionsCol
+        .find({ targetId: session.alumniId, status: 'declined' })
+        .sort({ declinedAt: -1, updatedAt: -1 })
+        .toArray(),
+      connectionsCol
+        .find({
+          status: 'removed',
+          $or: [{ requesterId: session.alumniId }, { targetId: session.alumniId }],
+        })
+        .sort({ removedAt: -1, updatedAt: -1 })
+        .toArray(),
+    ]);
 
-    // Pending incoming requests where I am the target
-    const pendingIncoming = await connectionsCol
-      .find({ targetId: session.alumniId, status: 'pending' })
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    // All requests I sent (any status)
-    const sentRequests = await connectionsCol
-      .find({ requesterId: session.alumniId })
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    // Requests I declined (where I am the target and status declined)
-    const declinedByMe = await connectionsCol
-      .find({ targetId: session.alumniId, status: 'declined' })
-      .sort({ updatedAt: -1 })
-      .toArray();
-
-    // Collect all alumni IDs to enrich
     const idsToFetch = new Set<string>();
-    for (const conn of accepted) {
-      const otherId = conn.requesterId === session.alumniId ? conn.targetId : conn.requesterId;
-      if (otherId) idsToFetch.add(otherId);
-    }
-    for (const conn of sentRequests) {
-      if (conn.targetId) idsToFetch.add(conn.targetId);
-    }
-    for (const conn of pendingIncoming) {
-      if (conn.requesterId) idsToFetch.add(conn.requesterId);
-    }
-    for (const conn of declinedByMe) {
-      if (conn.requesterId) idsToFetch.add(conn.requesterId);
-    }
+    const collectOtherIds = (items: any[], idSelector: (item: any) => string | undefined) => {
+      for (const item of items) {
+        const id = idSelector(item);
+        if (id && id !== session.alumniId) idsToFetch.add(id);
+      }
+    };
 
-    // Batch fetch alumni profiles
+    collectOtherIds(accepted, (conn) => (conn.requesterId === session.alumniId ? conn.targetId : conn.requesterId));
+    collectOtherIds(pendingIncoming, (conn) => conn.requesterId);
+    collectOtherIds(sentRequests, (conn) => conn.targetId);
+    collectOtherIds(declinedByMe, (conn) => conn.requesterId);
+    collectOtherIds(removedConnections, (conn) => (conn.requesterId === session.alumniId ? conn.targetId : conn.requesterId));
+
+    const currentObjectId = parseObjectId(session.alumniId);
+    let currentProfile: any = null;
+    if (currentObjectId) {
+      currentProfile = await alumniCol.findOne({ _id: currentObjectId }, { projection: { skills: 1 } });
+    }
+    if (!currentProfile) {
+      currentProfile = await alumniCol.findOne(
+        { $or: [{ username: session.username }, { email: session.username }] },
+        { projection: { skills: 1 } }
+      );
+    }
+    const mySkills = Array.isArray(currentProfile?.skills)
+      ? currentProfile.skills.filter((skill: unknown) => typeof skill === 'string')
+      : [];
+
     const alumniProfiles: Record<string, any> = {};
-    if (idsToFetch.size > 0) {
-      const objectIds: ObjectId[] = [];
-      for (const id of idsToFetch) {
-        try { objectIds.push(new ObjectId(id)); } catch { /* skip invalid */ }
-      }
-      if (objectIds.length > 0) {
-        const profiles = await alumniCol
-          .find({ _id: { $in: objectIds } })
-          .project({ name: 1, slug: 1, faculty: 1, year: 1, job_designation: 1, position: 1, company: 1, location: 1, open_to_mentorship: 1 })
-          .toArray();
-        for (const p of profiles) {
-          alumniProfiles[p._id.toString()] = {
-            ...p,
-            slug: p.slug || generateSlug(p.name || ''),
-          };
-        }
+    const objectIds = Array.from(idsToFetch)
+      .map((id) => parseObjectId(id))
+      .filter(Boolean) as ObjectId[];
+
+    if (objectIds.length > 0) {
+      const profiles = await alumniCol
+        .find({ _id: { $in: objectIds } })
+        .project({
+          name: 1,
+          slug: 1,
+          faculty: 1,
+          year: 1,
+          job_designation: 1,
+          position: 1,
+          company: 1,
+          location: 1,
+          open_to_mentorship: 1,
+          skills: 1,
+        })
+        .toArray();
+
+      for (const profile of profiles) {
+        alumniProfiles[profile._id.toString()] = {
+          _id: profile._id.toString(),
+          name: profile.name || '',
+          slug: profile.slug || generateSlug(profile.name || ''),
+          faculty: profile.faculty || '',
+          year: profile.year || '',
+          job_designation: profile.job_designation || profile.position || '',
+          company: profile.company || '',
+          location: profile.location || '',
+          open_to_mentorship: !!profile.open_to_mentorship,
+          skills: Array.isArray(profile.skills)
+            ? profile.skills.filter((skill: unknown) => typeof skill === 'string')
+            : [],
+        };
       }
     }
 
-    function enrichConn(conn: any, otherId: string) {
-      const profile = alumniProfiles[otherId] || null;
+    const enrichConn = (conn: any, otherId: string) => {
+      const profile = otherId ? alumniProfiles[otherId] || null : null;
       return {
         ...conn,
         _id: conn._id.toString(),
-        otherAlumni: profile
-          ? {
-              _id: otherId,
-              name: profile.name || '',
-              slug: profile.slug || '',
-              faculty: profile.faculty || '',
-              year: profile.year || '',
-              job_designation: profile.job_designation || profile.position || '',
-              company: profile.company || '',
-              location: profile.location || '',
-              open_to_mentorship: !!profile.open_to_mentorship,
-            }
-          : null,
+        otherAlumni: profile,
       };
-    }
+    };
 
-    const enrichedAccepted = accepted.map((conn) => {
-      const otherId = conn.requesterId === session.alumniId ? conn.targetId : conn.requesterId;
-      return enrichConn(conn, otherId);
-    });
-    const enrichedSent = sentRequests.map((conn) => enrichConn(conn, conn.targetId));
+    const enrichedAccepted = accepted.map((conn) =>
+      enrichConn(conn, conn.requesterId === session.alumniId ? conn.targetId : conn.requesterId)
+    );
     const enrichedPending = pendingIncoming.map((conn) => enrichConn(conn, conn.requesterId));
+    const enrichedSent = sentRequests.map((conn) => enrichConn(conn, conn.targetId));
     const enrichedDeclined = declinedByMe.map((conn) => enrichConn(conn, conn.requesterId));
+    const enrichedRemoved = removedConnections.map((conn) =>
+      enrichConn(conn, conn.requesterId === session.alumniId ? conn.targetId : conn.requesterId)
+    );
 
     return new Response(
       JSON.stringify({
         success: true,
+        mySkills,
         connections: enrichedAccepted,
         pendingIncoming: enrichedPending,
         sentRequests: enrichedSent,
         declinedByMe: enrichedDeclined,
+        removedConnections: enrichedRemoved,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );

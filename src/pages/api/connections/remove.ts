@@ -65,7 +65,14 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const now = new Date();
     await connectionsCol.updateOne(
       { _id: new ObjectId(connectionId) },
-      { $set: { status: 'removed', updatedAt: now } }
+      {
+        $set: {
+          status: 'removed',
+          updatedAt: now,
+          removedAt: now,
+          removedBy: session.alumniId,
+        },
+      }
     );
 
     return new Response(JSON.stringify({ success: true }), {
