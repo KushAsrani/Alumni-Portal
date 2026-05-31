@@ -19,260 +19,752 @@ const session = getCurrentAlumni(Astro.cookies)!;
         <p class="text-gray-500 mt-1">Manage your alumni network connections.</p>
       </div>
 
-      <!-- Tabs -->
       <div class="flex border-b border-gray-200 mb-6 gap-0 overflow-x-auto">
-        <button
-          id="tab-connections"
-          onclick="switchTab('connections')"
-          class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-primary-600 text-primary-600 transition-colors whitespace-nowrap"
-        >
+        <button id="tab-connections" data-tab="connections" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-primary-600 text-primary-600 transition-colors whitespace-nowrap">
           My Connections
+          <span id="badge-connections" class="ml-1 hidden items-center justify-center min-w-5 h-5 px-1 text-[10px] font-bold text-white bg-gray-500 rounded-full"></span>
         </button>
-        <button
-          id="tab-pending"
-          onclick="switchTab('pending')"
-          class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap"
-        >
+        <button id="tab-pending" data-tab="pending" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap">
           Pending Incoming
+          <span id="badge-pending" class="ml-1 hidden items-center justify-center min-w-5 h-5 px-1 text-[10px] font-bold text-white bg-primary-600 rounded-full"></span>
         </button>
-        <button
-          id="tab-sent"
-          onclick="switchTab('sent')"
-          class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap"
-        >
+        <button id="tab-sent" data-tab="sent" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap">
           Sent Requests
+          <span id="badge-sent" class="ml-1 hidden items-center justify-center min-w-5 h-5 px-1 text-[10px] font-bold text-white bg-gray-500 rounded-full"></span>
         </button>
-        <button
-          id="tab-declined"
-          onclick="switchTab('declined')"
-          class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap"
-        >
+        <button id="tab-declined" data-tab="declined" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap">
           Declined
+        </button>
+        <button id="tab-removed" data-tab="removed" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap">
+          Removed
         </button>
       </div>
 
-      <!-- Loading -->
       <div id="loading" class="text-center py-12 text-gray-400">Loading…</div>
 
-      <!-- My Connections panel -->
       <div id="panel-connections" class="hidden space-y-4"></div>
-
-      <!-- Pending Incoming panel -->
       <div id="panel-pending" class="hidden space-y-4"></div>
-
-      <!-- Sent Requests panel -->
       <div id="panel-sent" class="hidden space-y-4"></div>
-
-      <!-- Declined panel -->
       <div id="panel-declined" class="hidden space-y-4"></div>
+      <div id="panel-removed" class="hidden space-y-4"></div>
     </div>
   </section>
 
-  <!-- Toast -->
-  <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3">
+  <div id="toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 items-center gap-3">
     <span id="toast-icon"></span>
     <p id="toast-msg" class="text-sm text-gray-800"></p>
   </div>
 
-  <!-- Accept / Decline Confirmation Modal -->
-  <div
-    id="respond-modal"
-    class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="respond-modal-title"
-  >
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" id="respond-modal-box">
-      <div class="flex items-center gap-3 mb-4">
-        <div id="respond-modal-icon" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"></div>
-        <h2 id="respond-modal-title" class="text-lg font-semibold text-gray-900"></h2>
-      </div>
-      <p id="respond-modal-body" class="text-sm text-gray-600 mb-6"></p>
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+    <div id="confirm-modal-box" class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 modal-fade-in">
+      <h2 id="confirm-modal-title" class="text-lg font-semibold text-gray-900"></h2>
+      <p id="confirm-modal-body" class="text-sm text-gray-600 mt-2 mb-6"></p>
       <div class="flex gap-3 justify-end">
-        <button id="respond-modal-cancel" class="btn btn-outline btn-sm" type="button">Cancel</button>
-        <button id="respond-modal-confirm" class="btn btn-primary btn-sm" type="button"></button>
+        <button id="confirm-modal-cancel" type="button" class="btn btn-outline btn-sm">Cancel</button>
+        <button id="confirm-modal-confirm" type="button" class="btn btn-primary btn-sm"></button>
       </div>
     </div>
   </div>
 
-  <!-- Remove Connection Confirmation Modal -->
-  <div
-    id="remove-modal"
-    class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="remove-modal-title"
-  >
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" id="remove-modal-box">
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            <path d="M10 11v6"/><path d="M14 11v6"/>
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-          </svg>
-        </div>
-        <h2 id="remove-modal-title" class="text-lg font-semibold text-gray-900">Remove Connection</h2>
-      </div>
-      <p id="remove-modal-body" class="text-sm text-gray-600 mb-6"></p>
-      <div class="flex gap-3 justify-end">
-        <button id="remove-modal-cancel" class="btn btn-outline btn-sm" type="button">Cancel</button>
-        <button id="remove-modal-confirm" class="btn btn-sm bg-red-600 hover:bg-red-700 text-white border-0" type="button">Yes, Remove</button>
-      </div>
+  <div id="success-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="success-modal-title">
+    <div id="success-modal-box" class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 text-center modal-fade-in">
+      <div id="success-modal-icon" class="w-16 h-16 rounded-full mx-auto flex items-center justify-center"></div>
+      <h2 id="success-modal-title" class="text-xl font-bold text-gray-900 mt-4"></h2>
+      <p id="success-modal-body" class="text-sm text-gray-600 mt-2 mb-6"></p>
+      <button id="success-modal-done" class="btn btn-primary btn-sm">Done</button>
     </div>
   </div>
 
-  <!-- Cancel Sent Request Confirmation Modal -->
-  <div
-    id="cancel-modal"
-    class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="cancel-modal-title"
-  >
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" id="cancel-modal-box">
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-yellow-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-          </svg>
-        </div>
-        <h2 id="cancel-modal-title" class="text-lg font-semibold text-gray-900">Cancel Request</h2>
-      </div>
-      <p id="cancel-modal-body" class="text-sm text-gray-600 mb-6"></p>
-      <div class="flex gap-3 justify-end">
-        <button id="cancel-modal-cancel" class="btn btn-outline btn-sm" type="button">Keep Request</button>
-        <button id="cancel-modal-confirm" class="btn btn-sm bg-yellow-500 hover:bg-yellow-600 text-white border-0" type="button">Yes, Cancel Request</button>
+  <div id="message-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="message-modal-title">
+    <div id="message-modal-box" class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 modal-fade-in">
+      <h2 id="message-modal-title" class="text-lg font-semibold text-gray-900"></h2>
+      <textarea id="message-modal-text" maxlength="500" rows="5" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none mt-4 focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Write a message..."></textarea>
+      <p id="message-modal-count" class="text-xs text-gray-400 text-right mt-1">0/500</p>
+      <div class="flex gap-3 justify-end mt-4">
+        <button id="message-modal-cancel" type="button" class="btn btn-outline btn-sm">Cancel</button>
+        <button id="message-modal-send" type="button" class="btn btn-primary btn-sm">Send</button>
       </div>
     </div>
   </div>
 </Layout>
 
+<style>
+  @keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-fade-in { animation: modalFadeIn 180ms ease-out; }
+</style>
+
 <script define:vars={{ currentAlumniId: session.alumniId }}>
   let currentTab = 'connections';
+  let successTimer = null;
+  let mySkills = [];
+  let messageTarget = { id: '', name: '' };
+  let selectedPendingIds = new Set();
 
-  // ---------- Toast ----------
-  function showToast(message, success) {
+  const state = {
+    connections: [],
+    pendingIncoming: [],
+    sentRequests: [],
+    declinedByMe: [],
+    removedConnections: [],
+  };
+
+  const filters = {
+    connections: { search: '', faculty: '', company: '', year: '', location: '' },
+    pending: { search: '', sort: 'newest' },
+    sent: { search: '', status: 'all', sort: 'newest' },
+  };
+
+  function escapeHtml(value = '') {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function showToast(message, success = true) {
     const toast = document.getElementById('toast');
     document.getElementById('toast-msg').textContent = message;
     const iconEl = document.getElementById('toast-icon');
-    if (success) {
-      iconEl.innerHTML = '<svg class="w-5 h-5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
-    } else {
-      iconEl.innerHTML = '<svg class="w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-    }
+    iconEl.innerHTML = success
+      ? '<svg class="w-5 h-5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+      : '<svg class="w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     toast.classList.remove('hidden');
     toast.classList.add('flex');
-    setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex'); }, 4000);
+    setTimeout(() => {
+      toast.classList.add('hidden');
+      toast.classList.remove('flex');
+    }, 3500);
   }
 
-  // ---------- Date Formatting ----------
-  function formatDate(iso) {
+  function formatDateTime(iso, prefix = '') {
     if (!iso) return '';
-    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const d = new Date(iso);
+    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const date = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return prefix ? `${prefix} ${time} · ${date}` : `${time} · ${date}`;
   }
 
-  // ---------- Tab Switching ----------
+  function formatRelativeTime(iso) {
+    if (!iso) return '';
+    const diff = Date.now() - new Date(iso).getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days > 0) return `${days} day${days === 1 ? '' : 's'} ago`;
+    if (hours > 0) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    return 'just now';
+  }
+
+  function debounce(fn, wait = 200) {
+    let timer = null;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), wait);
+    };
+  }
+
+  function openModal(id, focusSelector) {
+    const modal = document.getElementById(id);
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (focusSelector) {
+      setTimeout(() => {
+        const el = modal.querySelector(focusSelector);
+        if (el) el.focus();
+      }, 30);
+    }
+  }
+
+  function closeModal(id) {
+    const modal = document.getElementById(id);
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function trapFocus(boxId) {
+    const box = document.getElementById(boxId);
+    box.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const focusables = box.querySelectorAll('button, textarea, input, select, a[href], [tabindex]:not([tabindex="-1"])');
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
+  }
+
+  function showSuccessModal(config) {
+    const iconEl = document.getElementById('success-modal-icon');
+    const titleEl = document.getElementById('success-modal-title');
+    const bodyEl = document.getElementById('success-modal-body');
+    const doneBtn = document.getElementById('success-modal-done');
+
+    iconEl.className = `w-16 h-16 rounded-full mx-auto flex items-center justify-center ${config.iconClass}`;
+    iconEl.innerHTML = config.icon;
+    titleEl.textContent = config.title;
+    bodyEl.textContent = config.body;
+
+    clearTimeout(successTimer);
+    openModal('success-modal', '#success-modal-done');
+    successTimer = setTimeout(() => closeModal('success-modal'), 4000);
+    doneBtn.onclick = () => {
+      clearTimeout(successTimer);
+      closeModal('success-modal');
+    };
+  }
+
+  function confirmAction({ title, body, confirmText, confirmClass = 'btn btn-primary btn-sm' }) {
+    return new Promise((resolve) => {
+      const titleEl = document.getElementById('confirm-modal-title');
+      const bodyEl = document.getElementById('confirm-modal-body');
+      const cancelBtn = document.getElementById('confirm-modal-cancel');
+      const confirmBtn = document.getElementById('confirm-modal-confirm');
+
+      titleEl.textContent = title;
+      bodyEl.innerHTML = body;
+
+      const freshConfirm = confirmBtn.cloneNode(true);
+      confirmBtn.parentNode.replaceChild(freshConfirm, confirmBtn);
+      freshConfirm.textContent = confirmText;
+      freshConfirm.className = confirmClass;
+
+      const closeAndResolve = (value) => {
+        closeModal('confirm-modal');
+        resolve(value);
+      };
+
+      cancelBtn.onclick = () => closeAndResolve(false);
+      freshConfirm.onclick = () => closeAndResolve(true);
+      openModal('confirm-modal', '#confirm-modal-confirm');
+    });
+  }
+
+  function getOtherName(item, fallback = 'Unknown') {
+    return item?.otherAlumni?.name || item?.requesterName || item?.targetName || fallback;
+  }
+
+  function getMutualSkills(itemSkills = []) {
+    if (!Array.isArray(itemSkills) || !mySkills.length) return [];
+    const mine = new Set(mySkills.map((s) => String(s).trim().toLowerCase()).filter(Boolean));
+    const seen = new Set();
+    const mutual = [];
+    for (const skill of itemSkills) {
+      const raw = String(skill || '').trim();
+      const key = raw.toLowerCase();
+      if (!raw || seen.has(key)) continue;
+      if (mine.has(key)) {
+        mutual.push(raw);
+        seen.add(key);
+      }
+    }
+    return mutual;
+  }
+
+  function renderMutualSkills(skills) {
+    if (!skills.length) return '';
+    return `
+      <div class="mt-3">
+        <p class="text-xs font-medium text-gray-500 mb-1">Mutual Skills</p>
+        <div class="flex flex-wrap gap-1.5">
+          ${skills.map((skill) => `<span class="text-xs px-2 py-1 rounded-full bg-primary-100 text-primary-700">${escapeHtml(skill)}</span>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function updateTabBadge(id, count) {
+    const badge = document.getElementById(id);
+    badge.textContent = String(count);
+    badge.classList.toggle('hidden', count <= 0);
+    badge.classList.toggle('inline-flex', count > 0);
+  }
+
   function switchTab(tab) {
     currentTab = tab;
-    ['connections', 'pending', 'sent', 'declined'].forEach((t) => {
-      const tabEl = document.getElementById(`tab-${t}`);
-      if (tabEl) {
-        tabEl.className =
-          t === tab
-            ? 'tab-btn px-5 py-3 text-sm font-medium border-b-2 border-primary-600 text-primary-600 transition-colors whitespace-nowrap'
-            : 'tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap';
-      }
-      const panelEl = document.getElementById(`panel-${t}`);
-      if (panelEl) panelEl.classList.toggle('hidden', t !== tab);
+    ['connections', 'pending', 'sent', 'declined', 'removed'].forEach((name) => {
+      const tabEl = document.getElementById(`tab-${name}`);
+      const panelEl = document.getElementById(`panel-${name}`);
+      const isActive = name === tab;
+      tabEl.className = isActive
+        ? 'tab-btn px-5 py-3 text-sm font-medium border-b-2 border-primary-600 text-primary-600 transition-colors whitespace-nowrap'
+        : 'tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap';
+      panelEl.classList.toggle('hidden', !isActive);
     });
   }
   window.switchTab = switchTab;
 
-  // ---------- Modal Utilities ----------
-  function openModal(id) {
-    const m = document.getElementById(id);
-    m.classList.remove('hidden');
-    m.classList.add('flex');
+  function buildFilterOptions(items, selector) {
+    const values = new Set();
+    for (const item of items) {
+      const value = selector(item);
+      if (value) values.add(String(value).trim());
+    }
+    return [...values].sort((a, b) => a.localeCompare(b));
   }
-  function closeModal(id) {
-    const m = document.getElementById(id);
-    m.classList.add('hidden');
-    m.classList.remove('flex');
-  }
-  function trapFocus(boxId) {
-    document.getElementById(boxId).addEventListener('keydown', (e) => {
-      if (e.key !== 'Tab') return;
-      const focusable = document.getElementById(boxId).querySelectorAll('button, [tabindex]:not([tabindex="-1"])');
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
-      else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+
+  function renderConnectionsTab() {
+    const panel = document.getElementById('panel-connections');
+    const all = state.connections;
+    const options = {
+      faculties: buildFilterOptions(all, (c) => c.otherAlumni?.faculty),
+      companies: buildFilterOptions(all, (c) => c.otherAlumni?.company),
+      years: buildFilterOptions(all, (c) => c.otherAlumni?.year),
+      locations: buildFilterOptions(all, (c) => c.otherAlumni?.location),
+    };
+
+    const filtered = all.filter((conn) => {
+      const other = conn.otherAlumni || {};
+      const name = getOtherName(conn).toLowerCase();
+      const q = filters.connections.search.toLowerCase();
+      if (q && !name.includes(q)) return false;
+      if (filters.connections.faculty && String(other.faculty || '') !== filters.connections.faculty) return false;
+      if (filters.connections.company && String(other.company || '') !== filters.connections.company) return false;
+      if (filters.connections.year && String(other.year || '') !== filters.connections.year) return false;
+      if (filters.connections.location && String(other.location || '') !== filters.connections.location) return false;
+      return true;
+    });
+
+    panel.innerHTML = `
+      <div class="bg-white border border-gray-200 rounded-2xl p-4">
+        <div class="grid md:grid-cols-5 gap-3">
+          <input id="connections-search" type="text" value="${escapeHtml(filters.connections.search)}" class="md:col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Search connections by name..." />
+          <select id="filter-faculty" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"><option value="">All Faculties</option>${options.faculties.map((v) => `<option value="${escapeHtml(v)}" ${v === filters.connections.faculty ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select>
+          <select id="filter-company" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"><option value="">All Companies</option>${options.companies.map((v) => `<option value="${escapeHtml(v)}" ${v === filters.connections.company ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select>
+          <div class="grid grid-cols-2 gap-3 md:col-span-5">
+            <select id="filter-year" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"><option value="">All Years</option>${options.years.map((v) => `<option value="${escapeHtml(v)}" ${v === filters.connections.year ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select>
+            <select id="filter-location" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"><option value="">All Locations</option>${options.locations.map((v) => `<option value="${escapeHtml(v)}" ${v === filters.connections.location ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div class="flex items-center justify-between mt-3">
+          <p class="text-xs text-gray-500">Showing ${filtered.length} of ${all.length} connections</p>
+          <button id="connections-clear-filters" class="btn btn-outline btn-sm text-xs">Clear Filters</button>
+        </div>
+      </div>
+      ${
+        filtered.length
+          ? filtered.map((conn) => {
+              const other = conn.otherAlumni || {};
+              const name = getOtherName(conn);
+              const initial = (name[0] || '?').toUpperCase();
+              const profileHref = other.slug ? `/alumni/profiles/${other.slug}` : '#';
+              const mutualSkills = getMutualSkills(other.skills || []);
+              const connectedAt = conn.acceptedAt || conn.updatedAt || conn.createdAt;
+              const jobLine = [other.job_designation, other.company].filter(Boolean).join(' · ');
+              const eduLine = [other.faculty, other.year].filter(Boolean).join(', ');
+              return `
+                <div class="bg-white shadow-md rounded-2xl p-6">
+                  <div class="flex items-start gap-4">
+                    <a href="${profileHref}" class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg flex-shrink-0">${escapeHtml(initial)}</a>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-start justify-between gap-2 flex-wrap">
+                        <a href="${profileHref}" class="font-semibold text-gray-900 hover:text-primary-600 truncate">${escapeHtml(name)}</a>
+                        <span class="badge bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full">Connected</span>
+                      </div>
+                      ${jobLine ? `<p class="text-sm text-gray-600 mt-0.5">${escapeHtml(jobLine)}</p>` : ''}
+                      ${eduLine ? `<p class="text-sm text-gray-500 mt-0.5">${escapeHtml(eduLine)}</p>` : ''}
+                      ${other.location ? `<p class="text-sm text-gray-500 mt-0.5">${escapeHtml(other.location)}</p>` : ''}
+                      ${connectedAt ? `<p class="text-xs text-gray-400 mt-1">${escapeHtml(formatDateTime(connectedAt, 'Connected since'))}</p>` : ''}
+                      ${renderMutualSkills(mutualSkills)}
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-2 mt-4">
+                    <a href="${profileHref}" class="btn btn-outline btn-sm text-xs">View Profile</a>
+                    <button data-action="message" data-target-id="${escapeHtml(other._id || '')}" data-target-name="${escapeHtml(name)}" class="btn btn-outline btn-sm text-xs text-primary-700 border-primary-300 hover:bg-primary-50 inline-flex items-center gap-1">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      Message
+                    </button>
+                    <button data-action="remove" data-id="${escapeHtml(conn._id)}" data-name="${escapeHtml(name)}" class="btn btn-outline btn-sm text-xs text-red-600 border-red-300 hover:bg-red-50">Remove</button>
+                  </div>
+                </div>
+              `;
+            }).join('')
+          : '<p class="text-center text-gray-400 py-12">No connections yet. Start networking!</p>'
+      }
+    `;
+
+    const debounced = debounce((value) => {
+      filters.connections.search = value;
+      renderConnectionsTab();
+    }, 200);
+    panel.querySelector('#connections-search')?.addEventListener('input', (e) => debounced(e.target.value));
+    panel.querySelector('#filter-faculty')?.addEventListener('change', (e) => { filters.connections.faculty = e.target.value; renderConnectionsTab(); });
+    panel.querySelector('#filter-company')?.addEventListener('change', (e) => { filters.connections.company = e.target.value; renderConnectionsTab(); });
+    panel.querySelector('#filter-year')?.addEventListener('change', (e) => { filters.connections.year = e.target.value; renderConnectionsTab(); });
+    panel.querySelector('#filter-location')?.addEventListener('change', (e) => { filters.connections.location = e.target.value; renderConnectionsTab(); });
+    panel.querySelector('#connections-clear-filters')?.addEventListener('click', () => {
+      filters.connections = { search: '', faculty: '', company: '', year: '', location: '' };
+      renderConnectionsTab();
     });
   }
 
-  // Close modals on Escape
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    ['respond-modal', 'remove-modal', 'cancel-modal'].forEach((id) => {
-      if (!document.getElementById(id).classList.contains('hidden')) closeModal(id);
+  function getSorted(items, sort) {
+    const copy = [...items];
+    copy.sort((a, b) => {
+      const da = new Date(a.createdAt || a.updatedAt || 0).getTime();
+      const db = new Date(b.createdAt || b.updatedAt || 0).getTime();
+      return sort === 'oldest' ? da - db : db - da;
     });
-  });
+    return copy;
+  }
 
-  // Close modals on backdrop click
-  ['respond-modal', 'remove-modal', 'cancel-modal'].forEach((id) => {
-    document.getElementById(id).addEventListener('click', (e) => {
-      if (e.target === document.getElementById(id)) closeModal(id);
-    });
-  });
+  function renderPendingTab() {
+    const panel = document.getElementById('panel-pending');
+    const searched = state.pendingIncoming.filter((item) =>
+      getOtherName(item).toLowerCase().includes(filters.pending.search.toLowerCase())
+    );
+    const items = getSorted(searched, filters.pending.sort);
 
-  // Cancel buttons
-  document.getElementById('respond-modal-cancel').addEventListener('click', () => closeModal('respond-modal'));
-  document.getElementById('remove-modal-cancel').addEventListener('click', () => closeModal('remove-modal'));
-  document.getElementById('cancel-modal-cancel').addEventListener('click', () => closeModal('cancel-modal'));
-
-  // Trap focus
-  trapFocus('respond-modal-box');
-  trapFocus('remove-modal-box');
-  trapFocus('cancel-modal-box');
-
-  // ---------- Respond (Accept / Decline) ----------
-  async function respond(requestId, action) {
-    const requesterName = document.querySelector(`[data-req-id="${requestId}"]`)?.dataset?.requesterName || 'this person';
-
-    const isAccept = action === 'accept';
-    const iconEl = document.getElementById('respond-modal-icon');
-    const titleEl = document.getElementById('respond-modal-title');
-    const bodyEl = document.getElementById('respond-modal-body');
-    const confirmBtn = document.getElementById('respond-modal-confirm');
-
-    if (isAccept) {
-      iconEl.className = 'w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0';
-      iconEl.innerHTML = '<svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
-      titleEl.textContent = 'Accept Connection Request';
-      bodyEl.innerHTML = `Are you sure you want to accept the connection request from <strong>${requesterName}</strong>?`;
-      confirmBtn.textContent = 'Yes, Accept';
-      confirmBtn.className = 'btn btn-primary btn-sm';
-    } else {
-      iconEl.className = 'w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0';
-      iconEl.innerHTML = '<svg class="w-5 h-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-      titleEl.textContent = 'Decline Connection Request';
-      bodyEl.innerHTML = `Are you sure you want to decline the connection request from <strong>${requesterName}</strong>? This action cannot be undone.`;
-      confirmBtn.textContent = 'Yes, Decline';
-      confirmBtn.className = 'btn btn-sm bg-red-600 hover:bg-red-700 text-white border-0';
+    if (!items.length) {
+      panel.innerHTML = `
+        <div class="bg-white rounded-2xl border border-gray-200 p-10 text-center">
+          <p class="text-lg font-semibold text-gray-800">No Pending Requests</p>
+          <p class="text-sm text-gray-500 mt-1">You're all caught up! No one is waiting for a response.</p>
+        </div>
+      `;
+      return;
     }
 
-    openModal('respond-modal');
-    setTimeout(() => confirmBtn.focus(), 50);
+    const allSelected = items.length > 0 && items.every((item) => selectedPendingIds.has(item._id));
+    panel.innerHTML = `
+      <div class="bg-white border border-gray-200 rounded-2xl p-4">
+        <div class="grid md:grid-cols-2 gap-3">
+          <input id="pending-search" type="text" value="${escapeHtml(filters.pending.search)}" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Search by name..." />
+          <select id="pending-sort" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="newest" ${filters.pending.sort === 'newest' ? 'selected' : ''}>Newest first</option>
+            <option value="oldest" ${filters.pending.sort === 'oldest' ? 'selected' : ''}>Oldest first</option>
+          </select>
+        </div>
+        <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2">
+          <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+            <input id="pending-select-all" type="checkbox" class="rounded border-gray-300" ${allSelected ? 'checked' : ''} />
+            Select all
+          </label>
+          <button id="accept-selected" class="btn btn-primary btn-sm" ${selectedPendingIds.size ? '' : 'disabled'}>Accept Selected</button>
+          <button id="decline-selected" class="btn btn-outline btn-sm text-red-600 border-red-300 hover:bg-red-50" ${selectedPendingIds.size ? '' : 'disabled'}>Decline Selected</button>
+        </div>
+      </div>
+      ${items.map((req) => {
+        const other = req.otherAlumni || {};
+        const name = getOtherName(req);
+        const initial = (name[0] || '?').toUpperCase();
+        const profileHref = other.slug ? `/alumni/profiles/${other.slug}` : '#';
+        const mutualSkills = getMutualSkills(other.skills || []);
+        const jobLine = [other.job_designation, other.company].filter(Boolean).join(' · ');
+        const eduLine = [other.faculty, other.year].filter(Boolean).join(', ');
+        return `
+          <div class="bg-white shadow-md rounded-2xl p-6" data-req-id="${escapeHtml(req._id)}">
+            <div class="flex items-start gap-3">
+              <input data-action="select-pending" data-id="${escapeHtml(req._id)}" type="checkbox" class="mt-1 rounded border-gray-300" ${selectedPendingIds.has(req._id) ? 'checked' : ''} />
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold">${escapeHtml(initial)}</div>
+                    <h3 class="font-semibold text-gray-900 truncate">${escapeHtml(name)}</h3>
+                  </div>
+                  <span class="badge bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-1 rounded-full">Pending</span>
+                </div>
+                ${jobLine ? `<p class="text-sm text-gray-600 mt-2">${escapeHtml(jobLine)}</p>` : ''}
+                <p class="text-sm text-gray-500 mt-0.5">${escapeHtml([eduLine, other.location].filter(Boolean).join(' · '))}</p>
+                <p class="text-xs text-gray-400 mt-1">${escapeHtml(formatDateTime(req.createdAt, 'Received at'))}</p>
+                <p class="text-xs text-gray-400">${escapeHtml(formatRelativeTime(req.createdAt))}</p>
+                ${req.message ? `
+                  <div class="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700">
+                    <div class="inline-flex items-center gap-1 text-gray-500 mb-1">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      Note
+                    </div>
+                    <p>"${escapeHtml(req.message)}"</p>
+                  </div>
+                ` : ''}
+                ${renderMutualSkills(mutualSkills)}
+                <div class="flex flex-wrap gap-2 mt-4">
+                  <a href="${profileHref}" class="btn btn-outline btn-sm text-xs">View Profile</a>
+                  <button data-action="accept" data-id="${escapeHtml(req._id)}" data-name="${escapeHtml(name)}" class="btn btn-primary btn-sm text-xs">Accept</button>
+                  <button data-action="decline" data-id="${escapeHtml(req._id)}" data-name="${escapeHtml(name)}" class="btn btn-outline btn-sm text-xs text-red-600 border-red-300 hover:bg-red-50">Decline</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    `;
 
-    // Replace listener (clone to remove old one)
-    const newConfirm = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
-    newConfirm.textContent = isAccept ? 'Yes, Accept' : 'Yes, Decline';
-    newConfirm.className = isAccept ? 'btn btn-primary btn-sm' : 'btn btn-sm bg-red-600 hover:bg-red-700 text-white border-0';
-    newConfirm.addEventListener('click', async () => {
-      newConfirm.disabled = true;
-      newConfirm.textContent = 'Processing…';
+    const pendingDebounced = debounce((value) => {
+      filters.pending.search = value;
+      renderPendingTab();
+    }, 200);
+    panel.querySelector('#pending-search')?.addEventListener('input', (e) => pendingDebounced(e.target.value));
+    panel.querySelector('#pending-sort')?.addEventListener('change', (e) => {
+      filters.pending.sort = e.target.value;
+      renderPendingTab();
+    });
+    panel.querySelector('#pending-select-all')?.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        items.forEach((item) => selectedPendingIds.add(item._id));
+      } else {
+        items.forEach((item) => selectedPendingIds.delete(item._id));
+      }
+      renderPendingTab();
+    });
+    panel.querySelector('#accept-selected')?.addEventListener('click', () => handleBulkPendingAction('accept'));
+    panel.querySelector('#decline-selected')?.addEventListener('click', () => handleBulkPendingAction('decline'));
+  }
+
+  function renderSentTab() {
+    const panel = document.getElementById('panel-sent');
+    const searched = state.sentRequests.filter((item) =>
+      getOtherName(item).toLowerCase().includes(filters.sent.search.toLowerCase())
+    );
+    const filteredByStatus = searched.filter((item) =>
+      filters.sent.status === 'all' ? true : (item.status || 'pending') === filters.sent.status
+    );
+    const items = getSorted(filteredByStatus, filters.sent.sort);
+
+    panel.innerHTML = `
+      <div class="bg-white border border-gray-200 rounded-2xl p-4">
+        <div class="grid md:grid-cols-3 gap-3">
+          <input id="sent-search" type="text" value="${escapeHtml(filters.sent.search)}" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Search by recipient name..." />
+          <select id="sent-status" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="all" ${filters.sent.status === 'all' ? 'selected' : ''}>All</option>
+            <option value="pending" ${filters.sent.status === 'pending' ? 'selected' : ''}>Pending</option>
+            <option value="accepted" ${filters.sent.status === 'accepted' ? 'selected' : ''}>Accepted</option>
+            <option value="declined" ${filters.sent.status === 'declined' ? 'selected' : ''}>Declined</option>
+          </select>
+          <select id="sent-sort" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="newest" ${filters.sent.sort === 'newest' ? 'selected' : ''}>Newest first</option>
+            <option value="oldest" ${filters.sent.sort === 'oldest' ? 'selected' : ''}>Oldest first</option>
+          </select>
+        </div>
+      </div>
+      ${
+        items.length
+          ? items.map((req) => {
+              const other = req.otherAlumni || {};
+              const name = getOtherName(req);
+              const initial = (name[0] || '?').toUpperCase();
+              const profileHref = other.slug ? `/alumni/profiles/${other.slug}` : '#';
+              const jobLine = [other.job_designation, other.company].filter(Boolean).join(' · ');
+              const eduLine = [other.faculty, other.year].filter(Boolean).join(', ');
+              const mutualSkills = getMutualSkills(other.skills || []);
+              const status = req.status || 'pending';
+              const statusClass = status === 'accepted'
+                ? 'bg-green-100 text-green-700'
+                : status === 'declined'
+                ? 'bg-red-100 text-red-700'
+                : 'bg-yellow-100 text-yellow-700';
+              const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+              return `
+                <div class="bg-white shadow-md rounded-2xl p-6">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-center gap-4 min-w-0">
+                      <a href="${profileHref}" class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg">${escapeHtml(initial)}</a>
+                      <div class="min-w-0">
+                        <a href="${profileHref}" class="font-semibold text-gray-900 hover:text-primary-600 truncate">${escapeHtml(name)}</a>
+                        ${jobLine ? `<p class="text-sm text-gray-600 mt-0.5">${escapeHtml(jobLine)}</p>` : ''}
+                        <p class="text-sm text-gray-500 mt-0.5">${escapeHtml([eduLine, other.location].filter(Boolean).join(' · '))}</p>
+                        <p class="text-xs text-gray-400 mt-1">${escapeHtml(formatDateTime(req.createdAt, 'Sent at'))}</p>
+                      </div>
+                    </div>
+                    <span class="badge ${statusClass} text-xs font-medium px-2 py-1 rounded-full">${statusText}</span>
+                  </div>
+                  ${req.message ? `
+                    <div class="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700">
+                      <div class="inline-flex items-center gap-1 text-gray-500 mb-1">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        Your note
+                      </div>
+                      <p>"${escapeHtml(req.message)}"</p>
+                    </div>
+                  ` : ''}
+                  ${renderMutualSkills(mutualSkills)}
+                  <div class="flex flex-wrap gap-2 mt-4">
+                    <a href="${profileHref}" class="btn btn-outline btn-sm text-xs">View Profile</a>
+                    ${status === 'pending' ? `<button data-action="cancel-request" data-id="${escapeHtml(req._id)}" data-name="${escapeHtml(name)}" class="btn btn-outline btn-sm text-xs text-yellow-700 border-yellow-300 hover:bg-yellow-50">Cancel Request</button>` : ''}
+                  </div>
+                  ${
+                    status === 'accepted' && req.acceptedAt
+                      ? `<p class="text-xs text-green-700 mt-3">✅ ${escapeHtml(formatDateTime(req.acceptedAt, 'Accepted at'))}</p>`
+                      : status === 'declined' && req.declinedAt
+                      ? `<p class="text-xs text-red-700 mt-3">❌ ${escapeHtml(formatDateTime(req.declinedAt, 'Declined at'))}</p>`
+                      : ''
+                  }
+                </div>
+              `;
+            }).join('')
+          : `
+            <div class="bg-white rounded-2xl border border-gray-200 p-10 text-center">
+              <p class="text-lg font-semibold text-gray-800">No Sent Requests</p>
+              <p class="text-sm text-gray-500 mt-1">You haven't sent any connection requests yet.</p>
+              <p class="text-sm text-gray-500">Browse alumni profiles to start connecting!</p>
+              <a href="/alumni/profiles" class="btn btn-primary btn-sm mt-4">Browse Profiles →</a>
+            </div>
+          `
+      }
+    `;
+
+    const sentDebounced = debounce((value) => {
+      filters.sent.search = value;
+      renderSentTab();
+    }, 200);
+    panel.querySelector('#sent-search')?.addEventListener('input', (e) => sentDebounced(e.target.value));
+    panel.querySelector('#sent-status')?.addEventListener('change', (e) => {
+      filters.sent.status = e.target.value;
+      renderSentTab();
+    });
+    panel.querySelector('#sent-sort')?.addEventListener('change', (e) => {
+      filters.sent.sort = e.target.value;
+      renderSentTab();
+    });
+  }
+
+  function renderDeclinedTab() {
+    const panel = document.getElementById('panel-declined');
+    const sentDeclined = state.sentRequests.filter((item) => item.status === 'declined');
+    const combined = [...state.declinedByMe, ...sentDeclined];
+    const unique = [];
+    const seen = new Set();
+    for (const item of combined) {
+      if (seen.has(item._id)) continue;
+      seen.add(item._id);
+      unique.push(item);
+    }
+
+    panel.innerHTML = unique.length
+      ? unique.map((item) => {
+          const other = item.otherAlumni || {};
+          const name = getOtherName(item);
+          const initial = (name[0] || '?').toUpperCase();
+          const profileHref = other.slug ? `/alumni/profiles/${other.slug}` : '#';
+          const iDeclined = item.targetId === currentAlumniId;
+          return `
+            <div class="bg-white shadow-md rounded-2xl p-6 opacity-90">
+              <div class="flex items-start gap-4">
+                <a href="${profileHref}" class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-lg">${escapeHtml(initial)}</a>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-start justify-between gap-2 flex-wrap">
+                    <a href="${profileHref}" class="font-semibold text-gray-700 hover:text-primary-600 truncate">${escapeHtml(name)}</a>
+                    <span class="badge bg-red-100 text-red-700 text-xs font-medium px-2 py-1 rounded-full">Declined</span>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-1">${escapeHtml(formatDateTime(item.createdAt, iDeclined ? 'Received at' : 'Sent at'))}</p>
+                  ${item.declinedAt || item.updatedAt ? `<p class="text-xs text-gray-400">${escapeHtml(formatDateTime(item.declinedAt || item.updatedAt, 'Declined at'))}</p>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')
+      : '<p class="text-center text-gray-400 py-12">No declined connections.</p>';
+  }
+
+  function renderRemovedTab() {
+    const panel = document.getElementById('panel-removed');
+    const items = state.removedConnections || [];
+    panel.innerHTML = items.length
+      ? items.map((item) => {
+          const other = item.otherAlumni || {};
+          const name = getOtherName(item);
+          const initial = (name[0] || '?').toUpperCase();
+          const profileHref = other.slug ? `/alumni/profiles/${other.slug}` : '#';
+          const connectedAt = item.acceptedAt || item.updatedAt || item.createdAt;
+          const removedBy = item.removedBy === currentAlumniId ? 'You' : 'Them';
+          const jobLine = [other.job_designation, other.company].filter(Boolean).join(' · ');
+          const eduLine = [other.faculty, other.year].filter(Boolean).join(', ');
+          return `
+            <div class="bg-white shadow-md rounded-2xl p-6">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex items-center gap-4 min-w-0">
+                  <a href="${profileHref}" class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-lg">${escapeHtml(initial)}</a>
+                  <div class="min-w-0">
+                    <a href="${profileHref}" class="font-semibold text-gray-900 hover:text-primary-600 truncate">${escapeHtml(name)}</a>
+                    ${jobLine ? `<p class="text-sm text-gray-600 mt-0.5">${escapeHtml(jobLine)}</p>` : ''}
+                    <p class="text-sm text-gray-500 mt-0.5">${escapeHtml([eduLine, other.location].filter(Boolean).join(' · '))}</p>
+                    ${connectedAt ? `<p class="text-xs text-gray-400 mt-1">${escapeHtml(formatDateTime(connectedAt, 'Connected'))}</p>` : ''}
+                    ${item.removedAt ? `<p class="text-xs text-gray-400">${escapeHtml(formatDateTime(item.removedAt, 'Removed at'))}</p>` : ''}
+                    <p class="text-xs text-gray-500">Removed by: ${removedBy}</p>
+                  </div>
+                </div>
+                <span class="badge bg-gray-200 text-gray-700 text-xs font-medium px-2 py-1 rounded-full">Removed</span>
+              </div>
+              <div class="mt-4">
+                <a href="${profileHref}" class="btn btn-outline btn-sm text-xs">View Profile</a>
+              </div>
+            </div>
+          `;
+        }).join('')
+      : `
+        <div class="bg-white rounded-2xl border border-gray-200 p-10 text-center">
+          <p class="text-lg font-semibold text-gray-800">No Removed Connections</p>
+          <p class="text-sm text-gray-500 mt-1">Your removed connections history is empty.</p>
+        </div>
+      `;
+  }
+
+  async function handleRespond(requestId, action, name) {
+    const isAccept = action === 'accept';
+    const ok = await confirmAction({
+      title: isAccept ? 'Accept Connection Request?' : 'Decline Connection Request?',
+      body: isAccept
+        ? `Are you sure you want to accept the connection request from <strong>${escapeHtml(name)}</strong>?`
+        : `Are you sure you want to decline the connection request from <strong>${escapeHtml(name)}</strong>?`,
+      confirmText: isAccept ? 'Accept' : 'Decline',
+      confirmClass: isAccept ? 'btn btn-primary btn-sm' : 'btn btn-sm bg-red-600 hover:bg-red-700 text-white border-0',
+    });
+    if (!ok) return;
+
+    const res = await fetch('/api/connections/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestId, action }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showToast(data.message || 'Failed to update request.', false);
+      return;
+    }
+
+    await loadConnections();
+    if (isAccept) {
+      showSuccessModal({
+        iconClass: 'bg-green-100 text-green-600',
+        icon: '<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+        title: 'Connection Accepted!',
+        body: `You're now connected with ${name}. You can view their profile, request mentorship, or send a message from "My Connections".`,
+      });
+    } else {
+      showSuccessModal({
+        iconClass: 'bg-red-100 text-red-600',
+        icon: '<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+        title: 'Request Declined',
+        body: `You've declined the connection request from ${name}. The request has been moved to the Declined history.`,
+      });
+    }
+  }
+
+  async function handleBulkPendingAction(action) {
+    const ids = [...selectedPendingIds];
+    if (!ids.length) return;
+    const isAccept = action === 'accept';
+    const ok = await confirmAction({
+      title: isAccept ? `Accept ${ids.length} requests?` : `Decline ${ids.length} requests?`,
+      body: isAccept
+        ? 'This will accept all selected requests one by one.'
+        : 'This will decline all selected requests one by one.',
+      confirmText: isAccept ? 'Accept Selected' : 'Decline Selected',
+      confirmClass: isAccept ? 'btn btn-primary btn-sm' : 'btn btn-sm bg-red-600 hover:bg-red-700 text-white border-0',
+    });
+    if (!ok) return;
+
+    let done = 0;
+    for (const requestId of ids) {
       try {
         const res = await fetch('/api/connections/respond', {
           method: 'POST',
@@ -280,292 +772,216 @@ const session = getCurrentAlumni(Astro.cookies)!;
           body: JSON.stringify({ requestId, action }),
         });
         const data = await res.json();
-        closeModal('respond-modal');
-        if (data.success) {
-          showToast(isAccept ? `Connected with ${requesterName}!` : `Request from ${requesterName} declined.`, true);
-          await loadConnections();
-        } else {
-          showToast(data.message || 'Failed to respond.', false);
-        }
-      } catch {
-        closeModal('respond-modal');
-        showToast('Network error. Please try again.', false);
-      }
+        if (data.success) done++;
+      } catch {}
+    }
+
+    selectedPendingIds.clear();
+    await loadConnections();
+    showSuccessModal({
+      iconClass: isAccept ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600',
+      icon: isAccept
+        ? '<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
+        : '<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+      title: isAccept ? `${done} requests accepted!` : `${done} requests declined!`,
+      body: isAccept ? 'Selected requests were accepted successfully.' : 'Selected requests were declined successfully.',
     });
   }
-  window.respond = respond;
 
-  // ---------- Remove Connection ----------
-  async function removeConnection(connectionId, otherName) {
-    document.getElementById('remove-modal-body').innerHTML =
-      `Are you sure you want to remove your connection with <strong>${otherName}</strong>? This cannot be undone.`;
-    openModal('remove-modal');
-    const confirmBtn = document.getElementById('remove-modal-confirm');
-    const newConfirm = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
-    newConfirm.textContent = 'Yes, Remove';
-    newConfirm.className = 'btn btn-sm bg-red-600 hover:bg-red-700 text-white border-0';
-    setTimeout(() => newConfirm.focus(), 50);
-    newConfirm.addEventListener('click', async () => {
-      newConfirm.disabled = true;
-      newConfirm.textContent = 'Removing…';
-      try {
-        const res = await fetch('/api/connections/remove', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ connectionId }),
-        });
-        const data = await res.json();
-        closeModal('remove-modal');
-        if (data.success) {
-          showToast(`Connection with ${otherName} removed.`, true);
-          await loadConnections();
-        } else {
-          showToast(data.message || 'Failed to remove connection.', false);
-        }
-      } catch {
-        closeModal('remove-modal');
-        showToast('Network error. Please try again.', false);
-      }
+  async function handleRemove(connectionId, name) {
+    const ok = await confirmAction({
+      title: 'Remove Connection?',
+      body: `Are you sure you want to remove your connection with <strong>${escapeHtml(name)}</strong>?`,
+      confirmText: 'Remove',
+      confirmClass: 'btn btn-sm bg-red-600 hover:bg-red-700 text-white border-0',
+    });
+    if (!ok) return;
+
+    const res = await fetch('/api/connections/remove', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ connectionId }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showToast(data.message || 'Failed to remove connection.', false);
+      return;
+    }
+
+    await loadConnections();
+    showSuccessModal({
+      iconClass: 'bg-yellow-100 text-yellow-700',
+      icon: '<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"/><path d="M7 7v10"/><path d="M17 7v10"/></svg>',
+      title: 'Connection Removed',
+      body: `You've removed your connection with ${name}. This has been saved to your Removed Connections history.`,
     });
   }
-  window.removeConnection = removeConnection;
 
-  // ---------- Cancel Sent Request ----------
-  async function cancelRequest(connectionId, targetName) {
-    document.getElementById('cancel-modal-body').innerHTML =
-      `Are you sure you want to cancel your connection request to <strong>${targetName}</strong>?`;
-    openModal('cancel-modal');
-    const confirmBtn = document.getElementById('cancel-modal-confirm');
-    const newConfirm = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
-    newConfirm.textContent = 'Yes, Cancel Request';
-    newConfirm.className = 'btn btn-sm bg-yellow-500 hover:bg-yellow-600 text-white border-0';
-    setTimeout(() => newConfirm.focus(), 50);
-    newConfirm.addEventListener('click', async () => {
-      newConfirm.disabled = true;
-      newConfirm.textContent = 'Cancelling…';
-      try {
-        const res = await fetch('/api/connections/cancel', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ connectionId }),
-        });
-        const data = await res.json();
-        closeModal('cancel-modal');
-        if (data.success) {
-          showToast(`Request to ${targetName} cancelled.`, true);
-          await loadConnections();
-        } else {
-          showToast(data.message || 'Failed to cancel request.', false);
-        }
-      } catch {
-        closeModal('cancel-modal');
-        showToast('Network error. Please try again.', false);
-      }
+  async function handleCancelRequest(connectionId, name) {
+    const ok = await confirmAction({
+      title: 'Cancel Connection Request?',
+      body: `Are you sure you want to cancel your request to <strong>${escapeHtml(name)}</strong>? This will remove the request and they won't be notified.`,
+      confirmText: 'Cancel Request',
+      confirmClass: 'btn btn-sm bg-yellow-500 hover:bg-yellow-600 text-white border-0',
+    });
+    if (!ok) return;
+
+    const res = await fetch('/api/connections/cancel', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ connectionId }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showToast(data.message || 'Failed to cancel request.', false);
+      return;
+    }
+
+    await loadConnections();
+    showSuccessModal({
+      iconClass: 'bg-yellow-100 text-yellow-700',
+      icon: '<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 19 5 12 12 5"/><line x1="5" y1="12" x2="20" y2="12"/></svg>',
+      title: 'Request Cancelled',
+      body: `Your connection request to ${name} has been cancelled. You can send a new request at any time.`,
     });
   }
-  window.cancelRequest = cancelRequest;
 
-  // ---------- Card Renderers ----------
-  function renderConnectionCard(conn) {
-    const other = conn.otherAlumni || {};
-    const name = other.name || (conn.requesterId === currentAlumniId ? conn.targetName : conn.requesterName) || 'Unknown';
-    const initial = (name[0] || '?').toUpperCase();
-    const slug = other.slug || '';
-    const jobTitle = other.job_designation || '';
-    const company = other.company || '';
-    const faculty = other.faculty || '';
-    const year = other.year || '';
-    const location = other.location || '';
-    const openToMentorship = other.open_to_mentorship || false;
-    const otherId = other._id || (conn.requesterId === currentAlumniId ? conn.targetId : conn.requesterId);
-    const connectedSince = conn.acceptedAt || conn.updatedAt || conn.createdAt;
-
-    const jobLine = [jobTitle, company].filter(Boolean).join(' · ');
-    const eduLine = [faculty ? `${faculty}` : '', year ? `${year}` : ''].filter(Boolean).join(', ');
-
-    const viewProfileHref = slug ? `/alumni/profiles/${slug}` : '#';
-    const mentorshipHref = `/alumni/mentorship?mentor=${otherId}`;
-
-    return `
-      <div class="bg-white shadow-md rounded-2xl p-6">
-        <div class="flex items-start gap-4">
-          <a href="${viewProfileHref}" class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg flex-shrink-0 hover:opacity-80 transition-opacity" aria-label="View ${name}'s profile">
-            ${initial}
-          </a>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-start justify-between gap-2 flex-wrap">
-              <a href="${viewProfileHref}" class="font-semibold text-gray-900 hover:text-primary-600 transition-colors truncate">${name}</a>
-              <span class="badge bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full shrink-0 flex items-center gap-1">
-                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                Connected
-              </span>
-            </div>
-            ${jobLine ? `<p class="text-sm text-gray-600 mt-0.5">${jobLine}</p>` : ''}
-            ${eduLine ? `<p class="text-sm text-gray-500 mt-0.5">${eduLine}</p>` : ''}
-            ${location ? `<p class="text-sm text-gray-500 mt-0.5">${location}</p>` : ''}
-            ${connectedSince ? `<p class="text-xs text-gray-400 mt-1">Connected since ${formatDate(connectedSince)}</p>` : ''}
-          </div>
-        </div>
-        <div class="flex flex-wrap gap-2 mt-4">
-          <a href="${viewProfileHref}" class="btn btn-outline btn-sm text-xs">View Profile</a>
-          ${openToMentorship ? `<a href="${mentorshipHref}" class="btn btn-outline btn-sm text-xs text-primary-600 border-primary-300 hover:bg-primary-50">Request Mentorship</a>` : ''}
-          <button onclick="removeConnection('${conn._id}', '${name.replace(/'/g, "\\'")}');return false;" class="btn btn-outline btn-sm text-xs text-red-600 border-red-300 hover:bg-red-50">Remove</button>
-        </div>
-      </div>`;
+  function openMessageModal(targetId, name) {
+    messageTarget = { id: targetId, name };
+    const text = document.getElementById('message-modal-text');
+    document.getElementById('message-modal-title').textContent = `Message ${name}`;
+    text.value = '';
+    document.getElementById('message-modal-count').textContent = '0/500';
+    openModal('message-modal', '#message-modal-text');
   }
 
-  function renderPendingCard(req) {
-    const name = req.otherAlumni?.name || req.requesterName || 'Unknown';
-    const initial = (name[0] || '?').toUpperCase();
-    return `
-      <div class="bg-white shadow-md rounded-2xl p-6" data-req-id="${req._id}" data-requester-name="${name.replace(/"/g, '&quot;')}">
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex items-center gap-4 min-w-0">
-            <div class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg flex-shrink-0">
-              ${initial}
-            </div>
-            <div class="min-w-0">
-              <h3 class="font-semibold text-gray-900 truncate">${name}</h3>
-              ${req.message ? `<p class="text-sm text-gray-500 mt-1 italic">"${req.message}"</p>` : ''}
-              <p class="text-xs text-gray-400 mt-1">Received ${formatDate(req.createdAt)}</p>
-            </div>
-          </div>
-          <span class="badge bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-1 rounded-full shrink-0">Pending</span>
-        </div>
-        <div class="flex gap-2 mt-4">
-          <button onclick="respond('${req._id}','accept')" class="btn btn-primary btn-sm">Accept</button>
-          <button onclick="respond('${req._id}','decline')" class="btn btn-outline btn-sm text-red-600 border-red-300 hover:bg-red-50">Decline</button>
-        </div>
-      </div>`;
-  }
+  async function sendMessage() {
+    const sendBtn = document.getElementById('message-modal-send');
+    const text = document.getElementById('message-modal-text');
+    const message = text.value.trim();
+    if (!message || message.length > 500 || !messageTarget.id) {
+      showToast('Please enter a valid message (max 500 characters).', false);
+      return;
+    }
 
-  function renderSentCard(req) {
-    const other = req.otherAlumni || {};
-    const name = other.name || req.targetName || 'Unknown';
-    const initial = (name[0] || '?').toUpperCase();
-    const slug = other.slug || '';
-    const profileHref = slug ? `/alumni/profiles/${slug}` : '#';
-    const status = req.status || 'pending';
-
-    const statusBadge = {
-      pending: '<span class="badge bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-1 rounded-full shrink-0">Pending</span>',
-      accepted: '<span class="badge bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full shrink-0">Accepted</span>',
-      declined: '<span class="badge bg-red-100 text-red-700 text-xs font-medium px-2 py-1 rounded-full shrink-0">Declined</span>',
-    }[status] || `<span class="badge bg-gray-100 text-gray-600 text-xs font-medium px-2 py-1 rounded-full shrink-0">${status}</span>`;
-
-    const dateInfo = status === 'accepted' && req.acceptedAt
-      ? `<p class="text-xs text-gray-400 mt-1">Accepted ${formatDate(req.acceptedAt)}</p>`
-      : status === 'declined' && req.declinedAt
-      ? `<p class="text-xs text-gray-400 mt-1">Declined ${formatDate(req.declinedAt)}</p>`
-      : `<p class="text-xs text-gray-400 mt-1">Sent ${formatDate(req.createdAt)}</p>`;
-
-    return `
-      <div class="bg-white shadow-md rounded-2xl p-6">
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex items-center gap-4 min-w-0">
-            <a href="${profileHref}" class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg flex-shrink-0 hover:opacity-80 transition-opacity">
-              ${initial}
-            </a>
-            <div class="min-w-0">
-              <a href="${profileHref}" class="font-semibold text-gray-900 hover:text-primary-600 transition-colors truncate">${name}</a>
-              ${req.message ? `<p class="text-sm text-gray-500 mt-1 italic">"${req.message}"</p>` : ''}
-              ${dateInfo}
-            </div>
-          </div>
-          ${statusBadge}
-        </div>
-        ${status === 'pending' ? `
-        <div class="flex gap-2 mt-4">
-          <button onclick="cancelRequest('${req._id}', '${name.replace(/'/g, "\\'")}');return false;" class="btn btn-outline btn-sm text-xs text-yellow-700 border-yellow-300 hover:bg-yellow-50">Cancel Request</button>
-        </div>` : ''}
-      </div>`;
-  }
-
-  function renderDeclinedCard(item) {
-    // item can be: a request I declined (I was target), or a sent request declined by other (I was requester)
-    const other = item.otherAlumni || {};
-    const iDeclined = item.targetId === currentAlumniId && item.status === 'declined';
-    const name = other.name || (iDeclined ? item.requesterName : item.targetName) || 'Unknown';
-    const initial = (name[0] || '?').toUpperCase();
-    const slug = other.slug || '';
-    const profileHref = slug ? `/alumni/profiles/${slug}` : '#';
-
-    const declinedDate = item.declinedAt || item.updatedAt;
-    const sentDate = item.createdAt;
-
-    return `
-      <div class="bg-white shadow-md rounded-2xl p-6 opacity-80">
-        <div class="flex items-start gap-4">
-          <a href="${profileHref}" class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-lg flex-shrink-0 hover:opacity-80 transition-opacity">
-            ${initial}
-          </a>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-start justify-between gap-2 flex-wrap">
-              <a href="${profileHref}" class="font-semibold text-gray-700 hover:text-primary-600 transition-colors truncate">${name}</a>
-              <span class="badge bg-red-100 text-red-700 text-xs font-medium px-2 py-1 rounded-full shrink-0">Declined</span>
-            </div>
-            <p class="text-xs text-gray-400 mt-1">
-              ${iDeclined ? `Request received ${formatDate(sentDate)}` : `Request sent ${formatDate(sentDate)}`}
-            </p>
-            ${declinedDate ? `<p class="text-xs text-gray-400">Declined ${formatDate(declinedDate)}</p>` : ''}
-            <p class="text-xs text-gray-500 mt-1 italic">${iDeclined ? 'You declined this request.' : 'Your request was declined.'}</p>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  // ---------- Load All Data ----------
-  async function loadConnections() {
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending...';
     try {
-      const res = await fetch('/api/connections/my-connections');
+      const res = await fetch('/api/connections/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetId: messageTarget.id, message }),
+      });
       const data = await res.json();
-      if (data.success) {
-        const connPanel = document.getElementById('panel-connections');
-        const pendingPanel = document.getElementById('panel-pending');
-        const sentPanel = document.getElementById('panel-sent');
-        const declinedPanel = document.getElementById('panel-declined');
-
-        const connections = data.connections || [];
-        const pendingIncoming = data.pendingIncoming || [];
-        const sentRequests = data.sentRequests || [];
-        const declinedByMe = data.declinedByMe || [];
-
-        // My Connections tab
-        connPanel.innerHTML = connections.length
-          ? connections.map(renderConnectionCard).join('')
-          : '<p class="text-center text-gray-400 py-12">No connections yet. Start networking!</p>';
-
-        // Pending Incoming tab — update badge
-        const pendingTabBtn = document.getElementById('tab-pending');
-        pendingTabBtn.innerHTML = pendingIncoming.length
-          ? `Pending Incoming <span class="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary-600 rounded-full">${pendingIncoming.length}</span>`
-          : 'Pending Incoming';
-
-        pendingPanel.innerHTML = pendingIncoming.length
-          ? pendingIncoming.map(renderPendingCard).join('')
-          : '<p class="text-center text-gray-400 py-12">No pending requests.</p>';
-
-        // Sent Requests tab
-        sentPanel.innerHTML = sentRequests.length
-          ? sentRequests.map(renderSentCard).join('')
-          : '<p class="text-center text-gray-400 py-12">You haven\'t sent any connection requests yet.</p>';
-
-        // Declined tab — combine declinedByMe + sent requests declined by others
-        const sentDeclined = sentRequests.filter(r => r.status === 'declined');
-        const allDeclined = [...declinedByMe, ...sentDeclined];
-        declinedPanel.innerHTML = allDeclined.length
-          ? allDeclined.map(renderDeclinedCard).join('')
-          : '<p class="text-center text-gray-400 py-12">No declined connections.</p>';
+      if (!data.success) {
+        showToast(data.message || 'Failed to send message.', false);
+        return;
       }
+      closeModal('message-modal');
+      showToast(`Message sent to ${messageTarget.name}!`, true);
+    } catch {
+      showToast('Network error. Please try again.', false);
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send';
+    }
+  }
+
+  function renderAllPanels() {
+    updateTabBadge('badge-connections', state.connections.length);
+    updateTabBadge('badge-pending', state.pendingIncoming.length);
+    updateTabBadge('badge-sent', state.sentRequests.length);
+    renderConnectionsTab();
+    renderPendingTab();
+    renderSentTab();
+    renderDeclinedTab();
+    renderRemovedTab();
+  }
+
+  async function loadConnections() {
+    const loading = document.getElementById('loading');
+    loading.classList.remove('hidden');
+    try {
+      const [connectionsRes, meRes] = await Promise.all([
+        fetch('/api/connections/my-connections'),
+        fetch('/api/alumni/me'),
+      ]);
+      const data = await connectionsRes.json();
+      const meData = await meRes.json().catch(() => ({}));
+      if (!data.success) {
+        showToast(data.message || 'Failed to load connections.', false);
+        return;
+      }
+
+      state.connections = Array.isArray(data.connections) ? data.connections : [];
+      state.pendingIncoming = Array.isArray(data.pendingIncoming) ? data.pendingIncoming : [];
+      state.sentRequests = Array.isArray(data.sentRequests) ? data.sentRequests : [];
+      state.declinedByMe = Array.isArray(data.declinedByMe) ? data.declinedByMe : [];
+      state.removedConnections = Array.isArray(data.removedConnections) ? data.removedConnections : [];
+
+      const apiMeSkills = Array.isArray(meData?.data?.skills) ? meData.data.skills : [];
+      const apiBucketSkills = Array.isArray(data.mySkills) ? data.mySkills : [];
+      mySkills = [...new Set([...apiMeSkills, ...apiBucketSkills].map((s) => String(s || '').trim()).filter(Boolean))];
+
+      selectedPendingIds = new Set([...selectedPendingIds].filter((id) =>
+        state.pendingIncoming.some((item) => item._id === id)
+      ));
+
+      renderAllPanels();
     } catch {
       document.getElementById('panel-connections').innerHTML = '<p class="text-center text-red-400 py-12">Failed to load connections.</p>';
     } finally {
-      document.getElementById('loading').classList.add('hidden');
-      document.getElementById(`panel-${currentTab}`).classList.remove('hidden');
+      loading.classList.add('hidden');
+      switchTab(currentTab);
     }
   }
+
+  document.querySelectorAll('[data-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  document.addEventListener('click', async (event) => {
+    const actionEl = event.target.closest('[data-action]');
+    if (!actionEl) return;
+    const action = actionEl.dataset.action;
+    if (action === 'accept' || action === 'decline') {
+      await handleRespond(actionEl.dataset.id, action, actionEl.dataset.name || 'this alumni');
+    } else if (action === 'remove') {
+      await handleRemove(actionEl.dataset.id, actionEl.dataset.name || 'this alumni');
+    } else if (action === 'cancel-request') {
+      await handleCancelRequest(actionEl.dataset.id, actionEl.dataset.name || 'this alumni');
+    } else if (action === 'message') {
+      openMessageModal(actionEl.dataset.targetId, actionEl.dataset.targetName || 'alumni');
+    } else if (action === 'select-pending') {
+      if (actionEl.checked) selectedPendingIds.add(actionEl.dataset.id);
+      else selectedPendingIds.delete(actionEl.dataset.id);
+      renderPendingTab();
+    }
+  });
+
+  ['confirm-modal', 'success-modal', 'message-modal'].forEach((id) => {
+    const modal = document.getElementById(id);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal(id);
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    ['confirm-modal', 'success-modal', 'message-modal'].forEach((id) => {
+      if (!document.getElementById(id).classList.contains('hidden')) closeModal(id);
+    });
+  });
+
+  document.getElementById('message-modal-cancel').addEventListener('click', () => closeModal('message-modal'));
+  document.getElementById('message-modal-send').addEventListener('click', sendMessage);
+  document.getElementById('message-modal-text').addEventListener('input', (e) => {
+    document.getElementById('message-modal-count').textContent = `${e.target.value.length}/500`;
+  });
+
+  trapFocus('confirm-modal-box');
+  trapFocus('success-modal-box');
+  trapFocus('message-modal-box');
 
   loadConnections();
 </script>
