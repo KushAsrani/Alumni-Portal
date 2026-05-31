@@ -6,6 +6,8 @@ import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
 import { connectToDatabase } from '../../lib/mongodb';
 import type { AlumniRegistration } from '../../lib/mongodb';
 import { ObjectId } from 'mongodb';
+import ProfileCompletenessWidget from '../../components/ProfileCompletenessWidget.astro';
+import { calculateCompleteness } from '../../lib/profile-completeness';
 
 // Redirect unauthenticated users
 if (!isAlumniAuthenticated(Astro.cookies)) {
@@ -42,6 +44,8 @@ try {
   console.error('Edit profile fetch error:', err);
   fetchError = 'Unable to load profile at this time. Please try again later.';
 }
+
+const completenessResult = alumni ? calculateCompleteness(alumni) : null;
 ---
 
 <Layout title="Edit Profile | Alumni Portal">
@@ -71,7 +75,9 @@ try {
       )}
 
       {alumni && (
-        <form id="editProfileForm" class="space-y-8">
+        <>
+          {completenessResult && <ProfileCompletenessWidget result={completenessResult} compact={true} />}
+          <form id="editProfileForm" class="space-y-8">
 
           <!-- Read-only account info -->
           <div class="form-section">
@@ -341,7 +347,8 @@ try {
             <a href="/alumni/profile" class="btn btn-outline">Cancel</a>
           </div>
 
-        </form>
+          </form>
+        </>
       )}
 
     </div>

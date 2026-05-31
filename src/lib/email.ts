@@ -135,3 +135,49 @@ export function buildWaitlistPromotionEmail(opts: {
   const text = `Hi ${userName},\n\nYou've been confirmed for ${eventTitle} on ${dateStr}.\n\nView your ticket: ${eventUrl}`;
   return { subject, html, text };
 }
+
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function buildIncompleteProfileNudgeEmail(params: {
+  userName: string;
+  score: number;
+  missingFields: string[];
+  editProfileUrl: string;
+}): { subject: string; html: string; text: string } {
+  const { userName, score, missingFields, editProfileUrl } = params;
+  const fieldList = missingFields.slice(0, 6).map((field) => `<li style="margin-bottom: 8px;">${escapeHtml(field)}</li>`).join('');
+  const subject = 'Complete your Alumni Portal profile';
+  const html = `
+    <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 0;">
+      <div style="background: #2e4096; padding: 32px 40px; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 22px;">Complete your profile</h1>
+      </div>
+      <div style="background: white; padding: 32px 40px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="color: #334155; font-size: 16px;">Hi <strong>${escapeHtml(userName)}</strong>,</p>
+        <p style="color: #334155; font-size: 16px;">Your Alumni Portal profile is currently ${score}% complete. Updating the remaining fields helps other alumni connect with you and improves your visibility across the portal.</p>
+        <div style="background: #eef2ff; border-left: 4px solid #2e4096; padding: 16px 20px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0 0 12px; color: #1d275c;"><strong>Suggested fields to complete:</strong></p>
+          <ul style="margin: 0; padding-left: 18px; color: #1d275c;">${fieldList || '<li>Review your profile details and complete any missing information.</li>'}</ul>
+        </div>
+        <a href="${editProfileUrl}" style="display: inline-block; background: #2e4096; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; margin-top: 8px;">
+          Update Profile
+        </a>
+        <p style="color: #94a3b8; font-size: 13px; margin-top: 32px;">You received this email because you have an approved account on the Alumni Portal.</p>
+      </div>
+    </div>
+  `;
+  const text = `Hi ${userName},
+
+Your Alumni Portal profile is ${score}% complete. Suggested fields: ${missingFields.slice(0, 6).join(', ') || 'Review your profile details.'}
+
+Update your profile: ${editProfileUrl}`;
+  return { subject, html, text };
+}

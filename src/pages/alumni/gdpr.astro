@@ -1,0 +1,86 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { ObjectId } from 'mongodb';
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
+import { connectToDatabase } from '../../lib/mongodb';
+import { formatDate } from '../../utils/date-format';
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login');
+}
+
+const session = getCurrentAlumni(Astro.cookies)!;
+const { db } = await connectToDatabase();
+const collection = db.collection('alumni_registrations');
+let alumni: any = null;
+
+try {
+  alumni = await collection.findOne({ _id: new ObjectId(session.alumniId) });
+} catch (error) {
+  console.error('GDPR page ObjectId fallback:', error);
+  alumni = await collection.findOne({ $or: [{ username: session.username }, { email: session.username }] });
+}
+---
+
+<Layout title="Privacy & Data | Alumni Portal">
+  <main class="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+    <a href="/alumni/profile" class="text-sm font-medium text-primary-700 hover:text-primary-800">Back to profile</a>
+    <h1 class="mt-2 text-3xl font-bold text-slate-900">Privacy & Data Requests</h1>
+    <p class="mt-2 text-slate-600">Export your data or request account deletion.</p>
+
+    <div class="mt-8 grid gap-6 md:grid-cols-2">
+      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-semibold text-slate-900">Download my data</h2>
+        <p class="mt-2 text-sm text-slate-600">Get a copy of your profile data and profile change history in JSON format.</p>
+        <a href="/api/alumni/gdpr-export" class="mt-6 inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
+          Download export
+        </a>
+      </section>
+
+      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-semibold text-slate-900">Request account deletion</h2>
+        <p class="mt-2 text-sm text-slate-600">Submit a deletion request for admin review.</p>
+        <div class="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
+          <p><strong>Current status:</strong> {alumni?.gdpr_deletion_requested ? 'Requested' : 'No deletion request submitted'}</p>
+          {alumni?.gdpr_deletion_requested_at && <p class="mt-1">Requested on {formatDate(alumni.gdpr_deletion_requested_at)}</p>}
+        </div>
+        <form id="gdprDeleteForm" class="mt-4 space-y-3">
+          <label class="block text-sm font-medium text-slate-700" for="deletionReason">Reason (optional)</label>
+          <textarea id="deletionReason" class="min-h-[120px] w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" placeholder="Add context for your request"></textarea>
+          <button type="submit" class="inline-flex items-center rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">
+            Submit deletion request
+          </button>
+          <p id="gdprMessage" class="text-sm"></p>
+        </form>
+      </section>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  document.getElementById('gdprDeleteForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const message = document.getElementById('gdprMessage');
+    const reason = document.getElementById('deletionReason');
+
+    try {
+      const response = await fetch('/api/alumni/gdpr-delete-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: reason?.value || '' }),
+      });
+      const result = await response.json();
+      message.textContent = result.message || (result.success ? 'Request submitted.' : 'Unable to submit request.');
+      message.className = `text-sm ${result.success ? 'text-emerald-700' : 'text-red-700'}`;
+      if (result.success) {
+        window.setTimeout(() => window.location.reload(), 800);
+      }
+    } catch (error) {
+      console.error('GDPR request error:', error);
+      message.textContent = 'Unable to submit request.';
+      message.className = 'text-sm text-red-700';
+    }
+  });
+</script>

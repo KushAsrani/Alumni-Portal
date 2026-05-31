@@ -1,0 +1,247 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { ObjectId } from 'mongodb';
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
+import { connectToDatabase } from '../../lib/mongodb';
+import { formatDate } from '../../utils/date-format';
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login');
+}
+
+const session = getCurrentAlumni(Astro.cookies)!;
+const publicResponse = await fetch(`${Astro.url.origin}/api/alumni/testimonials`);
+const publicData = publicResponse.ok ? await publicResponse.json() : { testimonials: [] };
+const publicTestimonials = Array.isArray(publicData?.testimonials) ? publicData.testimonials : [];
+
+const { db } = await connectToDatabase();
+const alumniCollection = db.collection('alumni_registrations');
+const testimonialsCollection = db.collection('testimonials');
+let alumni: any = null;
+
+try {
+  alumni = await alumniCollection.findOne({ _id: new ObjectId(session.alumniId) });
+} catch (error) {
+  console.error('Testimonials page ObjectId fallback:', error);
+  alumni = await alumniCollection.findOne({ $or: [{ username: session.username }, { email: session.username }] });
+}
+
+const ownTestimonials = await testimonialsCollection.find({ alumniId: session.alumniId }).sort({ createdAt: -1 }).toArray();
+const serializedOwnTestimonials = ownTestimonials.map((item) => ({ ...item, _id: item._id?.toString() }));
+---
+
+<Layout title="Testimonials | Alumni Portal">
+  <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <a href="/alumni/profile" class="text-sm font-medium text-primary-700 hover:text-primary-800">Back to profile</a>
+        <h1 class="mt-2 text-3xl font-bold text-slate-900">Community Testimonials</h1>
+        <p class="mt-2 text-slate-600">Share your experience and browse approved stories from the alumni network.</p>
+      </div>
+    </div>
+
+    <div class="grid gap-8 lg:grid-cols-[1.2fr,0.8fr]">
+      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-xl font-semibold text-slate-900">Public testimonials</h2>
+          <select id="testimonialCategoryFilter" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700">
+            <option value="all">All categories</option>
+            <option value="mentorship">Mentorship</option>
+            <option value="community">Community</option>
+            <option value="career">Career</option>
+            <option value="networking">Networking</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <div id="testimonialFeed" class="mt-6 space-y-4"></div>
+        <div class="mt-6 flex items-center justify-between">
+          <button id="prevTestimonialsBtn" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Previous</button>
+          <span id="testimonialPaginationLabel" class="text-sm text-slate-500"></span>
+          <button id="nextTestimonialsBtn" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Next</button>
+        </div>
+      </section>
+
+      <section class="space-y-6">
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 class="text-xl font-semibold text-slate-900">Submit a testimonial</h2>
+          <p class="mt-2 text-sm text-slate-600">Your testimonial will be reviewed by the admin team before it becomes public.</p>
+          <form id="testimonialForm" class="mt-6 space-y-4">
+            <div>
+              <label for="testimonialContent" class="block text-sm font-medium text-slate-700">Your testimonial</label>
+              <textarea id="testimonialContent" maxlength="500" class="mt-2 min-h-[140px] w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" placeholder="Share how the alumni network helped you"></textarea>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p class="block text-sm font-medium text-slate-700">Rating</p>
+                <div id="starSelector" class="mt-2 flex items-center gap-2"></div>
+              </div>
+              <div>
+                <label for="testimonialCategory" class="block text-sm font-medium text-slate-700">Category</label>
+                <select id="testimonialCategory" class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200">
+                  <option value="mentorship">Mentorship</option>
+                  <option value="community">Community</option>
+                  <option value="career">Career</option>
+                  <option value="networking">Networking</option>
+                  <option value="general">General</option>
+                </select>
+              </div>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-slate-700">
+              <input id="testimonialPublic" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600" checked />
+              Make this testimonial public once approved
+            </label>
+            <button type="submit" class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">Submit testimonial</button>
+            <p id="testimonialMessage" class="text-sm"></p>
+          </form>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 class="text-xl font-semibold text-slate-900">My testimonials</h2>
+          <div class="mt-4 space-y-3">
+            {serializedOwnTestimonials.length === 0 ? (
+              <p class="text-sm text-slate-600">You have not submitted any testimonials yet.</p>
+            ) : (
+              serializedOwnTestimonials.map((item) => (
+                <div class="rounded-xl border border-slate-200 p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 text-amber-500">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <svg class={`h-4 w-4 ${index < item.rating ? 'fill-current' : 'fill-slate-200 text-slate-200'}`} viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.539 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.783.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81H7.03a1 1 0 00.95-.69l1.07-3.292z"></path>
+                        </svg>
+                      ))}
+                    </div>
+                    <span class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${item.isApproved ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{item.isApproved ? 'Approved' : 'Pending review'}</span>
+                  </div>
+                  <p class="mt-3 text-sm text-slate-700">{item.content}</p>
+                  <p class="mt-3 text-xs uppercase tracking-[0.2em] text-slate-500">{item.category}</p>
+                  <p class="mt-2 text-xs text-slate-500">Submitted {formatDate(item.createdAt)}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</Layout>
+
+<script define:vars={{ publicTestimonials, alumniName: alumni?.name || session.name, alumniYear: alumni?.year || '', alumniCompany: alumni?.company || '', alumniPhoto: alumni?.photo_blob_url || '' }}>
+  let selectedRating = 5;
+  let currentPage = 1;
+  const pageSize = 6;
+  let activeCategory = 'all';
+
+  const stars = document.getElementById('starSelector');
+  const feed = document.getElementById('testimonialFeed');
+  const paginationLabel = document.getElementById('testimonialPaginationLabel');
+  const prevBtn = document.getElementById('prevTestimonialsBtn');
+  const nextBtn = document.getElementById('nextTestimonialsBtn');
+  const filterSelect = document.getElementById('testimonialCategoryFilter');
+  const messageEl = document.getElementById('testimonialMessage');
+
+  function renderStars() {
+    stars.innerHTML = Array.from({ length: 5 }).map((_, index) => {
+      const rating = index + 1;
+      const active = rating <= selectedRating;
+      return `<button type="button" data-rating="${rating}" class="rounded-full p-1 ${active ? 'text-amber-500' : 'text-slate-300'}">
+        <svg class="h-6 w-6 fill-current" viewBox="0 0 20 20" aria-hidden="true"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.539 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.783.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81H7.03a1 1 0 00.95-.69l1.07-3.292z"></path></svg>
+      </button>`;
+    }).join('');
+    stars.querySelectorAll('button').forEach((button) => {
+      button.addEventListener('click', () => {
+        selectedRating = Number(button.dataset.rating || '5');
+        renderStars();
+      });
+    });
+  }
+
+  function getFilteredTestimonials() {
+    return activeCategory === 'all'
+      ? publicTestimonials
+      : publicTestimonials.filter((item) => item.category === activeCategory);
+  }
+
+  function renderTestimonials() {
+    const filtered = getFilteredTestimonials();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    currentPage = Math.min(currentPage, totalPages);
+    const start = (currentPage - 1) * pageSize;
+    const items = filtered.slice(start, start + pageSize);
+
+    if (items.length === 0) {
+      feed.innerHTML = '<div class="rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-600">No testimonials found for this category.</div>';
+    } else {
+      feed.innerHTML = items.map((item) => {
+        const starsMarkup = Array.from({ length: 5 }).map((_, index) => `<svg class="h-4 w-4 ${index < item.rating ? 'fill-current text-amber-500' : 'fill-slate-200 text-slate-200'}" viewBox="0 0 20 20" aria-hidden="true"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.539 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.783.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81H7.03a1 1 0 00.95-.69l1.07-3.292z"></path></svg>`).join('');
+        const identity = `<div><p class="font-semibold text-slate-900">${item.alumniName}</p><p class="text-xs text-slate-500">${[item.alumniYear, item.alumniCompany].filter(Boolean).join(' • ')}</p></div>`;
+        const avatar = item.alumniPhoto
+          ? `<img src="${item.alumniPhoto}" alt="${item.alumniName}" class="h-12 w-12 rounded-full object-cover" />`
+          : `<div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">${item.alumniName.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}</div>`;
+        return `<article class="rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">${avatar}${identity}</div>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">${item.category}</span>
+          </div>
+          <div class="mt-4 flex items-center gap-1">${starsMarkup}</div>
+          <p class="mt-4 text-sm leading-6 text-slate-700">${item.content}</p>
+        </article>`;
+      }).join('');
+    }
+
+    paginationLabel.textContent = `Page ${currentPage} of ${totalPages}`;
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+  }
+
+  prevBtn?.addEventListener('click', () => {
+    currentPage = Math.max(1, currentPage - 1);
+    renderTestimonials();
+  });
+
+  nextBtn?.addEventListener('click', () => {
+    const totalPages = Math.max(1, Math.ceil(getFilteredTestimonials().length / pageSize));
+    currentPage = Math.min(totalPages, currentPage + 1);
+    renderTestimonials();
+  });
+
+  filterSelect?.addEventListener('change', () => {
+    activeCategory = filterSelect.value || 'all';
+    currentPage = 1;
+    renderTestimonials();
+  });
+
+  document.getElementById('testimonialForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const content = document.getElementById('testimonialContent')?.value || '';
+    const category = document.getElementById('testimonialCategory')?.value || 'general';
+    const isPublic = Boolean(document.getElementById('testimonialPublic')?.checked);
+
+    try {
+      const response = await fetch('/api/alumni/testimonials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, rating: selectedRating, category, isPublic }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Unable to submit testimonial.');
+      }
+      messageEl.textContent = 'Testimonial submitted for review.';
+      messageEl.className = 'text-sm text-emerald-700';
+      event.target.reset();
+      selectedRating = 5;
+      renderStars();
+      window.setTimeout(() => window.location.reload(), 800);
+    } catch (error) {
+      console.error('Testimonial submit error:', error);
+      messageEl.textContent = error.message || 'Unable to submit testimonial.';
+      messageEl.className = 'text-sm text-red-700';
+    }
+  });
+
+  renderStars();
+  renderTestimonials();
+</script>

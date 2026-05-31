@@ -6,6 +6,10 @@ import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
 import { connectToDatabase } from '../../lib/mongodb';
 import type { AlumniRegistration } from '../../lib/mongodb';
 import { ObjectId } from 'mongodb';
+import VerifiedBadge from '../../components/VerifiedBadge.astro';
+import ProfileCompletenessWidget from '../../components/ProfileCompletenessWidget.astro';
+import { calculateCompleteness } from '../../lib/profile-completeness';
+import { timeAgo } from '../../utils/date-format';
 
 // Redirect unauthenticated users
 if (!isAlumniAuthenticated(Astro.cookies)) {
@@ -71,12 +75,8 @@ function statusColor(status: string) {
   return 'status-pending';
 }
 
-const skills = alumni?.skills
-  ? alumni.skills.split(',').map((s) => s.trim()).filter(Boolean)
-  : [];
-const interests = alumni?.interests
-  ? alumni.interests.split(',').map((s) => s.trim()).filter(Boolean)
-  : [];
+const skills = toArray(alumni?.skills);
+const interests = toArray(alumni?.interests);
 
 function toArray(value: unknown): string[] {
   if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
@@ -90,25 +90,11 @@ let bioKeywords = toArray((alumni as any)?.bio_keywords);
 
 let similarAlumni: Array<any> = [];
 let similarMessage = '';
-let completeness = { score: 0, missing_fields: [] as string[], suggestions: [] as string[] };
+const completenessResult = alumni ? calculateCompleteness(alumni) : null;
 
 if (alumni?._id) {
   const alumniId = alumni._id.toString();
   const baseUrl = Astro.url.origin;
-
-  try {
-    const completenessRes = await fetch(`${baseUrl}/api/ai/profile-completeness?alumni_id=${encodeURIComponent(alumniId)}`);
-    if (completenessRes.ok) {
-      const data = await completenessRes.json();
-      completeness = {
-        score: Number(data?.score || 0),
-        missing_fields: Array.isArray(data?.missing_fields) ? data.missing_fields : [],
-        suggestions: Array.isArray(data?.suggestions) ? data.suggestions : [],
-      };
-    }
-  } catch (error) {
-    console.error('Profile completeness fetch failed:', error);
-  }
 
   if (alumni.status === 'approved') {
     try {
@@ -144,7 +130,6 @@ if (alumni?._id) {
   }
 }
 
-const completenessColor = completeness.score >= 80 ? '#16a34a' : completeness.score >= 50 ? '#eab308' : '#dc2626';
 ---
 
 <Layout title={`${alumni?.name ?? 'My Profile'} | Alumni Portal`}>
@@ -187,6 +172,7 @@ const completenessColor = completeness.score >= 80 ? '#16a34a' : completeness.sc
               <div class="profile-identity">
                 <div class="profile-name-row">
                   <h1 class="profile-name">{alumni.name}</h1>
+                  <VerifiedBadge verified={Boolean(alumni.is_verified)} />
                   <span class={`status-badge ${statusColor(alumni.status)}`}>
                     {alumni.status.charAt(0).toUpperCase() + alumni.status.slice(1)}
                   </span>
@@ -245,10 +231,20 @@ const completenessColor = completeness.score >= 80 ? '#16a34a' : completeness.sc
                     </a>
                   )}
                 </div>
+                {alumni.updated_at && (
+                  <p class="mt-3 text-sm text-accent-500">Last updated {timeAgo(alumni.updated_at)}</p>
+                )}
               </div>
-
+ 
               <!-- Action buttons -->
               <div class="header-actions">
+                <div class="flex flex-col gap-2 w-full md:w-auto">
+                  <a href="/alumni/edit-profile" class="btn-teal-outline">Edit Profile</a>
+                  <a href="/alumni/profile-history" class="btn-teal-outline">Profile History</a>
+                  <a href="/alumni/gdpr" class="btn-teal-outline">Privacy & Data</a>
+                  <a href="/alumni/2fa-setup" class="btn-teal-outline">Two-Factor Authentication</a>
+                  <a href="/alumni/testimonials" class="btn-teal-outline">Testimonials</a>
+                </div>
                 <!-- 
                     <a href="/alumni/edit-profile" class="btn-teal-outline">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -279,37 +275,7 @@ const completenessColor = completeness.score >= 80 ? '#16a34a' : completeness.sc
             <div class="info-left">
 
               <!-- Profile Completeness -->
-              <div class="info-card">
-                <h2 class="info-card-title">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 20V10"></path>
-                    <path d="M18 20V4"></path>
-                    <path d="M6 20v-6"></path>
-                  </svg>
-                  Profile Completeness
-                </h2>
-                <div class="completeness-card">
-                  <div class="completeness-circle" style={`--completion:${completeness.score}; --completion-color:${completenessColor};`}>
-                    <span>{completeness.score}%</span>
-                  </div>
-                  {completeness.missing_fields.length > 0 ? (
-                    <ul class="missing-list">
-                      {completeness.missing_fields.slice(0, 5).map((field) => (
-                        <li>{field}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p class="completeness-note">Great job! Your profile is complete.</p>
-                  )}
-                </div>
-                {completeness.suggestions.length > 0 && (
-                  <ul class="suggestion-list">
-                    {completeness.suggestions.slice(0, 3).map((suggestion) => (
-                      <li>{suggestion}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              {completenessResult && <ProfileCompletenessWidget result={completenessResult} />}
 
               <!-- Personal Information -->
               <div class="info-card">
