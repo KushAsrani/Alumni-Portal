@@ -61,7 +61,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Look up target alumni name
+    // Look up target alumni name and requester email
     const alumniCol = db.collection('alumni_registrations');
     let target = null;
     try {
@@ -70,11 +70,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // ignore invalid ObjectId
     }
 
+    let requesterEmail = '';
+    try {
+      const requester = await alumniCol.findOne({ _id: new ObjectId(session.alumniId) });
+      requesterEmail = requester?.email || '';
+    } catch {
+      // ignore
+    }
+
     const now = new Date();
     const insertResult = await connectionsCol.insertOne({
       requesterId: session.alumniId,
       requesterName: session.name,
-      requesterEmail: '',
+      requesterEmail,
       targetId,
       targetName: target?.name || '',
       message: message || '',
