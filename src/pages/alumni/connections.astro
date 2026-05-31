@@ -120,6 +120,7 @@ const session = getCurrentAlumni(Astro.cookies)!;
       document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
     });
   }
+  window.switchTab = switchTab;
 
   async function respond(requestId, action) {
     try {
@@ -139,6 +140,7 @@ const session = getCurrentAlumni(Astro.cookies)!;
       showToast('Network error. Please try again.', false);
     }
   }
+  window.respond = respond;
 
   async function loadConnections() {
     try {
