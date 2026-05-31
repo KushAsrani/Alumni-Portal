@@ -5,7 +5,7 @@ import { isAlumniAuthenticated, getCurrentAlumni } from '../../../lib/alumni-aut
 import { connectToDatabase } from '../../../lib/mongodb';
 import { ObjectId } from 'mongodb';
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const DELETE: APIRoute = async ({ request, cookies }) => {
   if (!isAlumniAuthenticated(cookies)) {
     return new Response(
       JSON.stringify({ success: false, message: 'Not authenticated' }),
@@ -15,7 +15,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const session = getCurrentAlumni(cookies)!;
 
-  let body: { requestId?: string; action?: 'accept' | 'decline' };
+  let body: { connectionId?: string };
   try {
     body = await request.json();
   } catch {
@@ -25,11 +25,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
   }
 
-  const { requestId, action } = body;
-
-  if (!requestId || !action || !['accept', 'decline'].includes(action)) {
+  const { connectionId } = body;
+  if (!connectionId) {
     return new Response(
-      JSON.stringify({ success: false, message: 'requestId and action (accept|decline) are required' }),
+      JSON.stringify({ success: false, message: 'connectionId is required' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -38,63 +37,48 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { db } = await connectToDatabase();
     const connectionsCol = db.collection('connection_requests');
 
-    let connectionRequest = null;
+    let connection = null;
     try {
-      connectionRequest = await connectionsCol.findOne({ _id: new ObjectId(requestId) });
+      connection = await connectionsCol.findOne({ _id: new ObjectId(connectionId) });
     } catch {
       return new Response(
-        JSON.stringify({ success: false, message: 'Invalid request ID' }),
+        JSON.stringify({ success: false, message: 'Invalid connection ID' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!connectionRequest) {
+    if (!connection) {
       return new Response(
         JSON.stringify({ success: false, message: 'Connection request not found' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Only the target can respond
-    if (connectionRequest.targetId !== session.alumniId) {
+    // Only the requester can cancel, and only if still pending
+    if (connection.requesterId !== session.alumniId) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Only the target alumni can respond to this request' }),
+        JSON.stringify({ success: false, message: 'Only the requester can cancel a connection request' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const newStatus = action === 'accept' ? 'accepted' : 'declined';
-    const now = new Date();
-
-    const timestampField = action === 'accept' ? 'acceptedAt' : 'declinedAt';
-    await connectionsCol.updateOne(
-      { _id: new ObjectId(requestId) },
-      { $set: { status: newStatus, updatedAt: now, [timestampField]: now } }
-    );
-
-    // Update engagement record status
-    try {
-      const engagementCol = db.collection('alumni_engagement');
-      await engagementCol.updateOne(
-        {
-          type: 'connection_request',
-          alumniId: connectionRequest.requesterId,
-          targetAlumniId: session.alumniId,
-        },
-        { $set: { status: newStatus } }
+    if (connection.status !== 'pending') {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Only pending requests can be cancelled' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
-    } catch {
-      // silently ignore
     }
+
+    await connectionsCol.deleteOne({ _id: new ObjectId(connectionId) });
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Connection respond error:', error);
+    console.error('Cancel connection error:', error);
     return new Response(
-      JSON.stringify({ success: false, message: 'Failed to respond to connection request' }),
+      JSON.stringify({ success: false, message: 'Failed to cancel connection request' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
