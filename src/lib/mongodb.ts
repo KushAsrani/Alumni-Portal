@@ -75,6 +75,21 @@ export interface AlumniRegistration {
   last_login?: Date;             // NEW: track last login
   created_at: Date;
   updated_at: Date;
+  is_verified?: boolean;
+  verified_at?: Date | null;
+  verified_by?: string | null;
+  gdpr_deletion_requested?: boolean;
+  gdpr_deletion_requested_at?: Date | null;
+  gdpr_deletion_request_reason?: string;
+  two_fa_enabled?: boolean;
+  two_fa_secret?: string | null;
+  two_fa_backup_codes?: string[];
+  is_flagged?: boolean;
+  flag_reason?: string;
+  flag_reported_at?: Date | null;
+  flag_reported_by?: string | null;
+  flag_resolved?: boolean;
+  flag_resolved_at?: Date | null;
 }
 
 // Create indexes for better performance

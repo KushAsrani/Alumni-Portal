@@ -1,0 +1,161 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { ObjectId } from 'mongodb';
+import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
+import { connectToDatabase } from '../../lib/mongodb';
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login');
+}
+
+const session = getCurrentAlumni(Astro.cookies)!;
+const { db } = await connectToDatabase();
+const collection = db.collection('alumni_registrations');
+let alumni: any = null;
+
+try {
+  alumni = await collection.findOne({ _id: new ObjectId(session.alumniId) });
+} catch (error) {
+  console.error('2FA page ObjectId fallback:', error);
+  alumni = await collection.findOne({ $or: [{ username: session.username }, { email: session.username }] });
+}
+---
+
+<Layout title="Two-Factor Authentication | Alumni Portal">
+  <main class="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+    <a href="/alumni/profile" class="text-sm font-medium text-primary-700 hover:text-primary-800">Back to profile</a>
+    <h1 class="mt-2 text-3xl font-bold text-slate-900">Two-Factor Authentication</h1>
+    <p class="mt-2 text-slate-600">Protect your alumni account with an authenticator app.</p>
+
+    <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 class="text-xl font-semibold text-slate-900">Authenticator app setup</h2>
+          <p class="mt-2 text-sm text-slate-600">
+            Status: <span class={`font-semibold ${alumni?.two_fa_enabled ? 'text-emerald-700' : 'text-amber-700'}`}>{alumni?.two_fa_enabled ? 'Enabled' : 'Not enabled'}</span>
+          </p>
+        </div>
+        {!alumni?.two_fa_enabled ? (
+          <button id="start2faBtn" class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">Set up 2FA</button>
+        ) : null}
+      </div>
+
+      <div id="setupPanel" class="mt-6 hidden space-y-6">
+        <div class="grid gap-6 md:grid-cols-[220px,1fr] md:items-start">
+          <div class="rounded-2xl border border-slate-200 p-4">
+            <img id="qrCode" alt="2FA QR code" class="hidden w-full rounded-xl" />
+          </div>
+          <div>
+            <p class="text-sm text-slate-600">Scan the QR code with Google Authenticator, Microsoft Authenticator, Authy, or another TOTP app.</p>
+            <div class="mt-4 rounded-xl bg-slate-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Manual setup key</p>
+              <p id="manualSecret" class="mt-2 break-all font-mono text-sm text-slate-800"></p>
+            </div>
+            <form id="confirm2faForm" class="mt-4 space-y-3">
+              <label class="block text-sm font-medium text-slate-700" for="confirmToken">Enter 6-digit code</label>
+              <input id="confirmToken" maxlength="6" inputmode="numeric" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" placeholder="123456" />
+              <button type="submit" class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">Enable 2FA</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div id="backupCodesPanel" class="mt-6 hidden rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+        <h3 class="text-lg font-semibold text-emerald-800">Backup codes</h3>
+        <p class="mt-2 text-sm text-emerald-700">Store these one-time codes somewhere safe. Each code can only be used once.</p>
+        <div id="backupCodesList" class="mt-4 grid gap-2 sm:grid-cols-2"></div>
+      </div>
+
+      {alumni?.two_fa_enabled ? (
+        <form id="disable2faForm" class="mt-8 rounded-2xl border border-red-200 bg-red-50 p-5">
+          <h3 class="text-lg font-semibold text-red-800">Disable 2FA</h3>
+          <p class="mt-2 text-sm text-red-700">Enter a current authentication code to disable two-factor authentication.</p>
+          <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+            <input id="disableToken" maxlength="8" inputmode="numeric" class="w-full rounded-xl border border-red-200 px-3 py-2 text-sm text-slate-900 focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100" placeholder="Enter code" />
+            <button type="submit" class="inline-flex items-center justify-center rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">Disable 2FA</button>
+          </div>
+        </form>
+      ) : null}
+
+      <p id="twoFaMessage" class="mt-4 text-sm"></p>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  const messageEl = document.getElementById('twoFaMessage');
+  const setupPanel = document.getElementById('setupPanel');
+  const backupPanel = document.getElementById('backupCodesPanel');
+  const qrCode = document.getElementById('qrCode');
+  const manualSecret = document.getElementById('manualSecret');
+  const backupCodesList = document.getElementById('backupCodesList');
+
+  document.getElementById('start2faBtn')?.addEventListener('click', async () => {
+    try {
+      const response = await fetch('/api/alumni/2fa-setup', { method: 'POST' });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to set up 2FA');
+      }
+      setupPanel?.classList.remove('hidden');
+      qrCode.src = result.qrDataUrl;
+      qrCode.classList.remove('hidden');
+      manualSecret.textContent = result.secret;
+      messageEl.textContent = 'Scan the QR code and confirm with a current code.';
+      messageEl.className = 'mt-4 text-sm text-slate-700';
+    } catch (error) {
+      console.error('2FA setup page error:', error);
+      messageEl.textContent = error.message || 'Failed to set up 2FA.';
+      messageEl.className = 'mt-4 text-sm text-red-700';
+    }
+  });
+
+  document.getElementById('confirm2faForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const token = document.getElementById('confirmToken')?.value || '';
+    try {
+      const response = await fetch('/api/alumni/2fa-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to enable 2FA');
+      }
+      backupCodesList.innerHTML = (result.backupCodes || []).map((code) => `<div class="rounded-lg bg-white px-3 py-2 font-mono text-sm text-slate-800">${code}</div>`).join('');
+      backupPanel?.classList.remove('hidden');
+      messageEl.textContent = 'Two-factor authentication enabled.';
+      messageEl.className = 'mt-4 text-sm text-emerald-700';
+    } catch (error) {
+      console.error('2FA confirm page error:', error);
+      messageEl.textContent = error.message || 'Failed to enable 2FA.';
+      messageEl.className = 'mt-4 text-sm text-red-700';
+    }
+  });
+
+  document.getElementById('disable2faForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const token = document.getElementById('disableToken')?.value || '';
+    try {
+      const response = await fetch('/api/alumni/2fa-disable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to disable 2FA');
+      }
+      messageEl.textContent = 'Two-factor authentication disabled.';
+      messageEl.className = 'mt-4 text-sm text-emerald-700';
+      window.setTimeout(() => window.location.reload(), 800);
+    } catch (error) {
+      console.error('2FA disable page error:', error);
+      messageEl.textContent = error.message || 'Failed to disable 2FA.';
+      messageEl.className = 'mt-4 text-sm text-red-700';
+    }
+  });
+</script>

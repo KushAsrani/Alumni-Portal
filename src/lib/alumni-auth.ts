@@ -195,3 +195,52 @@ export function setAlumniAuthCookie(cookies: AstroCookies, alumniId: string, use
 export function clearAlumniAuthCookie(cookies: AstroCookies): void {
   cookies.delete(ALUMNI_COOKIE_NAME, { path: '/' });
 }
+
+export function createTwoFATempToken(alumniId: string): string {
+  const timestamp = Date.now();
+  const payload = JSON.stringify({ alumniId, timestamp, purpose: '2fa-temp' });
+  const signature = createHash('sha256')
+    .update(payload + SESSION_SECRET)
+    .digest('hex');
+
+  return Buffer.from(JSON.stringify({ payload, signature })).toString('base64');
+}
+
+export function verifyTwoFATempToken(token: string): {
+  valid: boolean;
+  alumniId?: string;
+  error?: string;
+} {
+  try {
+    const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
+
+    if (!decoded.payload || !decoded.signature) {
+      return { valid: false, error: 'Invalid token structure' };
+    }
+
+    const expectedSignature = createHash('sha256')
+      .update(decoded.payload + SESSION_SECRET)
+      .digest('hex');
+
+    if (decoded.signature !== expectedSignature) {
+      return { valid: false, error: 'Invalid signature' };
+    }
+
+    const data = JSON.parse(decoded.payload);
+    const sessionAge = Date.now() - data.timestamp;
+    const maxAge = 5 * 60 * 1000;
+
+    if (!data.alumniId || data.purpose !== '2fa-temp') {
+      return { valid: false, error: 'Invalid payload data' };
+    }
+
+    if (sessionAge > maxAge || sessionAge < 0) {
+      return { valid: false, error: 'Token expired' };
+    }
+
+    return { valid: true, alumniId: data.alumniId };
+  } catch (error) {
+    console.error('2FA temp token verification error:', error);
+    return { valid: false, error: 'Token verification failed' };
+  }
+}

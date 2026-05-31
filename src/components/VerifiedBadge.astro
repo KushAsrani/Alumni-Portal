@@ -1,0 +1,17 @@
+---
+interface Props {
+  verified: boolean;
+  small?: boolean;
+}
+
+const { verified, small = false } = Astro.props;
+---
+
+{verified ? (
+  <span class={`inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 font-semibold ${small ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-sm'}`}>
+    <svg class={small ? 'h-3.5 w-3.5' : 'h-4 w-4'} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3.25-3.25a1 1 0 111.414-1.414l2.543 2.543 6.543-6.543a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+    </svg>
+    Verified
+  </span>
+) : null}

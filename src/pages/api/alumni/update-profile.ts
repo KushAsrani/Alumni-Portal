@@ -1,9 +1,10 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { ObjectId } from 'mongodb';
 import { isAlumniAuthenticated, getCurrentAlumni } from '../../../lib/alumni-auth';
 import { connectToDatabase } from '../../../lib/mongodb';
-import { ObjectId } from 'mongodb';
+import { recordProfileUpdate } from '../../../lib/profile-history';
 
 const ALLOWED_FIELDS = [
   'name',
@@ -32,14 +33,14 @@ const ALLOWED_FIELDS = [
   'open_to_mentorship',
   'open_to_work',
   'open_to_referral',
-];
+] as const;
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   if (!isAlumniAuthenticated(cookies)) {
-    return new Response(
-      JSON.stringify({ success: false, message: 'Unauthorized' }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: false, message: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const session = getCurrentAlumni(cookies)!;
@@ -47,14 +48,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   let body: Record<string, unknown>;
   try {
     body = await request.json();
-  } catch {
-    return new Response(
-      JSON.stringify({ success: false, message: 'Invalid JSON body' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
+  } catch (error) {
+    console.error('Update profile parse error:', error);
+    return new Response(JSON.stringify({ success: false, message: 'Invalid JSON body' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
-  // Build update object with only allowed fields
   const updateData: Record<string, unknown> = {};
   for (const field of ALLOWED_FIELDS) {
     if (field in body) {
@@ -62,18 +63,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
   }
 
-  const booleanFields = ['open_to_mentorship', 'open_to_work', 'open_to_referral'];
-  for (const field of booleanFields) {
+  for (const field of ['open_to_mentorship', 'open_to_work', 'open_to_referral']) {
     if (field in body) {
       updateData[field] = body[field] === true || body[field] === 'true' || body[field] === 1;
     }
   }
 
   if (Object.keys(updateData).length === 0) {
-    return new Response(
-      JSON.stringify({ success: false, message: 'No valid fields to update' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: false, message: 'No valid fields to update' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   updateData.updated_at = new Date();
@@ -82,34 +82,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { db } = await connectToDatabase();
     const collection = db.collection('alumni_registrations');
 
-    let result;
+    let existing = null;
     try {
-      result = await collection.updateOne(
-        { _id: new ObjectId(session.alumniId) },
-        { $set: updateData }
-      );
-    } catch {
-      // alumniId may not be a valid ObjectId in dev/test environments;
-      // fall back to looking up by username or email (matches profile.astro pattern).
-      result = await collection.updateOne(
-        {
-          $or: [
-            { username: session.username },
-            { email: session.username },
-          ],
-        },
-        { $set: updateData }
-      );
+      existing = await collection.findOne({ _id: new ObjectId(session.alumniId) });
+    } catch (error) {
+      console.error('Update profile ObjectId fallback:', error);
+      existing = await collection.findOne({ $or: [{ username: session.username }, { email: session.username }] });
     }
 
-    if (result.matchedCount === 0) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Profile not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (!existing) {
+      return new Response(JSON.stringify({ success: false, message: 'Profile not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    // Fire-and-forget profile update engagement tracking
+    await collection.updateOne({ _id: existing._id }, { $set: updateData });
+    const updated = await collection.findOne({ _id: existing._id });
+
+    if (updated) {
+      await recordProfileUpdate(existing._id.toString(), existing.email, existing, updated, 'alumni');
+    }
+
     try {
       const engagementCol = db.collection('alumni_engagement');
       await engagementCol.insertOne({
@@ -119,19 +113,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         status: 'completed',
         createdAt: new Date(),
       });
-    } catch {
-      // silently ignore - tracking must never break main functionality
+    } catch (error) {
+      console.error('Profile update engagement error:', error);
     }
 
-    return new Response(
-      JSON.stringify({ success: true, message: 'Profile updated successfully' }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
-  } catch (err) {
-    console.error('Update profile error:', err);
-    return new Response(
-      JSON.stringify({ success: false, message: 'Failed to update profile' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: true, message: 'Profile updated successfully' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    return new Response(JSON.stringify({ success: false, message: 'Failed to update profile' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 };

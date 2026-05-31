@@ -27,6 +27,12 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
             </svg>
             Export CSV
           </button>
+          <button id="nudgeBtn" class="btn btn-outline btn-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+            </svg>
+            Nudge Incomplete
+          </button>
           <button id="bulkActionsBtn" class="btn btn-outline btn-sm hidden">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
@@ -212,7 +218,7 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
       try {
         const response = await fetch('/api/register', {
           headers: {
-            'Authorization': `Bearer ${apiKey}`
+            'Authorization': 'Bearer ' + apiKey,
           }
         });
 
@@ -239,6 +245,28 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
         error.classList.remove('hidden');
         document.getElementById('errorMessage').textContent = err.message;
       }
+    }
+
+    function timeAgo(value) {
+      if (!value) return 'recently';
+      const target = new Date(value);
+      const diffMs = Date.now() - target.getTime();
+      const minutes = Math.floor(diffMs / 60000);
+      if (minutes < 1) return 'just now';
+      if (minutes < 60) return `${minutes}m ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      if (days < 30) return `${days}d ago`;
+      const months = Math.floor(days / 30);
+      if (months < 12) return `${months}mo ago`;
+      return `${Math.floor(days / 365)}y ago`;
+    }
+
+    function getCsvFilename(response) {
+      const disposition = response.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      return match ? match[1] : `alumni-export-${new Date().toISOString().split('T')[0]}.csv`;
     }
 
     function updateStats(data) {
@@ -291,6 +319,11 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
                   <h3 class="text-xl font-semibold text-accent-900">${reg.name}</h3>
                   <p class="text-accent-600">${reg.email}</p>
                   <p class="text-sm text-accent-500">${reg.mobile || 'N/A'}</p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    ${reg.is_verified ? '<span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold">Verified</span>' : ''}
+                    ${reg.gdpr_deletion_requested ? '<span class="px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">GDPR Request</span>' : ''}
+                    ${reg.updated_at ? `<span class="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">Updated ${timeAgo(reg.updated_at)}</span>` : ''}
+                  </div>
                 </div>
                 <span class="px-3 py-1 text-xs font-medium rounded-full ${
                   reg.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -358,6 +391,13 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
                     Approve
                   </button>
                 ` : ''}
+
+                <button onclick="toggleVerification('${reg.id}', '${reg.is_verified ? 'unverify' : 'verify'}')" class="btn btn-sm ${reg.is_verified ? 'bg-slate-800 hover:bg-slate-900 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}">
+                  ${reg.is_verified ? 'Unverify' : 'Verify'}
+                </button>
+                <button onclick="toggleFlag('${reg.id}', '${reg.is_flagged ? 'unflag' : 'flag'}')" class="btn btn-sm ${reg.is_flagged ? 'border border-amber-300 text-amber-700 hover:bg-amber-50' : 'border border-red-300 text-red-700 hover:bg-red-50'}">
+                  ${reg.is_flagged ? 'Unflag' : 'Flag'}
+                </button>
               </div>
             </div>
           </div>
@@ -518,7 +558,7 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
     const response = await fetch('/api/generate-profile', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': 'Bearer ' + apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ id })
@@ -527,13 +567,66 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
     const result = await response.json();
 
     if (result.success) {
-      alert(`Profile generated successfully!\n\nFile: ${result.data.fileName}\nPath: ${result.data.path}\n\nNote: Restart your dev server to see the new profile.`);
+      alert(`Profile generated successfully!
+
+File: ${result.data.fileName}
+Path: ${result.data.path}
+
+Note: Restart your dev server to see the new profile.`);
     } else {
       alert(`Error: ${result.message}`);
     }
   } catch (error) {
     console.error('Profile generation error:', error);
     alert('Failed to generate profile. Please try again.');
+  }
+};
+
+    window.toggleVerification = async function(alumniId, action) {
+  try {
+    const response = await fetch('/api/admin/verify-alumni', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alumniId, action })
+    });
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Failed to update verification status.');
+    }
+
+    loadRegistrations();
+  } catch (error) {
+    console.error('Verification update error:', error);
+    alert(error instanceof Error ? error.message : 'Failed to update verification status.');
+  }
+};
+
+    window.toggleFlag = async function(alumniId, action) {
+  let reason = '';
+  if (action === 'flag') {
+    reason = prompt('Why are you flagging this profile?') || '';
+    if (!reason.trim()) {
+      return;
+    }
+  }
+
+  try {
+    const response = await fetch('/api/admin/flag-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alumniId, action, reason })
+    });
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Failed to update flag status.');
+    }
+
+    loadRegistrations();
+  } catch (error) {
+    console.error('Flag update error:', error);
+    alert(error instanceof Error ? error.message : 'Failed to update flag status.');
   }
 };
 
@@ -552,18 +645,18 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
     // Export CSV
     document.getElementById('exportBtn')?.addEventListener('click', async () => {
       try {
-        const response = await fetch('/api/export-csv', {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
-        });
+        const query = new URLSearchParams();
+        if (currentFilter && currentFilter !== 'all') {
+          query.set('status', currentFilter);
+        }
+        const response = await fetch(`/api/export-csv?${query.toString()}`);
 
         if (response.ok) {
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `alumni-registrations-${new Date().toISOString().split('T')[0]}.csv`;
+          a.download = getCsvFilename(response);
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
@@ -574,6 +667,28 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
       } catch (error) {
         console.error('Export error:', error);
         alert('Failed to export CSV');
+      }
+    });
+
+    document.getElementById('nudgeBtn')?.addEventListener('click', async () => {
+      const thresholdInput = prompt('Send reminder emails to profiles below which completeness score?', '70');
+      if (thresholdInput === null) return;
+      const threshold = Number(thresholdInput);
+
+      try {
+        const response = await fetch('/api/admin/nudge-incomplete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ threshold: Number.isFinite(threshold) ? threshold : 70 })
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error('Failed to send nudges');
+        }
+        alert(`Sent: ${result.sent}\nSkipped: ${result.skipped}\nErrors: ${(result.errors || []).length}`);
+      } catch (error) {
+        console.error('Nudge error:', error);
+        alert('Failed to send reminder emails.');
       }
     });
 
