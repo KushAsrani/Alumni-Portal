@@ -2,9 +2,12 @@
 // Or in MongoDB shell: paste the updateMany commands
 
 import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 async function main() {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
 
   if (!uri) {
     console.error('Set MONGODB_URI env var first');

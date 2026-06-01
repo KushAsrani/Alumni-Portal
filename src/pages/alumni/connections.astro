@@ -572,8 +572,8 @@ const session = getCurrentAlumni(Astro.cookies)!;
                         <a href="${profileHref}" class="font-semibold text-gray-900 hover:text-primary-600 truncate">${escapeHtml(name)}</a>
                         ${jobLine ? `<p class="text-sm text-gray-600 mt-0.5">${escapeHtml(jobLine)}</p>` : ''}
                         <p class="text-sm text-gray-500 mt-0.5">${escapeHtml([eduLine, other.location].filter(Boolean).join(' · '))}</p>
-                        <p class="text-xs text-gray-400 mt-1">${escapeHtml(formatDateTime(req.createdAt, 'Sent at'))}</p>
-                      </div>
+                        <p class="text-xs text-gray-400 mt-1">Sent at ${escapeHtml(new Date(req.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }))} ${escapeHtml(new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</p>
+                     </div>
                     </div>
                     <span class="badge ${statusClass} text-xs font-medium px-2 py-1 rounded-full">${statusText}</span>
                   </div>

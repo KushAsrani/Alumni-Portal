@@ -1,0 +1,30 @@
+name: "Example User"
+slug: "example-user"
+faculty: "Computer Science"
+year: 2025
+short_bio: "This is a test registration"
+long_bio: "This is a test registration"
+photo: "https://ytvf4iagehmrqd9s.public.blob.vercel-storage.com/alumni-photos/1774896551817-cl7n3q.jpg"
+email: "exampleuser@gmail.com"
+mobile: "+91 123 456 7890"
+location: "Remote"
+company: "PrepSOM"
+position: "Software Engineer"
+skills: ["Python","Java","SQL","React","Nodejs"]
+projects: [{"name":"Alumni Portal","description":""}]
+work_experience:
+  - company: "PrepSOM"
+    position: "Software Engineer"
+    duration: "2025 - Present"
+    description: "PrepSOM"
+education:
+  - degree: "B.Sc Computer Science"
+    institution: "Mumbai University"
+    year: 2025
+    gpa: "8.00"
+achievements: []
+interests: ["Python","Java","SQL","React","Nodejs"]
+social:
+  linkedin: "https://www.linkedin.com/testuser"
+  twitter: "https://x.com/TestUser"
+  github: "https://github.com/TestUser"

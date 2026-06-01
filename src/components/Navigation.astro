@@ -33,7 +33,6 @@ const config = getSiteConfig();
           <div class="relative group">
             {item.mega_menu ? (
               <div class="relative">
-                <Icon name="mdi:graduation-cap" class="w-4 h-4 mr-2 text-accent-600 group-hover:text-primary-600 transition-colors duration-200 relative" style={{ top: '5px' }} />
                 <button class="nav-link flex items-center space-x-1 py-2">
                   <span>{item.label}</span>
                   <Icon name="mdi:chevron-down" class="w-4 h-4 transition-transform duration-200 group-hover:rotate-180" />
@@ -118,7 +117,6 @@ const config = getSiteConfig();
               </div>
             ) : (
               <a href={item.url} class="nav-link py-2">
-                {item.icon && <Icon name={`mdi:${item.icon}`} class="w-4 h-4 mr-2" />} <br />
                 {item.label}
               </a>
             )}
@@ -159,13 +157,9 @@ const config = getSiteConfig();
                 <Icon name="mdi:account-circle" class="w-4 h-4 mr-3 text-accent-400" />
                 My Profile
               </a>
-              <a href="/alumni/mentorship" class="flex items-center px-4 py-2 text-sm text-accent-700 hover:bg-accent-50 transition-colors">
-                <Icon name="mdi:handshake-outline" class="w-4 h-4 mr-3 text-accent-400" />
-                Mentorship
-              </a>
-              <a href="/alumni/my-mentorship" class="flex items-center px-4 py-2 text-sm text-accent-700 hover:bg-accent-50 transition-colors">
-                <Icon name="mdi:account-clock-outline" class="w-4 h-4 mr-3 text-accent-400" />
-                My Mentorship
+              <a href="/alumni/settings" class="flex items-center px-4 py-2 text-sm text-accent-700 hover:bg-accent-50 transition-colors">
+                <Icon name="mdi:cog" class="w-4 h-4 mr-3 text-accent-400" />
+                Settings
               </a>
               <a href="/alumni/connections" class="flex items-center px-4 py-2 text-sm text-accent-700 hover:bg-accent-50 transition-colors">
                 <Icon name="mdi:account-multiple-outline" class="w-4 h-4 mr-3 text-accent-400" />

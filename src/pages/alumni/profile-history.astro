@@ -18,9 +18,13 @@ const history = session ? await getProfileHistory(session.alumniId, 50) : [];
   <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
     <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <a href="/alumni/profile" class="text-sm font-medium text-primary-700 hover:text-primary-800">Back to profile</a>
-        <h1 class="mt-2 text-3xl font-bold text-slate-900">Profile History</h1>
-        <p class="mt-2 text-slate-600">Recent changes to your alumni profile.</p>
+        <a href="/alumni/settings" class="text-sm font-medium text-primary-700 hover:text-primary-800"> <svg xmlns="http://www.w3.org/2000/svg" class="inline-block mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+          Back to settings</a>
+        <h1 class="mt-2 text-center text-3xl font-bold text-slate-900">
+          Profile Update History</h1>
+        <p class="mt-2 text-slate-600">View the latest changes made to your alumni profile. This log includes updates made by you and any administrators, helping you keep track of your profile's evolution over time. Administrators may make changes to ensure the accuracy and quality of the information displayed on your profile.</p>
       </div>
     </div>
 
