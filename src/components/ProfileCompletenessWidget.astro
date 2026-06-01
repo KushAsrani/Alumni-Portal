@@ -1,78 +1,82 @@
 ---
-import type { CompletenessResult } from '../lib/profile-completeness';
+import type { CompletenessSection } from '../lib/profile-completeness';
 
 interface Props {
-  result: CompletenessResult;
-  compact?: boolean;
+  score: number;
+  sections: CompletenessSection[];
+  missingFields: string[];
 }
 
-const { result, compact = false } = Astro.props;
-const circumference = 2 * Math.PI * 52;
-const dashOffset = circumference - (result.score / 100) * circumference;
-const ringColor = result.score >= 80 ? '#16a34a' : result.score >= 50 ? '#eab308' : '#dc2626';
+const { score, sections, missingFields } = Astro.props;
+const radius = 44;
+const circumference = 2 * Math.PI * radius;
+const offset = circumference * (1 - score / 100);
+const ringColor = score >= 80 ? '#16a34a' : score >= 40 ? '#f59e0b' : '#dc2626';
+const isComplete = score === 100;
 ---
 
-<div class={`rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ? 'p-5' : 'p-6'}`}>
-  <div class={`flex ${compact ? 'flex-col gap-4' : 'flex-col lg:flex-row gap-6'} lg:items-center`}>
-    <div class="flex items-center gap-4">
-      <div class="relative h-32 w-32 shrink-0">
+<section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+  <div class="flex flex-col gap-6 lg:flex-row lg:items-center">
+    <div class="flex justify-center lg:w-44 lg:flex-shrink-0">
+      <div class="relative h-32 w-32">
         <svg class="h-32 w-32 -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
-          <circle cx="60" cy="60" r="52" stroke="#e2e8f0" stroke-width="10" fill="none"></circle>
+          <circle cx="60" cy="60" r={radius} fill="none" stroke="#e2e8f0" stroke-width="10"></circle>
           <circle
             cx="60"
             cy="60"
-            r="52"
+            r={radius}
+            fill="none"
             stroke={ringColor}
             stroke-width="10"
-            fill="none"
             stroke-linecap="round"
             stroke-dasharray={circumference}
-            stroke-dashoffset={dashOffset}
+            stroke-dashoffset={offset}
           ></circle>
         </svg>
         <div class="absolute inset-0 flex flex-col items-center justify-center">
-          <span class="text-3xl font-bold text-slate-900">{result.score}%</span>
-          <span class="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Complete</span>
+          <span class="text-3xl font-bold text-slate-900">{score}%</span>
+          <span class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Complete</span>
         </div>
-      </div>
-      <div>
-        <h3 class="text-lg font-semibold text-slate-900">Profile completeness</h3>
-        <p class="mt-1 text-sm text-slate-600">
-          {result.missing.length === 0 ? 'Your profile is fully complete.' : `Complete ${result.missing.length} more field${result.missing.length === 1 ? '' : 's'} to strengthen your profile.`}
-        </p>
       </div>
     </div>
 
-    <div class="flex-1 space-y-4">
-      <div class="grid gap-3 md:grid-cols-2">
-        {result.sections.map((section) => (
-          <div class="rounded-xl bg-slate-50 p-4">
-            <div class="mb-2 flex items-center justify-between">
-              <span class="text-sm font-semibold text-slate-800">{section.name}</span>
-              <span class="text-sm text-slate-500">{section.score}%</span>
+    <div class="flex-1 space-y-5">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-900">Profile completeness</h2>
+        <p class="mt-1 text-sm text-slate-600">
+          {isComplete
+            ? 'Your profile is complete!'
+            : `Complete ${missingFields.length} more field${missingFields.length === 1 ? '' : 's'} to strengthen your profile.`}
+        </p>
+      </div>
+
+      <div class="space-y-3">
+        {sections.map((section) => (
+          <div class="grid grid-cols-[minmax(110px,auto)_1fr_auto] items-center gap-3 sm:grid-cols-[150px_1fr_auto]">
+            <span class="text-sm font-medium text-slate-700">{section.name}</span>
+            <div class="h-1.5 overflow-hidden rounded-full bg-slate-200">
+              <div
+                class="h-full rounded-full bg-[#2e4096] transition-all"
+                style={`width: ${section.score}%`}
+              ></div>
             </div>
-            <div class="h-2 overflow-hidden rounded-full bg-slate-200">
-              <div class="h-full rounded-full bg-primary-600" style={`width:${section.score}%`}></div>
-            </div>
+            <span class="text-sm font-medium text-slate-500">{section.score}%</span>
           </div>
         ))}
       </div>
 
-      {result.missing.length > 0 && (
+      {missingFields.length > 0 && (
         <div>
-          <p class="mb-2 text-sm font-semibold text-slate-800">Suggested next fields</p>
-          <ul class="space-y-2 text-sm text-slate-600">
-            {result.missing.slice(0, 6).map((field) => (
-              <li class="flex items-center gap-2">
-                <svg class="h-4 w-4 text-primary-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L13.586 11H4a1 1 0 110-2h9.586l-3.293-3.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                </svg>
-                <span>{field}</span>
-              </li>
+          <p class="mb-2 text-sm font-medium text-slate-700">Suggested next fields</p>
+          <div class="flex flex-wrap gap-2">
+            {missingFields.map((field) => (
+              <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-600">
+                + {field}
+              </span>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>
   </div>
-</div>
+</section>

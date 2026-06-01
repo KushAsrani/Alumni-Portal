@@ -76,7 +76,13 @@ const completenessResult = alumni ? calculateCompleteness(alumni) : null;
 
       {alumni && (
         <>
-          {completenessResult && <ProfileCompletenessWidget result={completenessResult} compact={true} />}
+          {completenessResult && (
+            <ProfileCompletenessWidget
+              score={completenessResult.score}
+              sections={completenessResult.sections}
+              missingFields={completenessResult.missing}
+            />
+          )}
           <form id="editProfileForm" class="space-y-8">
 
           <!-- Read-only account info -->

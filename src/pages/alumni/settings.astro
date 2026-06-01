@@ -1,0 +1,514 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { getCurrentAlumni, isAlumniAuthenticated } from '../../lib/alumni-auth';
+import { connectToDatabase } from '../../lib/mongodb';
+import type { AlumniRegistration } from '../../lib/mongodb';
+import { ObjectId } from 'mongodb';
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login');
+}
+
+const session = getCurrentAlumni(Astro.cookies)!;
+
+type AlumniDocument = AlumniRegistration & { _id: ObjectId | string; username?: string };
+type NotificationPreferences = NonNullable<AlumniRegistration['notification_preferences']>;
+
+const defaultPreferences: NotificationPreferences = {
+  connection_requests: true,
+  upcoming_events: true,
+  mentorship_requests: true,
+  weekly_digest: false,
+};
+
+let alumni: AlumniDocument | null = null;
+let fetchError = '';
+
+try {
+  const { db } = await connectToDatabase();
+  const collection = db.collection<AlumniDocument>('alumni_registrations');
+
+  try {
+    alumni = await collection.findOne({ _id: new ObjectId(session.alumniId) });
+  } catch {
+    alumni = await collection.findOne({
+      $or: [{ username: session.username }, { email: session.username }],
+    });
+  }
+
+  if (!alumni) {
+    fetchError = 'Unable to load your settings right now.';
+  }
+} catch (error) {
+  console.error('Settings page fetch error:', error);
+  fetchError = 'Unable to load your settings right now.';
+}
+
+const notificationPreferences: NotificationPreferences = {
+  ...defaultPreferences,
+  ...(alumni?.notification_preferences || {}),
+};
+
+function formatDate(value: Date | string | null | undefined): string {
+  if (!value) return 'Never';
+
+  return new Date(value).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+---
+
+<Layout title="Settings | Alumni Portal">
+  <main class="min-h-screen bg-slate-50 py-8 md:py-12">
+    <div class="container-custom mx-auto max-w-6xl px-4">
+      <a
+        href="/alumni/profile"
+        class="inline-flex items-center gap-2 text-sm font-medium text-[#2e4096] transition hover:text-[#24367d]"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        Back to Profile
+      </a>
+
+      <section class="mt-4 rounded-3xl border border-slate-200 bg-white px-6 py-6 shadow-sm md:px-8">
+        <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#2e4096]">Alumni Settings</p>
+            <h1 class="mt-2 text-3xl font-bold text-slate-900">Manage your account, privacy, and notifications</h1>
+            <p class="mt-2 text-sm text-slate-600">
+              Review your security status, update profile tools, and control how the community reaches you.
+            </p>
+          </div>
+          {alumni && (
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <p><span class="font-semibold text-slate-900">Username:</span> {alumni.username || alumni.email}</p>
+              <p class="mt-1"><span class="font-semibold text-slate-900">Last login:</span> {formatDate(alumni.last_login)}</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {fetchError && (
+        <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {fetchError}
+        </div>
+      )}
+
+      {alumni && (
+        <div class="mt-6 grid gap-6 lg:grid-cols-2">
+          <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="rounded-2xl bg-[#2e4096]/10 p-3 text-[#2e4096]">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-xl font-semibold text-slate-900">Account</h2>
+                <p class="text-sm text-slate-500">Update your profile and account access details.</p>
+              </div>
+            </div>
+
+            <div class="mt-6 space-y-4">
+              <a href="/alumni/edit-profile" class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-[#2e4096]/30 hover:bg-slate-50">
+                <div class="flex gap-3">
+                  <svg class="mt-0.5 text-[#2e4096]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                  </svg>
+                  <div>
+                    <p class="font-medium text-slate-900">Edit Profile</p>
+                    <p class="text-sm text-slate-500">Update your public profile, bio, education, and career details.</p>
+                  </div>
+                </div>
+                <span class="text-sm font-medium text-[#2e4096]">Open</span>
+              </a>
+
+              <a href="/alumni/change-password" class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-[#2e4096]/30 hover:bg-slate-50">
+                <div class="flex gap-3">
+                  <svg class="mt-0.5 text-[#2e4096]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <div>
+                    <p class="font-medium text-slate-900">Change Password</p>
+                    <p class="text-sm text-slate-500">Manage your password and sign-in credentials.</p>
+                  </div>
+                </div>
+                <span class="text-sm font-medium text-[#2e4096]">Open</span>
+              </a>
+
+              <div class="rounded-2xl border border-slate-200 px-4 py-4">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex gap-3">
+                    <svg class="mt-0.5 text-[#2e4096]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="8" r="4"></circle>
+                      <path d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6"></path>
+                    </svg>
+                    <div>
+                      <p class="font-medium text-slate-900">Username &amp; Login</p>
+                      <p class="text-sm text-slate-500">Current username: {alumni.username || alumni.email}</p>
+                    </div>
+                  </div>
+                  <a href="/alumni/change-password" class="text-sm font-medium text-[#2e4096]">Change</a>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="rounded-2xl bg-[#2e4096]/10 p-3 text-[#2e4096]">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-xl font-semibold text-slate-900">Security</h2>
+                <p class="text-sm text-slate-500">Review your current security status and sign-in activity.</p>
+              </div>
+            </div>
+
+            <div class="mt-6 space-y-4">
+              <a href="/alumni/2fa-setup" class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-[#2e4096]/30 hover:bg-slate-50">
+                <div class="flex gap-3">
+                  <svg class="mt-0.5 text-[#2e4096]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                  <div>
+                    <p class="font-medium text-slate-900">Two-Factor Authentication</p>
+                    <p class="text-sm text-slate-500">Add an extra layer of protection to your alumni account.</p>
+                  </div>
+                </div>
+                <span class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${alumni.two_fa_enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {alumni.two_fa_enabled ? 'Enabled' : 'Disabled'}
+                </span>
+              </a>
+
+              <div class="rounded-2xl border border-slate-200 px-4 py-4">
+                <div class="flex gap-3">
+                  <svg class="mt-0.5 text-[#2e4096]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="4" width="20" height="14" rx="2"></rect>
+                    <path d="M8 20h8"></path>
+                    <path d="M12 18v2"></path>
+                  </svg>
+                  <div>
+                    <p class="font-medium text-slate-900">Active Sessions</p>
+                    <p class="text-sm text-slate-500">You are logged in. Sessions expire after 7 days.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-slate-200 px-4 py-4">
+                <div class="flex gap-3">
+                  <svg class="mt-0.5 text-[#2e4096]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <div>
+                    <p class="font-medium text-slate-900">Login History</p>
+                    <p class="text-sm text-slate-500">Last login: {formatDate(alumni.last_login)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="rounded-2xl bg-[#2e4096]/10 p-3 text-[#2e4096]">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-xl font-semibold text-slate-900">Privacy &amp; Data</h2>
+                <p class="text-sm text-slate-500">Manage your exports, privacy requests, and GDPR actions.</p>
+              </div>
+            </div>
+
+            <div class="mt-6 space-y-4">
+              <a href="/api/alumni/gdpr-export" class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-[#2e4096]/30 hover:bg-slate-50">
+                <div class="flex gap-3">
+                  <svg class="mt-0.5 text-[#2e4096]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <div>
+                    <p class="font-medium text-slate-900">Download My Data</p>
+                    <p class="text-sm text-slate-500">Export your profile, account metadata, and history as JSON.</p>
+                  </div>
+                </div>
+                <span class="text-sm font-medium text-[#2e4096]">Download</span>
+              </a>
+
+              <a href="/alumni/gdpr" class="flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 transition hover:border-red-300 hover:bg-red-100/70">
+                <div class="flex gap-3">
+                  <svg class="mt-0.5 text-red-600" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6l-1 14H6L5 6"></path>
+                    <path d="M10 11v6"></path>
+                    <path d="M14 11v6"></path>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                  </svg>
+                  <div>
+                    <p class="font-medium text-slate-900">Request Account Deletion</p>
+                    <p class="text-sm text-slate-500">
+                      {alumni.gdpr_deletion_requested
+                        ? `Deletion request pending since ${formatDate(alumni.gdpr_deletion_requested_at)}.`
+                        : 'Start a GDPR deletion request for your alumni account.'}
+                    </p>
+                  </div>
+                </div>
+                <span class="text-sm font-medium text-red-600">Open</span>
+              </a>
+            </div>
+          </section>
+
+          <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="rounded-2xl bg-[#2e4096]/10 p-3 text-[#2e4096]">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-xl font-semibold text-slate-900">Profile &amp; Community</h2>
+                <p class="text-sm text-slate-500">Review your history and community-facing tools.</p>
+              </div>
+            </div>
+
+            <div class="mt-6 space-y-4">
+              <a href="/alumni/profile-history" class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-[#2e4096]/30 hover:bg-slate-50">
+                <div class="flex gap-3">
+                  <svg class="mt-0.5 text-[#2e4096]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3v5h5"></path>
+                    <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
+                    <path d="M12 7v5l3 3"></path>
+                  </svg>
+                  <div>
+                    <p class="font-medium text-slate-900">Profile History</p>
+                    <p class="text-sm text-slate-500">Review the latest changes made to your alumni profile.</p>
+                  </div>
+                </div>
+                <span class="text-sm font-medium text-[#2e4096]">Open</span>
+              </a>
+
+              <a href="/alumni/testimonials" class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-[#2e4096]/30 hover:bg-slate-50">
+                <div class="flex gap-3">
+                  <svg class="mt-0.5 text-[#2e4096]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 21c3 0 7-1 10-4"></path>
+                    <path d="M5 8h5v5H5z"></path>
+                    <path d="M14 5h5v5h-5z"></path>
+                  </svg>
+                  <div>
+                    <p class="font-medium text-slate-900">Testimonials</p>
+                    <p class="text-sm text-slate-500">Share feedback and review your community testimonials.</p>
+                  </div>
+                </div>
+                <span class="text-sm font-medium text-[#2e4096]">Open</span>
+              </a>
+
+              <a href="/alumni/mentorship" class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4 transition hover:border-[#2e4096]/30 hover:bg-slate-50">
+                <div class="flex gap-3">
+                  <svg class="mt-0.5 text-[#2e4096]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 11c1.657 0 3-1.567 3-3.5S17.657 4 16 4s-3 1.567-3 3.5 1.343 3.5 3 3.5z"></path>
+                    <path d="M8 11c1.657 0 3-1.567 3-3.5S9.657 4 8 4 5 5.567 5 7.5 6.343 11 8 11z"></path>
+                    <path d="M2 20c0-2.761 2.239-5 5-5h2"></path>
+                    <path d="M13 15h2c3.314 0 6 2.239 6 5"></path>
+                    <path d="M12 20l2-2-2-2"></path>
+                    <path d="M12 16l-2 2 2 2"></path>
+                  </svg>
+                  <div>
+                    <p class="font-medium text-slate-900">Mentorship Preferences</p>
+                    <p class="text-sm text-slate-500">Control your mentorship visibility and request preferences.</p>
+                  </div>
+                </div>
+                <span class="text-sm font-medium text-[#2e4096]">Open</span>
+              </a>
+            </div>
+          </section>
+
+          <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+            <div class="flex items-center gap-3">
+              <div class="rounded-2xl bg-[#2e4096]/10 p-3 text-[#2e4096]">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 8a6 6 0 0 0-12 0v8a6 6 0 0 0 12 0V8z"></path>
+                  <path d="M12 12h.01"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-xl font-semibold text-slate-900">Notifications</h2>
+                <p class="text-sm text-slate-500">Choose which alumni updates you want to receive by email.</p>
+              </div>
+            </div>
+
+            <form id="notificationPreferencesForm" class="mt-6 space-y-4">
+              <label class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4">
+                <div>
+                  <p class="font-medium text-slate-900">Email me when someone connects with me</p>
+                  <p class="text-sm text-slate-500">Receive an email when another alumnus connects with you.</p>
+                </div>
+                <input
+                  id="connection_requests"
+                  name="connection_requests"
+                  type="checkbox"
+                  class="mt-1 h-4 w-4 rounded border-slate-300 text-[#2e4096] focus:ring-[#2e4096]"
+                  checked={notificationPreferences.connection_requests}
+                />
+              </label>
+
+              <label class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4">
+                <div>
+                  <p class="font-medium text-slate-900">Email me about upcoming events</p>
+                  <p class="text-sm text-slate-500">Receive event reminders and relevant alumni program updates.</p>
+                </div>
+                <input
+                  id="upcoming_events"
+                  name="upcoming_events"
+                  type="checkbox"
+                  class="mt-1 h-4 w-4 rounded border-slate-300 text-[#2e4096] focus:ring-[#2e4096]"
+                  checked={notificationPreferences.upcoming_events}
+                />
+              </label>
+
+              <label class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4">
+                <div>
+                  <p class="font-medium text-slate-900">Email me mentorship request notifications</p>
+                  <p class="text-sm text-slate-500">Get notified when someone reaches out about mentorship.</p>
+                </div>
+                <input
+                  id="mentorship_requests"
+                  name="mentorship_requests"
+                  type="checkbox"
+                  class="mt-1 h-4 w-4 rounded border-slate-300 text-[#2e4096] focus:ring-[#2e4096]"
+                  checked={notificationPreferences.mentorship_requests}
+                />
+              </label>
+
+              <label class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-4">
+                <div>
+                  <p class="font-medium text-slate-900">Weekly digest of new alumni</p>
+                  <p class="text-sm text-slate-500">Receive a weekly summary of new alumni who join the portal.</p>
+                </div>
+                <input
+                  id="weekly_digest"
+                  name="weekly_digest"
+                  type="checkbox"
+                  class="mt-1 h-4 w-4 rounded border-slate-300 text-[#2e4096] focus:ring-[#2e4096]"
+                  checked={notificationPreferences.weekly_digest}
+                />
+              </label>
+
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  type="submit"
+                  class="inline-flex items-center justify-center rounded-xl bg-[#2e4096] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#24367d]"
+                >
+                  Save Preferences
+                </button>
+                <p id="notificationPreferencesMessage" class="text-sm text-slate-500"></p>
+              </div>
+            </form>
+          </section>
+
+          <section class="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm lg:col-span-2">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 class="text-xl font-semibold text-red-700">Danger Zone</h2>
+                <p class="mt-2 text-sm text-red-600">
+                  Request permanent account deletion if you need to remove your alumni portal data.
+                </p>
+              </div>
+              <a
+                href="/alumni/gdpr"
+                class="inline-flex items-center justify-center rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700"
+              >
+                Request Account Deletion
+              </a>
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>
+
+<script is:inline>
+  const form = document.getElementById('notificationPreferencesForm');
+  const message = document.getElementById('notificationPreferencesMessage');
+
+  const setMessage = (text, isError = false) => {
+    if (!message) return;
+    message.textContent = text;
+    message.className = `text-sm ${isError ? 'text-red-600' : 'text-emerald-600'}`;
+  };
+
+  const syncPreferences = async () => {
+    if (!form) return;
+
+    try {
+      const response = await fetch('/api/alumni/notification-preferences');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to load notification preferences.');
+      }
+
+      ['connection_requests', 'upcoming_events', 'mentorship_requests', 'weekly_digest'].forEach((key) => {
+        const input = document.getElementById(key);
+        if (input instanceof HTMLInputElement) {
+          input.checked = Boolean(data?.notification_preferences?.[key]);
+        }
+      });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to load notification preferences.', true);
+    }
+  };
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const payload = {};
+    ['connection_requests', 'upcoming_events', 'mentorship_requests', 'weekly_digest'].forEach((key) => {
+      const input = document.getElementById(key);
+      if (input instanceof HTMLInputElement) {
+        payload[key] = input.checked;
+      }
+    });
+
+    try {
+      setMessage('Saving...');
+      const response = await fetch('/api/alumni/notification-preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to save notification preferences.');
+      }
+
+      setMessage(data?.message || 'Notification preferences saved.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to save notification preferences.', true);
+    }
+  });
+
+  syncPreferences();
+</script>
