@@ -81,6 +81,12 @@ export interface AlumniRegistration {
   gdpr_deletion_requested?: boolean;
   gdpr_deletion_requested_at?: Date | null;
   gdpr_deletion_request_reason?: string;
+  notification_preferences?: {
+    connection_requests?: boolean;
+    upcoming_events?: boolean;
+    mentorship_requests?: boolean;
+    weekly_digest?: boolean;
+  };
   two_fa_enabled?: boolean;
   two_fa_secret?: string | null;
   two_fa_backup_codes?: string[];
