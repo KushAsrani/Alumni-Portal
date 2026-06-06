@@ -116,13 +116,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const notification_preferences = normalizePreferences(body);
     const { db } = await connectToDatabase();
+    const setUpdates: Record<string, boolean | Date> = {
+      'notification_preferences.connection_requests': notification_preferences.connection_requests,
+      'notification_preferences.upcoming_events': notification_preferences.upcoming_events,
+      'notification_preferences.mentorship_requests': notification_preferences.mentorship_requests,
+      'notification_preferences.weekly_digest': notification_preferences.weekly_digest,
+      updated_at: new Date(),
+    };
+
     await db.collection<AlumniDocument>('alumni_registrations').updateOne(
       { _id: alumni._id },
       {
-        $set: {
-          notification_preferences,
-          updated_at: new Date(),
-        },
+        $set: setUpdates,
       }
     );
 

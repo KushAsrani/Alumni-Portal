@@ -87,6 +87,26 @@ export interface AlumniRegistration {
     upcoming_events?: boolean;
     mentorship_requests?: boolean;
     weekly_digest?: boolean;
+    digest_frequency?: 'daily' | 'weekly' | 'never';
+    notify_on_verification?: boolean;
+  };
+  profile_visibility?: {
+    show_in_directory?: boolean;
+    show_email_publicly?: boolean;
+    allow_connection_requests?: boolean;
+  };
+  mentorship_preferences?: {
+    looking_for_mentor?: boolean;
+    preferred_mode?: 'online' | 'in-person' | 'either';
+  };
+  connected_accounts?: {
+    linkedin_connected?: boolean;
+    github_connected?: boolean;
+    linkedin_url?: string;
+    github_url?: string;
+  };
+  accessibility?: {
+    preferred_language?: string;
   };
   two_fa_enabled?: boolean;
   two_fa_secret?: string | null;
