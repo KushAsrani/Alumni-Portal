@@ -73,6 +73,7 @@ export interface AlumniRegistration {
   status: 'pending' | 'approved' | 'rejected';
   login_enabled: boolean;        // NEW: set to true when admin approves
   last_login?: Date;             // NEW: track last login
+  password_changed_at?: Date;
   created_at: Date;
   updated_at: Date;
   is_verified?: boolean;
