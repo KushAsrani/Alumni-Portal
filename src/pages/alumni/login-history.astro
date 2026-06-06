@@ -1,0 +1,196 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { ObjectId } from 'mongodb';
+import { connectToDatabase, type AlumniRegistration } from '../../lib/mongodb';
+import { getCurrentAlumni, isAlumniAuthenticated } from '../../lib/alumni-auth';
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login');
+}
+
+const session = getCurrentAlumni(Astro.cookies);
+if (!session) {
+  return Astro.redirect('/alumni/login');
+}
+
+type AlumniDocument = AlumniRegistration & { _id: ObjectId; username?: string };
+type EngagementType = 'login' | 'password_change';
+interface EngagementEntry {
+  _id?: ObjectId;
+  type: EngagementType;
+  status?: string;
+  createdAt?: Date | string;
+}
+
+const pageParam = Number(Astro.url.searchParams.get('page') || '1');
+const page = Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : 1;
+const pageSize = 20;
+
+let alumni: AlumniDocument | null = null;
+let entries: EngagementEntry[] = [];
+let totalEvents = 0;
+let totalLogins = 0;
+let lastLoginAt: Date | string | null = null;
+
+try {
+  const { db } = await connectToDatabase();
+  const alumniCollection = db.collection<AlumniDocument>('alumni_registrations');
+
+  try {
+    alumni = await alumniCollection.findOne({ _id: new ObjectId(session.alumniId) });
+  } catch {
+    alumni = await alumniCollection.findOne({
+      $or: [{ username: session.username }, { email: session.username }],
+    });
+  }
+
+  if (alumni) {
+    const engagementCollection = db.collection<EngagementEntry>('alumni_engagement');
+    const eventFilter = {
+      alumniId: alumni._id.toString(),
+      type: { $in: ['login', 'password_change'] as EngagementType[] },
+    };
+
+    entries = await engagementCollection
+      .find(eventFilter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .toArray();
+
+    totalEvents = await engagementCollection.countDocuments(eventFilter);
+    totalLogins = await engagementCollection.countDocuments({
+      alumniId: alumni._id.toString(),
+      type: 'login',
+    });
+
+    const lastLoginEntry = await engagementCollection.findOne(
+      { alumniId: alumni._id.toString(), type: 'login' },
+      { sort: { createdAt: -1 } }
+    );
+
+    lastLoginAt = lastLoginEntry?.createdAt || null;
+  }
+} catch (error) {
+  console.error('Login history page error:', error);
+}
+
+const totalPages = Math.max(1, Math.ceil(totalEvents / pageSize));
+const hasPreviousPage = page > 1;
+const hasNextPage = page < totalPages;
+
+function formatDate(value: Date | string | null | undefined): string {
+  if (!value) return 'Not available';
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+---
+
+<Layout title="Login History | Alumni Portal">
+  <main class="min-h-screen bg-slate-50 py-8 md:py-12">
+    <div class="container-custom mx-auto max-w-4xl px-4">
+      <a
+        href="/alumni/settings"
+        class="inline-flex items-center gap-2 text-sm font-medium text-[#2e4096] transition hover:text-[#24367d]"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        Back to Settings
+      </a>
+
+      <section class="mt-4 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div class="flex items-center gap-3">
+          <div class="rounded-2xl bg-[#2e4096]/10 p-3 text-[#2e4096]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900">Login History</h1>
+            <p class="text-sm text-slate-500">Your recent sign-in activity.</p>
+          </div>
+        </div>
+
+        <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <p class="text-sm text-slate-600">Detailed device and location data is not currently captured. Showing recorded account events only.</p>
+        </div>
+
+        <div class="mt-6 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-2xl border border-slate-200 p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Total logins recorded</p>
+            <p class="mt-2 text-2xl font-semibold text-slate-900">{totalLogins}</p>
+          </div>
+          <div class="rounded-2xl border border-slate-200 p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Last login date</p>
+            <p class="mt-2 text-base font-semibold text-slate-900">{formatDate(lastLoginAt)}</p>
+          </div>
+        </div>
+
+        {entries.length === 0 ? (
+          <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
+            No login history recorded yet. Your activity will appear here after your next login.
+          </div>
+        ) : (
+          <div class="mt-6 space-y-3">
+            {entries.map((entry) => (
+              <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 px-4 py-4">
+                <div class="flex items-start gap-3">
+                  {entry.type === 'login' ? (
+                    <svg class="mt-0.5 text-emerald-600" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                      <polyline points="10 17 15 12 10 7"></polyline>
+                      <line x1="15" y1="12" x2="3" y2="12"></line>
+                    </svg>
+                  ) : (
+                    <svg class="mt-0.5 text-[#2e4096]" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M3 10V7a4 4 0 0 1 4-4h5"></path>
+                      <path d="M14 2l3 3-3 3"></path>
+                      <rect x="3" y="12" width="18" height="9" rx="2"></rect>
+                      <circle cx="12" cy="16.5" r="1"></circle>
+                    </svg>
+                  )}
+                  <div>
+                    <p class="font-medium text-slate-900">{entry.type === 'login' ? 'Signed in' : 'Password changed'}</p>
+                    <p class="text-sm text-slate-500">{formatDate(entry.createdAt)}</p>
+                  </div>
+                </div>
+                <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Status: Completed</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {entries.length > 0 ? (
+          <div class="mt-6 flex items-center justify-between">
+            {hasPreviousPage ? (
+              <a href={`/alumni/login-history?page=${page - 1}`} class="inline-flex items-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                Previous
+              </a>
+            ) : (
+              <span class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-400">Previous</span>
+            )}
+
+            <span class="text-sm text-slate-500">Page {page} of {totalPages}</span>
+
+            {hasNextPage ? (
+              <a href={`/alumni/login-history?page=${page + 1}`} class="inline-flex items-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                Next
+              </a>
+            ) : (
+              <span class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-400">Next</span>
+            )}
+          </div>
+        ) : null}
+      </section>
+    </div>
+  </main>
+</Layout>
