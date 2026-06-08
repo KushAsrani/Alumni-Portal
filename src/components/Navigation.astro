@@ -1,6 +1,7 @@
 ---
 import { getSiteConfig } from '../utils/config';
 import Icon from './Icon.astro';
+import ThemeToggle from './ThemeToggle.astro';
 
 const config = getSiteConfig();
 ---
@@ -122,6 +123,8 @@ const config = getSiteConfig();
             )}
           </div>
         ))}
+
+        <ThemeToggle />
 
         <!-- ========== ALUMNI AUTH SECTION (Desktop) ========== -->
         <div class="flex items-center space-x-3">
@@ -254,6 +257,8 @@ const config = getSiteConfig();
 
         <!-- ========== ALUMNI AUTH SECTION (Mobile) ========== -->
         <div class="border-t border-accent-100 pt-4 mt-4 px-4 space-y-2">
+          <ThemeToggle />
+
           <!-- Logged OUT (mobile) -->
           <div id="alumni-auth-loggedout-mobile" class="space-y-2">
             <a href="/alumni/login" class="block w-full text-center btn btn-outline btn-sm">
