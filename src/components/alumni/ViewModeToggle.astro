@@ -1,0 +1,27 @@
+<div class="flex flex-col sm:flex-row gap-2" role="group" aria-label="Directory view mode">
+  <button id="view-grid" type="button" class="view-mode-btn is-active" aria-label="Grid view" aria-pressed="true">
+    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+      <rect x="3" y="3" width="8" height="8" rx="1.5"></rect>
+      <rect x="13" y="3" width="8" height="8" rx="1.5"></rect>
+      <rect x="3" y="13" width="8" height="8" rx="1.5"></rect>
+      <rect x="13" y="13" width="8" height="8" rx="1.5"></rect>
+    </svg>
+    <span>Grid</span>
+  </button>
+  <button id="view-list" type="button" class="view-mode-btn" aria-label="List view" aria-pressed="false">
+    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+      <path d="M8 6h13M8 12h13M8 18h13"></path>
+      <circle cx="4" cy="6" r="1"></circle>
+      <circle cx="4" cy="12" r="1"></circle>
+      <circle cx="4" cy="18" r="1"></circle>
+    </svg>
+    <span>List</span>
+  </button>
+  <button id="view-map" type="button" class="view-mode-btn" aria-label="Map view" aria-pressed="false">
+    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+      <path d="M9 18 3 21V6l6-3m0 15 6 3m-6-18 6 3m0 15 6-3V3l-6 3"></path>
+      <circle cx="12" cy="11" r="2.5"></circle>
+    </svg>
+    <span>Map</span>
+  </button>
+</div>
