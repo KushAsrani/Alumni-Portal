@@ -41,12 +41,12 @@ const config = getSiteConfig();
                 <!-- Mega Menu -->
                 <div class="mega-menu">
                   <div class="mega-menu-content">
-                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:gap-8">
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-3 xl:gap-4">
                       <!-- Years Section -->
                       <div class="mega-menu-section">
                         <h3 class="mega-menu-title">Browse by Year</h3>
                         <div class="mega-menu-links max-h-64 overflow-y-auto scrollbar-hide">
-                          <div class="grid grid-cols-2 xl:grid-cols-1 gap-2">
+                          <div class="grid grid-cols-2 xl:grid-cols-1 gap-1">
                             {Array.from({ length: config.years.end - config.years.start + 1 }, (_, i) => {
                               const year = config.years.end - i;
                               return (
@@ -69,7 +69,7 @@ const config = getSiteConfig();
                         <div class="mega-menu-links max-h-64 overflow-y-auto scrollbar-hide">
                           <div class="grid grid-cols-1 gap-2">
                             {config.faculties.map((faculty) => (
-                              <a href={`/alumni/faculties/${faculty.slug}`} class="mega-menu-link flex items-center space-x-2 hover:bg-accent-50 px-3 py-2 rounded-lg -mx-3 -my-2">
+                              <a href={`/alumni/faculties/${faculty.slug}`} class="mega-menu-link flex items-center space-x-2 hover:bg-accent-50 px-3 py-2 rounded-lg -mx-3 -my-2 mb-2">
                                 <!-- <Icon name="mdi:school" class="w-4 h-4 text-accent-400 flex-shrink-0" /> -->
                                 <span class="truncate">{faculty.name}</span>
                                 <span class="text-xs text-accent-400 ml-auto hidden xl:inline">

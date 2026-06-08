@@ -1,6 +1,6 @@
 name: "Test User"
 slug: "test-user"
-faculty: "Computer Science"
+faculty: "Master of Computer Application (MCA)"
 year: 2025
 short_bio: "This is a test registration"
 long_bio: "This is a test registration"
@@ -18,7 +18,7 @@ work_experience:
     duration: "2025 - Present"
     description: "PrepSOM"
 education:
-  - degree: "B.Sc Computer Science"
+  - degree: "B.Sc Information Technology"
     institution: "Mumbai University"
     year: 2025
     gpa: "8.00"
