@@ -4,12 +4,6 @@ export const prerender = false;
 import Layout from '@/layouts/Layout.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import Icon from '../../../components/Icon.astro';
-import ViewModeToggle from '@/components/alumni/ViewModeToggle.astro';
-import AlumniMap from '@/components/alumni/AlumniMap.astro';
-import ShareModal from '@/components/alumni/ShareModal.astro';
-import AlumniListCard from '@/components/alumni/AlumniListCard.astro';
-import AlumniSkeleton from '@/components/alumni/AlumniSkeleton.astro';
-import Toast from '@/components/alumni/Toast.astro';
 import { getCollection } from 'astro:content';
 import { getSiteConfig } from '@/utils/config';
 
@@ -241,31 +235,31 @@ const isRecentlyActive = (alum: any): boolean => {
 
   <section class="section">
     <div class="container-custom">
-      <div class="relative text-center mb-12">
+      <div class="text-center mb-12">
         <h1 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">Alumni Directory</h1>
-        <p class="text-xl text-accent-600 max-w-3xl mx-auto">
-          Connect with fellow alumni from {config.organization.name}. Discover alumni by faculty, year, skills, location, and availability.
+        <p class="text-xl text-justify text-accent-600 max-w-5xl mx-auto">
+          Connect with fellow alumni from our college. Discover alumni by faculty, year, skills, location, and availability. Use the search and filters to find and connect with alumni who share your interests, career goals, or industry. Whether you're looking for mentorship, job opportunities, or just want to network, our directory is here to help you engage with our vibrant alumni community. Explore profiles, reach out, and stay connected with the amazing individuals who have been part of our journey.
         </p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         <div class="bg-gradient-to-br from-primary-50 to-primary-100 p-6 rounded-2xl text-center">
           <div class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="mdi:account-group" class="w-8 h-8 text-white" />
+            <Icon name="mdi:account-group" class="w-16 h-16 flex items-center justify-center mx-auto mb-4 text-white" />
           </div>
           <h3 class="text-2xl font-bold text-primary-900">{statsTotalAlumni}</h3>
           <p class="text-primary-700">Total Alumni</p>
         </div>
         <div class="bg-gradient-to-br from-secondary-50 to-secondary-100 p-6 rounded-2xl text-center">
           <div class="w-16 h-16 bg-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="mdi:school" class="w-8 h-8 text-white" />
+            <Icon name="mdi:school" class="w-16 h-16 flex items-center justify-center mx-auto mb-4 text-white" />
           </div>
           <h3 class="text-2xl font-bold text-secondary-900">{statsFaculties}</h3>
           <p class="text-secondary-700">Faculties</p>
         </div>
         <div class="bg-gradient-to-br from-accent-50 to-accent-100 p-6 rounded-2xl text-center">
           <div class="w-16 h-16 bg-accent-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="mdi:calendar" class="w-8 h-8 text-white" />
+            <Icon name="mdi:calendar" class="w-16 h-16 flex items-center justify-center mx-auto mb-4 text-white" />
           </div>
           <h3 class="text-2xl font-bold text-accent-900">{statsYears}</h3>
           <p class="text-accent-700">Graduation Years</p>
@@ -273,12 +267,10 @@ const isRecentlyActive = (alum: any): boolean => {
       </div>
 
       <div class="bg-white rounded-2xl shadow-sm border border-accent-100 p-6 mb-8 space-y-5">
-        <button id="filters-toggle" type="button" class="md:hidden btn btn-outline w-full min-h-11">Filters & Search</button>
-        <div id="filters-panel" class="space-y-5">
         <div class="space-y-3">
-          <button id="nl-toggle" type="button" class="btn btn-outline btn-sm">Ask in plain English</button>
+          <button id="nl-toggle" type="button" class="btn btn-outline btn-sm">Ask AI</button>
           <div id="nl-panel" class="hidden bg-primary-50 border border-primary-100 rounded-xl p-4 space-y-3">
-            <input id="nl-query" type="text" class="input input-bordered w-full" placeholder="e.g. Find alumni working in fintech in Mumbai with Python skills" />
+            <input id="nl-query" type="text" class="input input-bordered w-full" placeholder="e.g. Find alumni working in web development in PrepSOM with Python skills" />
             <div class="flex flex-wrap items-center gap-2">
               <button id="nl-submit" type="button" class="btn btn-primary btn-sm">Apply AI Search</button>
               <span id="nl-loading" class="hidden text-sm text-primary-700 inline-flex items-center gap-2">
@@ -348,23 +340,13 @@ const isRecentlyActive = (alum: any): boolean => {
           <div id="active-filters" class="flex flex-wrap gap-2"></div>
           <button id="clear-all-filters" type="button" class="btn btn-outline btn-sm">Clear All Filters</button>
         </div>
-        </div>
       </div>
 
       <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <p class="text-accent-600">
           Showing <span id="results-count">{alumni.length}</span> of <span id="results-total">{total}</span> alumni
         </p>
-        <div class="flex flex-wrap items-center gap-2">
-          <label class="inline-flex items-center gap-2 rounded-lg border border-accent-200 bg-white px-3 py-2 min-h-11">
-            <input id="infinite-scroll-toggle" type="checkbox" class="rounded border-accent-300" />
-            <span class="text-sm text-accent-700">Infinite Scroll</span>
-          </label>
-          <button id="bookmarked-filter" type="button" class="btn btn-outline min-h-11" aria-pressed="false">Bookmarked Alumni (0)</button>
-          <button id="export-csv" type="button" class="btn btn-outline min-h-11 w-full sm:w-auto">
-            <span id="export-csv-label">Export CSV</span>
-          </button>
-          <ViewModeToggle />
+        <div class="flex items-center space-x-2">
           <span class="text-sm text-accent-600">Sort by:</span>
           <select id="sort-by" class="select w-auto">
             <option value="name" selected={queryState.sort === 'name'}>Name</option>
@@ -377,11 +359,6 @@ const isRecentlyActive = (alum: any): boolean => {
       <p id="search-status" class={`text-sm mb-4 ${searchUnavailable ? 'text-amber-700' : 'hidden'}`}>
         Search unavailable from MongoDB. Showing content collection fallback results.
       </p>
-      <div id="error-banner" class="hidden mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
-      <div id="loading-more" class="hidden mb-4 text-sm text-accent-600">Loading more...</div>
-      <AlumniSkeleton count={12} />
-      <AlumniMap />
-      <AlumniListCard />
 
       <div id="alumni-grid" class="grid-responsive-lg mb-8">
         {alumni.map((alum: any) => {
@@ -495,47 +472,15 @@ const isRecentlyActive = (alum: any): boolean => {
           <Icon name="mdi:chevron-right" class="w-4 h-4 ml-1" />
         </button>
       </div>
-      <div id="empty-state" class="hidden rounded-2xl border border-accent-200 bg-white p-10 text-center">
-        <svg class="mx-auto mb-4 h-10 w-10 text-accent-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M3 12h18M3 6h18M3 18h18"></path>
-        </svg>
-        <p class="font-semibold text-accent-700">No alumni found for your current search.</p>
-        <p class="mt-1 text-sm text-accent-500">Try clearing filters or changing your query.</p>
-      </div>
     </div>
   </section>
-  <ShareModal />
-  <Toast />
 </Layout>
 
 <script id="alumni-initial-data" type="application/json" set:html={JSON.stringify(initialPayload)}></script>
 
 <script>
-  import { loadBookmarks, saveBookmarks, toggleBookmark } from '../../../utils/bookmarks';
-  import { exportAlumniToCsv } from '../../../utils/export';
-
   const payloadEl = document.getElementById('alumni-initial-data');
   const payload = payloadEl ? JSON.parse(payloadEl.textContent || '{}') : {};
-
-  const VIEW_MODE_KEY = 'alumni-directory-view-mode';
-  const INFINITE_SCROLL_KEY = 'alumni-directory-infinite-scroll';
-  const BOOKMARK_FILTER_KEY = 'alumni-directory-show-bookmarked';
-
-  const getStored = (key, fallback = '') => {
-    try {
-      return localStorage.getItem(key) ?? fallback;
-    } catch {
-      return fallback;
-    }
-  };
-
-  const setStored = (key, value) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      // no-op
-    }
-  };
 
   const state = {
     ...(payload.state || {}),
@@ -545,10 +490,6 @@ const isRecentlyActive = (alum: any): boolean => {
     location: payload.state?.location || [],
     company: payload.state?.company || [],
     availability: payload.state?.availability || [],
-    viewMode: ['grid', 'list', 'map'].includes(getStored(VIEW_MODE_KEY, 'grid')) ? getStored(VIEW_MODE_KEY, 'grid') : 'grid',
-    infiniteScrollEnabled: getStored(INFINITE_SCROLL_KEY, 'false') === 'true',
-    bookmarks: loadBookmarks(),
-    showBookmarked: getStored(BOOKMARK_FILTER_KEY, 'false') === 'true',
   };
 
   const resultState = {
@@ -557,18 +498,6 @@ const isRecentlyActive = (alum: any): boolean => {
       faculties: [], years: [], skills: [], locations: [], companies: [],
     },
   };
-
-  const mapState = {
-    map: null,
-    leaflet: null,
-    markers: [],
-    geocodeCache: new Map(),
-    visibleIds: null,
-  };
-
-  let isLoadingMore = false;
-  let shareTarget = null;
-  let toastTimer = null;
 
   const elements = {
     search: document.getElementById('search'),
@@ -588,33 +517,6 @@ const isRecentlyActive = (alum: any): boolean => {
     nlSubmit: document.getElementById('nl-submit'),
     nlLoading: document.getElementById('nl-loading'),
     nlMessage: document.getElementById('nl-message'),
-    filtersToggle: document.getElementById('filters-toggle'),
-    filtersPanel: document.getElementById('filters-panel'),
-    viewGrid: document.getElementById('view-grid'),
-    viewList: document.getElementById('view-list'),
-    viewMap: document.getElementById('view-map'),
-    infiniteScrollToggle: document.getElementById('infinite-scroll-toggle'),
-    bookmarkedFilter: document.getElementById('bookmarked-filter'),
-    exportCsv: document.getElementById('export-csv'),
-    exportCsvLabel: document.getElementById('export-csv-label'),
-    paginationControls: document.getElementById('pagination-controls'),
-    loadingMore: document.getElementById('loading-more'),
-    skeletons: document.getElementById('alumni-skeletons'),
-    mapWrapper: document.getElementById('alumni-map-wrapper'),
-    mapContainer: document.getElementById('alumni-map'),
-    mapError: document.getElementById('map-error'),
-    emptyState: document.getElementById('empty-state'),
-    errorBanner: document.getElementById('error-banner'),
-    shareModalOverlay: document.getElementById('share-modal-overlay'),
-    shareClose: document.getElementById('share-close'),
-    shareTarget: document.getElementById('share-target'),
-    shareCopy: document.getElementById('share-copy'),
-    shareEmail: document.getElementById('share-email'),
-    shareLinkedin: document.getElementById('share-linkedin'),
-    shareTwitter: document.getElementById('share-twitter'),
-    toast: document.getElementById('directory-toast'),
-    toastMessage: document.getElementById('directory-toast-message'),
-    toastAction: document.getElementById('directory-toast-action'),
     faculty: { toggle: document.getElementById('faculty-toggle'), panel: document.getElementById('faculty-panel'), options: document.getElementById('faculty-options'), count: document.getElementById('faculty-selected-count') },
     year: { toggle: document.getElementById('year-toggle'), panel: document.getElementById('year-panel'), options: document.getElementById('year-options'), count: document.getElementById('year-selected-count') },
     location: { toggle: document.getElementById('location-toggle'), panel: document.getElementById('location-panel'), options: document.getElementById('location-options'), search: document.getElementById('location-search'), count: document.getElementById('location-selected-count') },
@@ -679,92 +581,6 @@ const isRecentlyActive = (alum: any): boolean => {
     return values.length ? `(${values.length})` : '';
   }
 
-  const getAlumniKey = (alum) => String(alum._id || alum.slug || generateSlug(alum.name || ''));
-
-  const getFilteredAlumni = () => {
-    let alumni = [...(resultState.data.alumni || [])];
-    if (state.showBookmarked) {
-      alumni = alumni.filter((alum) => state.bookmarks.includes(getAlumniKey(alum)));
-    }
-    if (state.viewMode === 'map' && mapState.visibleIds) {
-      alumni = alumni.filter((alum) => mapState.visibleIds.has(getAlumniKey(alum)));
-    }
-    return alumni;
-  };
-
-  function showToast(message, options = {}) {
-    if (!elements.toast || !elements.toastMessage) return;
-    elements.toastMessage.textContent = message;
-    if (toastTimer) clearTimeout(toastTimer);
-    const { actionLabel, onAction, duration = 5000 } = options;
-    if (actionLabel && elements.toastAction) {
-      elements.toastAction.textContent = actionLabel;
-      elements.toastAction.classList.remove('hidden');
-      elements.toastAction.onclick = () => {
-        onAction?.();
-        elements.toast?.classList.add('hidden');
-      };
-    } else if (elements.toastAction) {
-      elements.toastAction.classList.add('hidden');
-      elements.toastAction.onclick = null;
-    }
-    elements.toast.classList.remove('hidden');
-    toastTimer = setTimeout(() => elements.toast?.classList.add('hidden'), duration);
-  }
-
-  function setErrorBanner(message = '', details = '') {
-    if (!elements.errorBanner) return;
-    if (!message) {
-      elements.errorBanner.classList.add('hidden');
-      elements.errorBanner.textContent = '';
-      return;
-    }
-    elements.errorBanner.classList.remove('hidden');
-    elements.errorBanner.textContent = details ? `${message}: ${details}` : message;
-  }
-
-  function showSkeletons(visible) {
-    elements.skeletons?.classList.toggle('hidden', !visible);
-    if (visible) {
-      elements.grid?.classList.add('hidden');
-      elements.emptyState?.classList.add('hidden');
-    }
-  }
-
-  function persistPreferenceState() {
-    setStored(VIEW_MODE_KEY, state.viewMode);
-    setStored(INFINITE_SCROLL_KEY, String(state.infiniteScrollEnabled));
-    setStored(BOOKMARK_FILTER_KEY, String(state.showBookmarked));
-  }
-
-  function renderViewModeControls() {
-    const modes = [
-      ['grid', elements.viewGrid],
-      ['list', elements.viewList],
-      ['map', elements.viewMap],
-    ];
-    modes.forEach(([mode, button]) => {
-      button?.classList.toggle('is-active', state.viewMode === mode);
-      button?.setAttribute('aria-pressed', String(state.viewMode === mode));
-    });
-    elements.mapWrapper?.classList.toggle('hidden', state.viewMode !== 'map');
-    elements.grid?.classList.toggle('hidden', state.viewMode === 'map');
-    if (elements.paginationControls) {
-      elements.paginationControls.classList.toggle('opacity-50', state.infiniteScrollEnabled);
-      elements.paginationControls.classList.toggle('pointer-events-none', state.infiniteScrollEnabled);
-    }
-  }
-
-  function renderPreferenceControls() {
-    if (elements.infiniteScrollToggle) elements.infiniteScrollToggle.checked = state.infiniteScrollEnabled;
-    if (elements.bookmarkedFilter) {
-      const count = state.bookmarks.length;
-      elements.bookmarkedFilter.textContent = `Bookmarked Alumni (${count})`;
-      elements.bookmarkedFilter.setAttribute('aria-pressed', String(state.showBookmarked));
-      elements.bookmarkedFilter.classList.toggle('btn-primary', state.showBookmarked);
-    }
-  }
-
   function mergeFacetWithSelections(items = [], selected = []) {
     const map = new Map(items.map((item) => [String(item.value), item]));
     selected.forEach((value) => {
@@ -806,7 +622,6 @@ const isRecentlyActive = (alum: any): boolean => {
       .map((item) => {
         const active = selectedSkills.includes(String(item.value));
         return `<button type="button" data-skill="${esc(item.value)}" class="px-3 py-1 rounded-full border text-sm ${active ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-accent-700 border-accent-300'}">
-          <span class="inline-block w-2 h-2 rounded-full bg-primary-300 mr-1"></span>
           ${esc(item.value)} <span class="text-xs opacity-80">${item.count ?? 0}</span>
         </button>`;
       })
@@ -829,12 +644,7 @@ const isRecentlyActive = (alum: any): boolean => {
   }
 
   function renderCards() {
-    const alumni = getFilteredAlumni();
-    const isList = state.viewMode === 'list';
-    elements.grid.className = `${isList ? 'space-y-4' : 'grid-responsive-lg'} mb-8`;
-    elements.grid.classList.toggle('hidden', state.viewMode === 'map');
-    elements.emptyState?.classList.toggle('hidden', alumni.length > 0 || state.viewMode === 'map');
-
+    const alumni = resultState.data.alumni || [];
     elements.grid.innerHTML = alumni.length
       ? alumni
           .map((alum) => {
@@ -847,9 +657,6 @@ const isRecentlyActive = (alum: any): boolean => {
             const barColor = getCompletenessColor(pct);
             const recent = isRecentlyActive(alum);
             const latestJob = (alum.work_experience && alum.work_experience.length > 0) ? alum.work_experience[0] : null;
-            const alumKey = getAlumniKey(alum);
-            const isBookmarked = state.bookmarks.includes(alumKey);
-            const profileHref = profileSlug ? `/alumni/profiles/${encodeURIComponent(profileSlug)}` : '#';
 
             const avatarHtml = photo
               ? `<img src="${esc(photo)}" alt="${esc(alum.name)}" class="profile-avatar" loading="lazy" />`
@@ -881,34 +688,11 @@ const isRecentlyActive = (alum: any): boolean => {
               if (parts.length === 0) return '';
               return `<div class="card-expand"><div class="card-expand-inner">${parts.join('')}</div></div>`;
             })();
-            const bookmarkButton = `<button type="button" class="bookmark-btn h-11 w-11 rounded-full border border-accent-200 bg-white ${isBookmarked ? 'text-rose-500' : 'text-accent-500'}" data-bookmark="${esc(alumKey)}" aria-label="Toggle bookmark">
-              <svg viewBox="0 0 24 24" class="mx-auto h-5 w-5" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8"><path d="M12.1 21s-7.1-4.5-9.1-8.2a5.2 5.2 0 0 1 9.1-5.2 5.2 5.2 0 0 1 9.1 5.2C19.2 16.5 12.1 21 12.1 21Z"></path></svg>
-            </button>`;
-            const shareButton = `<button type="button" class="share-btn h-11 w-11 rounded-full border border-accent-200 bg-white text-accent-500" data-share="${esc(alumKey)}" aria-label="Share profile">
-              <svg viewBox="0 0 24 24" class="mx-auto h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path><path d="M16 6l-4-4-4 4"></path><path d="M12 2v13"></path></svg>
-            </button>`;
-
-            if (isList) {
-              return `<article class="profile-card list-card flex flex-col sm:flex-row sm:items-center gap-4">
-                <div class="flex-shrink-0">${avatarHtml}</div>
-                <div class="min-w-0 flex-1">
-                  <div class="mb-1 flex flex-wrap items-center gap-2">
-                    <h3 class="text-lg font-semibold text-accent-900">${esc(alum.name)}${recent ? '<span class="recently-active-badge">Active</span>' : ''}</h3>
-                    <span class="badge badge-primary text-xs">${esc(alum.faculty || 'Alumni')}</span>
-                  </div>
-                  <p class="text-sm text-accent-500 line-clamp-2 mb-2">${esc(alum.short_bio || 'No bio available')}</p>
-                  <p class="text-sm text-accent-700">${esc(alum.company || '')}${alum.job_designation || alum.position ? ` • ${esc(alum.job_designation || alum.position)}` : ''}</p>
-                  ${alum.location ? `<p class="text-sm text-accent-500">${esc(alum.location)}</p>` : ''}
-                  ${topSkillBadges ? `<div class="mt-2 flex flex-wrap gap-1.5">${topSkillBadges}</div>` : ''}
-                </div>
-                <div class="flex items-center gap-2">${bookmarkButton}${shareButton}<a href="${profileHref}" class="btn btn-outline min-h-11">View</a></div>
-              </article>`;
-            }
 
             return `<div class="profile-card">
-              <div class="absolute right-3 top-3 flex items-center gap-2">${bookmarkButton}${shareButton}<span class="badge badge-primary text-xs">${esc(alum.faculty || 'Alumni')}</span></div>
+              <div class="absolute top-3 right-3"><span class="badge badge-primary text-xs">${esc(alum.faculty || 'Alumni')}</span></div>
               <div class="mb-3">${avatarHtml}</div>
-              <h3 class="text-lg font-semibold text-accent-900 mb-1">${esc(alum.name)}${recent ? '<span class="recently-active-badge">Active</span>' : ''}</h3>
+              <h3 class="text-lg font-semibold text-accent-900 mb-1">${esc(alum.name)}${recent ? '<span class="recently-active-badge">🟢 Active</span>' : ''}</h3>
               ${alum.bio_category ? `<span class="bio-category-badge">${esc(alum.bio_category)}</span>` : ''}
               <div class="completeness-bar-wrap mb-2" title="Profile ${pct}% complete">
                 <div class="completeness-bar-track"><div class="completeness-bar-fill" style="width:${pct}%;background-color:${barColor};"></div></div>
@@ -917,20 +701,20 @@ const isRecentlyActive = (alum: any): boolean => {
               <p class="text-accent-500 text-sm mb-3 line-clamp-2">${esc(alum.short_bio || 'No bio available')}</p>
               ${topSkillBadges ? `<div class="flex flex-wrap gap-1.5 justify-center mb-3">${topSkillBadges}</div>` : ''}
               ${alum.company || alum.job_designation || alum.position ? `<p class="text-sm font-medium text-accent-700 mb-1">${esc(alum.company || '')}${alum.job_designation || alum.position ? ` • ${esc(alum.job_designation || alum.position)}` : ''}</p>` : ''}
-              ${alum.location ? `<p class="text-sm text-accent-500 mb-2">${esc(alum.location)}</p>` : ''}
-              ${alum.open_to_mentorship ? '<span class="mentor-badge mb-3">Open to Mentor</span>' : ''}
+              ${alum.location ? `<p class="text-sm text-accent-500 mb-2">📍 ${esc(alum.location)}</p>` : ''}
+              ${alum.open_to_mentorship ? '<span class="mentor-badge mb-3">🤝 Open to Mentor</span>' : ''}
               ${expandHtml}
               <div class="card-footer">
                 <span class="text-xs text-accent-400">Class of ${esc(String(alum.year || '—'))}</span>
-                ${profileSlug ? `<a href="${profileHref}" class="view-profile-link">View Profile →</a>` : '<span class="text-accent-400 text-xs">Profile unavailable</span>'}
+                ${profileSlug ? `<a href="/alumni/profiles/${encodeURIComponent(profileSlug)}" class="view-profile-link">View Profile →</a>` : '<span class="text-accent-400 text-xs">Profile unavailable</span>'}
               </div>
             </div>`;
           })
           .join('')
-      : '';
+      : '<div class="col-span-full text-center text-accent-500 py-10">No alumni found for the selected filters.</div>';
 
     elements.resultsCount.textContent = String(alumni.length);
-    elements.resultsTotal.textContent = String(state.showBookmarked ? alumni.length : (resultState.data.total || 0));
+    elements.resultsTotal.textContent = String(resultState.data.total || 0);
   }
 
   function renderPagination() {
@@ -939,7 +723,6 @@ const isRecentlyActive = (alum: any): boolean => {
 
     elements.prev.disabled = currentPage <= 1;
     elements.next.disabled = currentPage >= totalPages;
-    if (state.infiniteScrollEnabled) return;
 
     elements.pageNumbers.innerHTML = '';
     const maxButtons = 7;
@@ -1019,8 +802,6 @@ const isRecentlyActive = (alum: any): boolean => {
   };
 
   async function fetchResults(resetPage = true) {
-    showSkeletons(true);
-    setErrorBanner();
     if (resetPage) state.page = 1;
     state.sort = elements.sort.value || 'name';
     state.q = elements.search.value.trim();
@@ -1043,35 +824,17 @@ const isRecentlyActive = (alum: any): boolean => {
       const response = await fetch(`/api/alumni/search?${params.toString()}`);
       if (!response.ok) throw new Error('Search failed');
       const data = await response.json();
-      if (state.infiniteScrollEnabled && !resetPage && isLoadingMore) {
-       const existing = resultState.data.alumni || [];
-       const incoming = data.alumni || [];
-       const seen = new Set(existing.map((alum) => getAlumniKey(alum)));
-       const merged = [...existing, ...incoming.filter((alum) => !seen.has(getAlumniKey(alum)))];
-       resultState.data = { ...data, alumni: merged };
-      } else {
-       resultState.data = data;
-      }
+      resultState.data = data;
       resultState.facets = data.facets || resultState.facets;
       elements.searchStatus.classList.add('hidden');
-      mapState.visibleIds = null;
     } catch {
       elements.searchStatus.classList.remove('hidden');
       elements.searchStatus.textContent = 'Search unavailable. Please try again later.';
-      showToast('Failed to load alumni. Please try again.', {
-       actionLabel: 'Retry',
-       onAction: () => fetchResults(resetPage),
-      });
-      setErrorBanner('Search error', 'Failed to load alumni data');
     }
 
-    showSkeletons(false);
     renderCards();
     renderPagination();
     renderAllControls();
-    renderViewModeControls();
-    renderPreferenceControls();
-    if (state.viewMode === 'map') await renderMap();
   }
 
   const debouncedSearch = debounce(() => fetchResults(true), 300);
@@ -1172,32 +935,6 @@ const isRecentlyActive = (alum: any): boolean => {
     fetchResults(true);
   });
 
-  elements.grid?.addEventListener('click', (event) => {
-    if (!(event.target instanceof Element)) return;
-    const bookmarkTarget = event.target.closest('[data-bookmark]');
-    if (bookmarkTarget) {
-      const id = bookmarkTarget.getAttribute('data-bookmark');
-      if (!id) return;
-      const next = toggleBookmark(state.bookmarks, id);
-      state.bookmarks = next.bookmarks;
-      if (!saveBookmarks(state.bookmarks)) {
-        showToast('Unable to save bookmark');
-      }
-      renderCards();
-      renderPreferenceControls();
-      persistPreferenceState();
-      return;
-    }
-
-    const shareTargetEl = event.target.closest('[data-share]');
-    if (shareTargetEl) {
-      const id = shareTargetEl.getAttribute('data-share');
-      const alum = (resultState.data.alumni || []).find((item) => getAlumniKey(item) === id);
-      if (!alum) return;
-      openShareModal(alum);
-    }
-  });
-
   elements.search.addEventListener('input', () => debouncedSearch());
   elements.sort.addEventListener('change', () => fetchResults(true));
   elements.nlToggle?.addEventListener('click', () => elements.nlPanel?.classList.toggle('hidden'));
@@ -1238,182 +975,6 @@ const isRecentlyActive = (alum: any): boolean => {
     renderMultiSelectOptions('company', 'companies', elements.company.search.value || '');
   });
 
-  elements.filtersToggle?.addEventListener('click', () => {
-    elements.filtersPanel?.classList.toggle('hidden');
-  });
-
-  function setViewMode(mode) {
-    state.viewMode = mode;
-    mapState.visibleIds = null;
-    renderCards();
-    renderViewModeControls();
-    if (mode === 'map') renderMap();
-    persistPreferenceState();
-  }
-
-  elements.viewGrid?.addEventListener('click', () => setViewMode('grid'));
-  elements.viewList?.addEventListener('click', () => setViewMode('list'));
-  elements.viewMap?.addEventListener('click', () => setViewMode('map'));
-
-  elements.infiniteScrollToggle?.addEventListener('change', () => {
-    state.infiniteScrollEnabled = !!elements.infiniteScrollToggle?.checked;
-    persistPreferenceState();
-    renderViewModeControls();
-  });
-
-  elements.bookmarkedFilter?.addEventListener('click', () => {
-    state.showBookmarked = !state.showBookmarked;
-    renderCards();
-    renderPreferenceControls();
-    persistPreferenceState();
-  });
-
-  elements.exportCsv?.addEventListener('click', () => {
-    const rows = getFilteredAlumni();
-    if (!rows.length) {
-      showToast('Export failed. Please try again.');
-      return;
-    }
-    elements.exportCsvLabel.textContent = 'Exporting...';
-    try {
-      exportAlumniToCsv(rows);
-    } catch {
-      showToast('Export failed. Please try again.');
-    } finally {
-      elements.exportCsvLabel.textContent = 'Export CSV';
-    }
-  });
-
-  function closeShareModal() {
-    elements.shareModalOverlay?.classList.add('hidden');
-    shareTarget = null;
-  }
-
-  function openShareModal(alum) {
-    shareTarget = alum;
-    const slug = alum.slug || generateSlug(alum.name || '');
-    const link = `${window.location.origin}/alumni/profiles/${encodeURIComponent(slug)}`;
-    const title = `Check out ${alum.name}'s profile`;
-    elements.shareTarget.textContent = alum.name || 'Alumni profile';
-    elements.shareEmail.setAttribute('href', `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(link)}`);
-    elements.shareLinkedin.setAttribute('href', `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link)}`);
-    elements.shareTwitter.setAttribute('href', `https://twitter.com/intent/tweet?url=${encodeURIComponent(link)}&text=${encodeURIComponent(title)}`);
-    elements.shareCopy.onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(link);
-        showToast('Link copied!');
-      } catch {
-        showToast('Unable to copy link');
-      }
-    };
-    elements.shareModalOverlay?.classList.remove('hidden');
-  }
-
-  elements.shareClose?.addEventListener('click', closeShareModal);
-  elements.shareModalOverlay?.addEventListener('click', (event) => {
-    if (event.target === elements.shareModalOverlay) closeShareModal();
-  });
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') closeShareModal();
-  });
-
-  async function geocodeLocation(location) {
-    if (!location) return null;
-    if (mapState.geocodeCache.has(location)) return mapState.geocodeCache.get(location);
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(location)}`);
-      const data = await response.json();
-      const coords = data?.[0] ? [Number(data[0].lat), Number(data[0].lon)] : null;
-      mapState.geocodeCache.set(location, coords);
-      return coords;
-    } catch {
-      mapState.geocodeCache.set(location, null);
-      return null;
-    }
-  }
-
-  async function ensureMap() {
-    if (mapState.map) return true;
-    try {
-      mapState.leaflet = await import('leaflet');
-      mapState.map = mapState.leaflet.map(elements.mapContainer).setView([20.5937, 78.9629], 4);
-      mapState.leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-      }).addTo(mapState.map);
-      mapState.map.on('moveend', () => {
-        const bounds = mapState.map.getBounds();
-        const visible = new Set();
-        mapState.markers.forEach((item) => {
-          if (bounds.contains(item.latlng)) {
-            item.ids.forEach((id) => visible.add(id));
-          }
-        });
-        mapState.visibleIds = visible;
-        renderCards();
-      });
-      return true;
-    } catch {
-      elements.mapError?.classList.remove('hidden');
-      elements.mapError.textContent = 'Map failed to load. Showing grid view instead.';
-      setViewMode('grid');
-      return false;
-    }
-  }
-
-  async function renderMap() {
-    if (state.viewMode !== 'map') return;
-    const ok = await ensureMap();
-    if (!ok) return;
-    mapState.markers.forEach((entry) => entry.marker.remove());
-    mapState.markers = [];
-
-    const grouped = new Map();
-    getFilteredAlumni().forEach((alum) => {
-      if (!alum.location) return;
-      const location = String(alum.location);
-      if (!grouped.has(location)) grouped.set(location, []);
-      grouped.get(location).push(alum);
-    });
-
-    const bounds = [];
-    for (const [location, alumni] of grouped.entries()) {
-      const coords = await geocodeLocation(location);
-      if (!coords) continue;
-      const [lat, lng] = coords;
-      const marker = mapState.leaflet.marker([lat, lng]).addTo(mapState.map);
-      const names = alumni.slice(0, 3).map((alum) => esc(alum.name)).join(', ');
-      const first = alumni[0];
-      const slug = first.slug || generateSlug(first.name || '');
-      marker.bindPopup(`<div class="text-sm"><p class="font-semibold">${esc(location)} (${alumni.length})</p><p>${names}${alumni.length > 3 ? '...' : ''}</p><a class="view-profile-link" href="/alumni/profiles/${encodeURIComponent(slug)}">View profile</a></div>`);
-      const ids = alumni.map((alum) => getAlumniKey(alum));
-      mapState.markers.push({ marker, latlng: mapState.leaflet.latLng(lat, lng), ids });
-      bounds.push([lat, lng]);
-    }
-    mapState.visibleIds = null;
-    if (bounds.length) mapState.map.fitBounds(bounds, { padding: [20, 20] });
-  }
-
-  const handleScroll = debounce(() => {
-    if (!state.infiniteScrollEnabled || isLoadingMore || state.viewMode === 'map') return;
-    const totalPages = resultState.data.totalPages || 1;
-    const currentPage = state.page || 1;
-    if (currentPage >= totalPages) return;
-    const threshold = window.innerWidth < 768 ? 100 : 200;
-    const scrollPosition = window.innerHeight + window.scrollY;
-    const target = document.body.offsetHeight - threshold;
-    if (scrollPosition >= target) {
-      isLoadingMore = true;
-      elements.loadingMore?.classList.remove('hidden');
-      state.page = currentPage + 1;
-      fetchResults(false).finally(() => {
-        isLoadingMore = false;
-        elements.loadingMore?.classList.add('hidden');
-      });
-    }
-  }, 200);
-
-  window.addEventListener('scroll', handleScroll);
-
   function wireDropdown(key) {
     const { toggle, panel } = elements[key];
     toggle.addEventListener('click', () => {
@@ -1438,11 +999,6 @@ const isRecentlyActive = (alum: any): boolean => {
   renderCards();
   renderPagination();
   renderAllControls();
-  renderViewModeControls();
-  renderPreferenceControls();
-  if (window.innerWidth < 768) elements.filtersPanel?.classList.add('hidden');
-  if (state.viewMode === 'map') renderMap();
-  persistPreferenceState();
 </script>
 
 <style is:global>
@@ -1638,41 +1194,4 @@ const isRecentlyActive = (alum: any): boolean => {
     transition: color 0.2s;
   }
   .view-profile-link:hover { color: #1d4ed8; }
-
-  .view-mode-btn {
-    min-height: 44px;
-    min-width: 44px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    color: #334155;
-    background: #fff;
-    transition: all 0.2s ease;
-  }
-  .view-mode-btn.is-active {
-    color: #1d4ed8;
-    border-color: #93c5fd;
-    background: #eff6ff;
-  }
-
-  .list-card .profile-avatar,
-  .list-card .profile-avatar-placeholder {
-    width: 70px;
-    height: 70px;
-    margin-bottom: 0;
-  }
-
-  @media (max-width: 767px) {
-    #alumni-map {
-      height: 300px;
-    }
-    #share-modal {
-      margin-top: auto;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-  }
 </style>

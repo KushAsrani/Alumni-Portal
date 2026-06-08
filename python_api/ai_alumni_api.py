@@ -504,11 +504,7 @@ def ai_chat():
         )
 
         answer = response.choices[0].message.content or ""
-        suggestions = [
-            "Who works at Google?",
-            "Alumni with Python skills",
-            "Top faculties in the directory",
-        ]
+        suggestions = []
 
         return jsonify({"success": True, "response": answer.strip(), "suggestions": suggestions}), 200
     except Exception:

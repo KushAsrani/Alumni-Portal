@@ -14,7 +14,7 @@ export interface Props {
 
 const { title, description, image, canonical } = Astro.props;
 const config = getSiteConfig();
-const showAlumniChatbot = Astro.url.pathname.startsWith('/alumni');
+const showAlumniChatbot = Astro.url.pathname.startsWith('/');
 
 const pageTitle = title === 'Home' ? config.site.name : config.seo.title_template.replace('%s', title);
 const pageDescription = description || config.seo.default_description;
