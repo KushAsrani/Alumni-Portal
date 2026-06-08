@@ -1,29 +1,41 @@
-# Open Alumns Portal 🎓
+# Alumni Engagement Portal 🎓
 
-A production-ready, open source alumni portal theme / template designed for colleges and communities for community building, networking and maintaining alumni engagement.
+A production-ready, full-stack alumni portal designed to connect current learners with alumni for mentorship, career guidance, and community support. Built with Astro, TypeScript, and Python APIs for intelligent job matching and AI-powered resume analysis.
 
-![Open Alumns Portal](https://img.shields.io/badge/Astro-4.0.0-purple?style=for-the-badge&logo=astro)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)
+![Astro](https://img.shields.io/badge/Astro-4.0.0-purple?style=for-the-badge&logo=astro)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge&logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.3-38B2AC?style=for-the-badge&logo=tailwind-css)
+![Python](https://img.shields.io/badge/Python-3.x-3776ab?style=for-the-badge&logo=python)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 ## ✨ Features
 
+### Core Features
 - **🎨 Fully Configurable**: Customize everything via `site.config.yml` without touching code
 - **📱 Responsive Design**: Beautiful UI that works on all devices
 - **🔍 Advanced Search**: Fuzzy search with faculty and year-based filtering
 - **📊 Content Collections**: Markdown-driven content using Astro Content Collections
 - **🎯 SEO Optimized**: Built-in SEO features and meta tags
 - **⚡ Performance**: Fast, static site generation with minimal JavaScript
-- **🎭 Theme System**: Easy color customization with CSS variables
-- **📚 Documentation**: Comprehensive guides for users and contributors
+
+### Advanced Features
+- **🤖 AI Resume Analysis**: Python-powered resume analysis and job matching using OpenAI
+- **💼 Job Board**: Intelligent job scraping and recommendations for alumni
+- **👥 Alumni Directory**: Comprehensive directory with multiple filtering options
+- **📧 Mentorship Platform**: Connect alumni with current students for guidance
+- **📊 Admin Dashboard**: Engagement metrics, analytics, and user management
+- **🔐 Authentication**: Secure login system with role-based access control
+- **🌐 n8n Workflow Automation**: Automated workflows for email, notifications, and integrations
+- **💾 MongoDB Integration**: Scalable data storage for alumni profiles and job data
+- **⚡ Redis Caching**: Performance optimization with caching layer
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 20.x (required)
 - npm or yarn
+- Docker & Docker Compose (optional, for full stack)
 
 ### Installation
 
@@ -38,25 +50,53 @@ A production-ready, open source alumni portal theme / template designed for coll
    npm install
    ```
 
-3. **Start development server**
+3. **Configure environment**
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your configuration
+   ```
+
+4. **Start development server**
    ```bash
    npm run dev
    ```
 
-4. **Open your browser**
+5. **Open your browser**
    Navigate to `http://localhost:4321`
+
+### Docker Setup (Full Stack)
+
+Run the entire application stack with Docker Compose:
+
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Start all services
+docker-compose up -d
+```
+
+This includes:
+- **Frontend**: Astro app (accessible via host.docker.internal:4321)
+- **n8n**: Workflow automation (http://localhost:5678)
+- **PostgreSQL**: n8n database
+- **Python Scraper API**: Job scraping service (http://localhost:5000)
+- **Resume Analysis API**: AI-powered resume analysis (http://localhost:5001)
+- **MongoDB Express**: Database UI (http://localhost:8081)
+- **Redis**: Caching layer
+- **Mongo Express**: MongoDB web interface
 
 ## 🛠️ Configuration
 
-The theme is fully configurable through the `site.config.yml` file. Here's what you can customize:
+The portal is fully configurable through the `site.config.yml` file. Here's what you can customize:
 
 ### Site Information
 ```yaml
 site:
-  name: "Your Alumni Portal"
+  name: "Alumni Portal"
   description: "Connect with your institution's alumni"
   url: "https://your-domain.com"
-  logo: "/logo.svg"
+  logo: "/favicon.ico"
   favicon: "/favicon.ico"
   hero_image: "/hero-bg.jpg"
 ```
@@ -79,43 +119,74 @@ navigation:
     url: "/"
     icon: "home"
   - label: "Alumni Directory"
-    url: "/alumni"
+    url: "/alumni/profiles"  # Note: /alumni/profiles (not /alumni)
     mega_menu: true
     submenu:
       - label: "By Year"
         url: "/alumni/years"
       - label: "By Faculty"
         url: "/alumni/faculties"
+  - label: "Events"
+    url: "/events"
+  - label: "Job Board"
+    url: "/jobs"
+  - label: "Blog"
+    url: "/blog"
 ```
 
-### Faculties
+### Faculties/Programs
 ```yaml
 faculties:
-  - name: "Computer Science"
-    slug: "cs"
+  - name: "Master of Computer Application (MCA)"
+    slug: "mca"
     description: "Computer Science graduates"
     icon: "code"
     color: "#22c55e"
+  - name: "MMS (Masters in Management Studies)"
+    slug: "mms"
+    description: "Management program"
+    icon: "briefcase"
+    color: "#3b82f6"
 ```
 
 ## 📁 Project Structure
 
 ```
-open-alumns-portal/
+Alumni-Portal/
 ├── src/
 │   ├── components/          # Reusable UI components
 │   ├── layouts/            # Page layouts
-│   ├── pages/              # Astro pages
+│   ├── pages/              # Astro pages (routes)
+│   │   ├── index.astro     # Homepage
+│   │   ├── alumni/         # Alumni directory pages
+│   │   ├── jobs.astro      # Job board
+│   │   ├── events.astro    # Events listing
+│   │   ├── blog/           # Blog pages
+│   │   ├── admin/          # Admin dashboard
+│   │   └── api/            # API routes
 │   ├── content/            # Content collections
 │   │   ├── alumni/         # Alumni profiles
 │   │   ├── events/         # Event listings
 │   │   └── blog/           # Blog posts
 │   ├── styles/             # Global styles and CSS
-│   └── utils/              # Utility functions
-├── public/                 # Static assets
+│   ├── utils/              # Utility functions & API clients
+│   └── lib/                # Libraries and helpers
+├── api/                    # Python Flask APIs
+│   ├── Dockerfile          # Scraper API container
+│   └── (Flask app)
+├── python_api/             # Python API implementations
+│   ├── scraper_api.py      # Job scraping API
+│   └── resume_api.py       # Resume analysis API
+├── prisma/                 # Database schemas & migrations
+├── n8n/                    # n8n workflow automation configs
+├── public/                 # Static assets (images, icons, etc)
+├── scripts/                # Utility scripts
 ├── site.config.yml         # Main configuration file
 ├── tailwind.config.mjs     # Tailwind CSS configuration
-└── astro.config.mjs        # Astro configuration
+├── astro.config.mjs        # Astro configuration
+├── docker-compose.yml      # Full stack Docker setup
+├── package.json            # Node.js dependencies
+└── requirements.txt        # Python dependencies
 ```
 
 ## 🎨 Customization
@@ -129,22 +200,23 @@ open-alumns-portal/
 ```astro
 ---
 import Layout from '../layouts/Layout.astro';
+import { getSiteConfig } from '../utils/config';
 
-export default function Page() {
-  return (
-    <Layout title="Page Title">
-      <h1>Your Content Here</h1>
-    </Layout>
-  );
-}
+const config = getSiteConfig();
 ---
+
+<Layout title="Page Title" description="Page description">
+  <section class="section">
+    <h1>Your Content Here</h1>
+  </section>
+</Layout>
 ```
 
 ### Customizing Styles
 
 - **Global CSS**: Edit `src/styles/global.css`
 - **Tailwind Config**: Modify `tailwind.config.mjs`
-- **Component Styles**: Use Tailwind classes or custom CSS
+- **Component Styles**: Use Tailwind classes or component-scoped CSS
 
 ### Adding New Content Types
 
@@ -176,6 +248,22 @@ featured: true
 ---
 ```
 
+### Job Listings
+
+Jobs are populated via web scraping and stored in MongoDB:
+
+```json
+{
+  "title": "Senior Software Engineer",
+  "company": "Tech Corp",
+  "location": "San Francisco, CA",
+  "salary": "$150k-$200k",
+  "description": "We're looking for...",
+  "posted_date": "2024-01-15",
+  "featured": true
+}
+```
+
 ### Events
 
 Add events in `src/content/events/`:
@@ -186,9 +274,11 @@ title: "Annual Alumni Meet"
 slug: "annual-alumni-meet-2024"
 description: "Join us for our annual gathering..."
 date: 2024-12-15
+time: "6:00 PM"
 location: "Main Campus"
 category: "Networking"
 featured: true
+image: "/events/alumni-meet.jpg"
 ---
 ```
 
@@ -202,8 +292,11 @@ title: "Building Strong Alumni Networks"
 description: "Tips for creating meaningful connections..."
 author: "Admin"
 publishDate: 2024-01-15
+updatedDate: 2024-01-16
 category: "Community"
 tags: ["networking", "alumni", "community"]
+image: "/blog/networking.jpg"
+draft: false
 ---
 
 Your blog content here...
@@ -215,16 +308,72 @@ Your blog content here...
 
 1. Push your code to GitHub
 2. Connect your repository to Vercel
-3. Deploy automatically
+3. Configure environment variables in Vercel dashboard
+4. Deploy automatically on every push
+
+```bash
+npm run build  # Test build locally first
+```
 
 ### Netlify
 
 1. Build the project: `npm run build`
 2. Deploy the `dist/` folder to Netlify
+3. Configure build settings to run `npm run build`
 
-### Other Platforms
+### Docker Deployment
 
-The theme generates static files, so it works with any static hosting service.
+1. Build the Docker image: `docker build -t alumni-portal .`
+2. Push to your registry
+3. Deploy using orchestration tools (Kubernetes, Docker Swarm, etc.)
+
+### Self-Hosted
+
+The theme generates static files, so it works with any static hosting service (GitHub Pages, GitLab Pages, AWS S3, etc.).
+
+## 🔧 Available Scripts
+
+### Frontend
+```bash
+npm run dev              # Start development server
+npm run build            # Build for production
+npm run preview          # Preview production build locally
+npm run astro            # Run Astro CLI commands
+```
+
+### Database
+```bash
+npm run db:setup         # Initialize MongoDB
+npm run db:migrate       # Run migrations
+npm run seed             # Seed database with sample data
+```
+
+### Job Scraping
+```bash
+npm run scrape:basic     # Basic job scraping
+npm run scrape:advanced  # Advanced scraping with filters
+npm run scrape:api       # Run Python scraper API
+npm run scrape:jobs      # Full job scraper
+npm run scrape:jobs:dev  # Job scraper with verbose output
+```
+
+### Resume Analysis
+```bash
+npm run resume:api       # Start resume analysis API
+```
+
+## 📊 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | Astro, TypeScript, Tailwind CSS (58.1% of codebase) |
+| **Backend APIs** | Python Flask, OpenAI API (13.7% of codebase) |
+| **Scripting** | Python, Node.js, Shell |
+| **Database** | MongoDB (application data), PostgreSQL (n8n) |
+| **Caching** | Redis |
+| **Automation** | n8n Workflows |
+| **Deployment** | Docker, Docker Compose, Vercel |
+| **Configuration** | YAML, JavaScript |
 
 ## 🤝 Contributing
 
@@ -233,29 +382,32 @@ We welcome contributions from the community! Here's how you can help:
 ### Getting Started
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
+2. Create a feature branch: `git checkout -b feature/your-feature`
 3. Make your changes
-4. Commit: `git commit -m 'Add feature'`
-5. Push: `git push origin feature-name`
+4. Commit: `git commit -m 'Add feature: description'`
+5. Push: `git push origin feature/your-feature`
 6. Open a Pull Request
 
 ### Development Guidelines
 
 - Follow the existing code style
 - Add TypeScript types where appropriate
-- Test your changes locally
+- Test your changes locally: `npm run dev`
 - Update documentation if needed
-- Ensure responsive design works
+- Ensure responsive design works on mobile devices
+- Test with Docker: `docker-compose up`
 
 ### Areas to Contribute
 
 - 🎨 UI/UX improvements
 - 🚀 Performance optimizations
 - 📱 Mobile experience enhancements
-- 🌍 Internationalization support
+- 🌍 Internationalization support (i18n)
 - 🔧 Additional customization options
 - 📚 Documentation improvements
 - 🐛 Bug fixes
+- 🤖 AI/ML features
+- 🔌 API integrations
 
 ## 📖 Documentation
 
@@ -263,7 +415,7 @@ We welcome contributions from the community! Here's how you can help:
 
 - [Installation Guide](docs/installation.md)
 - [Configuration Reference](docs/configuration.md)
-- [Content Management](docs/content.md)
+- [Content Management Guide](docs/content.md)
 - [Customization Guide](docs/customization.md)
 - [Deployment Guide](docs/deployment.md)
 
@@ -272,16 +424,77 @@ We welcome contributions from the community! Here's how you can help:
 - [Architecture Overview](docs/architecture.md)
 - [Component API](docs/components.md)
 - [Content Collections](docs/collections.md)
+- [Python APIs & Scraping](docs/python-apis.md)
 - [Styling System](docs/styling.md)
 - [Testing Guide](docs/testing.md)
+- [Docker Setup](docs/docker.md)
 
 ## 🎯 Roadmap
 
-- [ ] Advanced search filters
-- [ ] Alumni directory export
-- [ ] Event registration system
-- [ ] Newsletter integration
+### Completed ✅
+- Alumni Directory with search and filtering
+- Job Board with intelligent scraping
+- AI Resume Analysis
+- Admin Dashboard
+- Event Management
+- Blog System
+- Docker/Docker-Compose setup
+
+### In Progress 🚧
+- Advanced search filters with tags
+- Enhanced mentorship matching algorithms
+- Mobile app
+
+### Planned Features 📋
+- [ ] Alumni directory export (CSV, PDF)
+- [ ] Event registration and ticketing system
+- [ ] Newsletter/Email campaign integration
 - [ ] Multi-language support
 - [ ] Dark mode theme
-- [ ] Mobile app
 - [ ] Analytics dashboard
+- [ ] Video mentoring sessions
+- [ ] Automated career path recommendations
+
+## 📝 Environment Variables
+
+Create a `.env.local` file for development:
+
+```bash
+# Frontend
+SITE_URL=http://localhost:4321
+
+# MongoDB
+MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/alumni-portal
+
+# APIs
+OPENAI_API_KEY=your_openai_key
+BLOB_READ_WRITE_TOKEN=your_blob_token
+
+# n8n (if using Docker)
+N8N_ENCRYPTION_KEY=your_random_encryption_key
+
+# Admin
+ADMIN_API_KEY=your_admin_api_key
+```
+
+## 🤝 Support
+
+- 📧 Email: contact@prepsom.com
+- 🐙 GitHub Issues: [Report bugs](https://github.com/KushAsrani/Alumni-Portal/issues)
+- 💬 Discussions: [Ask questions](https://github.com/KushAsrani/Alumni-Portal/discussions)
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [Astro](https://astro.build)
+- Styled with [Tailwind CSS](https://tailwindcss.com)
+- Automation with [n8n](https://n8n.io)
+- Data management with [MongoDB](https://www.mongodb.com)
+- AI features powered by [OpenAI](https://openai.com)
+
+---
+
+**Made with ❤️ by the PrepSOM team | [PrepSOM Labs](https://prepsom.com)**
