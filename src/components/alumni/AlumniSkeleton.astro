@@ -1,0 +1,22 @@
+---
+const { count = 12 } = Astro.props;
+---
+
+<div id="alumni-skeletons" class="hidden grid-responsive-lg mb-8" aria-hidden="true">
+  {Array.from({ length: count }).map(() => (
+    <div class="rounded-2xl border border-accent-200 bg-white p-6 animate-pulse">
+      <div class="mx-auto mb-4 h-20 w-20 rounded-full bg-accent-100"></div>
+      <div class="mx-auto mb-2 h-4 w-2/3 rounded bg-accent-100"></div>
+      <div class="mx-auto mb-1 h-3 w-1/2 rounded bg-accent-100"></div>
+      <div class="mx-auto mb-4 h-3 w-3/4 rounded bg-accent-100"></div>
+      <div class="mb-2 h-3 w-full rounded bg-accent-100"></div>
+      <div class="mb-2 h-3 w-5/6 rounded bg-accent-100"></div>
+      <div class="mb-4 h-3 w-2/3 rounded bg-accent-100"></div>
+      <div class="flex gap-2">
+        <div class="h-6 w-16 rounded-full bg-accent-100"></div>
+        <div class="h-6 w-16 rounded-full bg-accent-100"></div>
+        <div class="h-6 w-16 rounded-full bg-accent-100"></div>
+      </div>
+    </div>
+  ))}
+</div>
