@@ -242,15 +242,6 @@ const isRecentlyActive = (alum: any): boolean => {
   <section class="section">
     <div class="container-custom">
       <div class="relative text-center mb-12">
-        <button id="theme-toggle" type="button" class="absolute right-0 top-0 h-11 w-11 rounded-lg border border-accent-200 bg-white text-accent-700 transition-colors" aria-label="Toggle dark mode">
-          <svg id="theme-icon-light" viewBox="0 0 24 24" class="mx-auto h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8">
-            <circle cx="12" cy="12" r="4"></circle>
-            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
-          </svg>
-          <svg id="theme-icon-dark" viewBox="0 0 24 24" class="mx-auto hidden h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"></path>
-          </svg>
-        </button>
         <h1 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">Alumni Directory</h1>
         <p class="text-xl text-accent-600 max-w-3xl mx-auto">
           Connect with fellow alumni from {config.organization.name}. Discover alumni by faculty, year, skills, location, and availability.
@@ -520,7 +511,6 @@ const isRecentlyActive = (alum: any): boolean => {
 <script id="alumni-initial-data" type="application/json" set:html={JSON.stringify(initialPayload)}></script>
 
 <script>
-  import { applyTheme, getStoredTheme, persistTheme } from '../../../utils/theme';
   import { loadBookmarks, saveBookmarks, toggleBookmark } from '../../../utils/bookmarks';
   import { exportAlumniToCsv } from '../../../utils/export';
 
@@ -557,7 +547,6 @@ const isRecentlyActive = (alum: any): boolean => {
     availability: payload.state?.availability || [],
     viewMode: ['grid', 'list', 'map'].includes(getStored(VIEW_MODE_KEY, 'grid')) ? getStored(VIEW_MODE_KEY, 'grid') : 'grid',
     infiniteScrollEnabled: getStored(INFINITE_SCROLL_KEY, 'false') === 'true',
-    theme: getStoredTheme(),
     bookmarks: loadBookmarks(),
     showBookmarked: getStored(BOOKMARK_FILTER_KEY, 'false') === 'true',
   };
@@ -599,9 +588,6 @@ const isRecentlyActive = (alum: any): boolean => {
     nlSubmit: document.getElementById('nl-submit'),
     nlLoading: document.getElementById('nl-loading'),
     nlMessage: document.getElementById('nl-message'),
-    themeToggle: document.getElementById('theme-toggle'),
-    themeIconLight: document.getElementById('theme-icon-light'),
-    themeIconDark: document.getElementById('theme-icon-dark'),
     filtersToggle: document.getElementById('filters-toggle'),
     filtersPanel: document.getElementById('filters-panel'),
     viewGrid: document.getElementById('view-grid'),
@@ -749,13 +735,6 @@ const isRecentlyActive = (alum: any): boolean => {
     setStored(VIEW_MODE_KEY, state.viewMode);
     setStored(INFINITE_SCROLL_KEY, String(state.infiniteScrollEnabled));
     setStored(BOOKMARK_FILTER_KEY, String(state.showBookmarked));
-    persistTheme(state.theme);
-  }
-
-  function renderTheme() {
-    applyTheme(state.theme);
-    elements.themeIconLight?.classList.toggle('hidden', state.theme === 'dark');
-    elements.themeIconDark?.classList.toggle('hidden', state.theme !== 'dark');
   }
 
   function renderViewModeControls() {
@@ -1276,12 +1255,6 @@ const isRecentlyActive = (alum: any): boolean => {
   elements.viewList?.addEventListener('click', () => setViewMode('list'));
   elements.viewMap?.addEventListener('click', () => setViewMode('map'));
 
-  elements.themeToggle?.addEventListener('click', () => {
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
-    renderTheme();
-    persistPreferenceState();
-  });
-
   elements.infiniteScrollToggle?.addEventListener('change', () => {
     state.infiniteScrollEnabled = !!elements.infiniteScrollToggle?.checked;
     persistPreferenceState();
@@ -1465,7 +1438,6 @@ const isRecentlyActive = (alum: any): boolean => {
   renderCards();
   renderPagination();
   renderAllControls();
-  renderTheme();
   renderViewModeControls();
   renderPreferenceControls();
   if (window.innerWidth < 768) elements.filtersPanel?.classList.add('hidden');
@@ -1691,44 +1663,6 @@ const isRecentlyActive = (alum: any): boolean => {
     width: 70px;
     height: 70px;
     margin-bottom: 0;
-  }
-
-  body, body * {
-    transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
-  }
-  body[data-theme='dark'] {
-    background: #0f172a;
-    color: #f1f5f9;
-  }
-  body[data-theme='dark'] .section,
-  body[data-theme='dark'] .bg-white,
-  body[data-theme='dark'] .profile-card,
-  body[data-theme='dark'] #share-modal,
-  body[data-theme='dark'] #directory-toast,
-  body[data-theme='dark'] #empty-state,
-  body[data-theme='dark'] #alumni-map {
-    background: #1e293b !important;
-    border-color: #334155 !important;
-    color: #f1f5f9 !important;
-  }
-  body[data-theme='dark'] .text-accent-900,
-  body[data-theme='dark'] .text-accent-800,
-  body[data-theme='dark'] .text-accent-700 {
-    color: #f1f5f9 !important;
-  }
-  body[data-theme='dark'] .text-accent-600,
-  body[data-theme='dark'] .text-accent-500,
-  body[data-theme='dark'] .text-accent-400 {
-    color: #cbd5e1 !important;
-  }
-  body[data-theme='dark'] .filter-toggle,
-  body[data-theme='dark'] .filter-panel,
-  body[data-theme='dark'] .input,
-  body[data-theme='dark'] .select,
-  body[data-theme='dark'] .btn-outline {
-    background: #0f172a !important;
-    color: #f1f5f9 !important;
-    border-color: #334155 !important;
   }
 
   @media (max-width: 767px) {
