@@ -57,6 +57,18 @@ const pageImage = image || config.seo.og_image;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
+    <script is:inline>
+      (function () {
+        try {
+          const storedTheme = localStorage.getItem('alumni-portal-theme');
+          const theme = storedTheme === 'dark' ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (error) {
+          document.documentElement.setAttribute('data-theme', 'light');
+          console.error('Theme initialization failed:', error);
+        }
+      })();
+    </script>
     <script is:inline src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -65,7 +77,7 @@ const pageImage = image || config.seo.og_image;
     
 
   </head>
-  <body class="bg-white text-gray-900 font-sans antialiased">
+  <body class="font-sans antialiased">
     <div class="min-h-screen flex flex-col">
       <Navigation />
       

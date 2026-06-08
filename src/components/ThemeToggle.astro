@@ -1,0 +1,57 @@
+<button
+  type="button"
+  class="theme-toggle group relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-accent-200 bg-white text-accent-700 transition-all duration-200 hover:bg-accent-50"
+  data-theme-toggle
+  aria-label="Toggle dark mode"
+  aria-pressed="false"
+>
+  <svg data-theme-icon-light viewBox="0 0 24 24" class="h-5 w-5 transition-all duration-200" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+    <circle cx="12" cy="12" r="4"></circle>
+    <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+  </svg>
+  <svg data-theme-icon-dark viewBox="0 0 24 24" class="hidden h-5 w-5 transition-all duration-200" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+    <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"></path>
+  </svg>
+  <span class="pointer-events-none absolute -bottom-10 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-accent-900 px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-200 lg:block lg:group-hover:opacity-100">
+    Toggle dark mode
+  </span>
+</button>
+
+<script>
+  import { getStoredTheme, toggleTheme } from '../utils/theme';
+
+  const themeWindow = window;
+  if (!themeWindow.__alumniPortalThemeToggleInit) {
+    themeWindow.__alumniPortalThemeToggleInit = true;
+
+    const syncThemeButtons = (theme) => {
+      document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+        const lightIcon = button.querySelector('[data-theme-icon-light]');
+        const darkIcon = button.querySelector('[data-theme-icon-dark]');
+        const isDark = theme === 'dark';
+        button.setAttribute('aria-pressed', String(isDark));
+        lightIcon?.classList.toggle('hidden', isDark);
+        darkIcon?.classList.toggle('hidden', !isDark);
+        lightIcon?.classList.toggle('rotate-90', isDark);
+        darkIcon?.classList.toggle('-rotate-90', !isDark);
+      });
+    };
+
+    syncThemeButtons(getStoredTheme());
+    document.addEventListener('alumni-theme-change', (event) => {
+      syncThemeButtons(event.detail?.theme || getStoredTheme());
+    });
+
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      const toggleButton = target instanceof Element ? target.closest('[data-theme-toggle]') : null;
+      if (!toggleButton) return;
+      try {
+        const theme = toggleTheme();
+        syncThemeButtons(theme);
+      } catch (error) {
+        console.error('Theme toggle failed:', error);
+      }
+    });
+  }
+</script>
