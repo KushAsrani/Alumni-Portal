@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       : '';
 
     if (!currentPassword.trim()) {
-      return jsonResponse({ error: 'Current password is required.' }, 400);
+      return jsonResponse({ error: 'Old password is required.' }, 400);
     }
 
     const { db } = await connectToDatabase();
@@ -65,7 +65,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!verifyAlumniPassword(currentPassword, alumniDoc.password_hash)) {
-      return jsonResponse({ error: 'Current password is incorrect.' }, 400);
+      return jsonResponse({ error: 'Old password is incorrect.' }, 400);
     }
 
     if (newPassword.length < 8) {
@@ -89,7 +89,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (newPassword === currentPassword) {
-      return jsonResponse({ error: 'New password must be different from your current password.' }, 400);
+      return jsonResponse({ error: 'New password must be different from your old password.' }, 400);
     }
 
     const newHash = hashAlumniPassword(newPassword);
