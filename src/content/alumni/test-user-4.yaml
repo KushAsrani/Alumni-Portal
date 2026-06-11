@@ -1,26 +1,34 @@
-name: "Test User"
+name: "Test User 4"
 slug: "test-user-4"
-faculty: "Software Engineering"
+faculty: "Master of Computer Application (MCA)"
 year: 2024
-short_bio: "Passionate software engineer with expertise in full-stack development, machine learning, and cloud technologies."
-long_bio: "I am a passionate software engineer with expertise in full-stack development, machine learning, and cloud technologies. I graduated with honors and has been working on innovative projects that solve real-world problems. In my free time, I enjoy contributing to open-source projects, exploring new technologies, and mentoring aspiring developers."
-photo: "https://ytvf4iagehmrqd9s.public.blob.vercel-storage.com/alumni-photos/1766164456834-7jnicj.jpg"
-email: "test4@example.com"
+short_bio: "This is a test registration..."
+long_bio: "This is a test registration..."
+photo: "https://ytvf4iagehmrqd9s.public.blob.vercel-storage.com/alumni-photos/1766754097513-1rhrs.jpg"
+email: "test6@example.com"
 mobile: "+91 1234 567 8900"
-location: "Test"
+location: "Mumbai, India"
 company: "PrepSOM"
 position: "Software Engineer"
-skills: []
-projects: []
+skills: ["Python","Java","JavaScript","React","Node.js","AWS","AI","Docker"]
+projects: [{"name":"AI-Powered Chatbot","description":""},{"name":"Developed an intelligent chatbot using natural language processing","description":""},{"name":"Cloud Migration Tool","description":""},{"name":"Built a tool to automate cloud infrastructure migration","description":""}]
 work_experience:
   - company: "PrepSOM"
     position: "Software Engineer"
-    duration: "2020 - Present"
-    description: ""
+    duration: "2025 - Present"
+    description: "Software Engineer - PrepSOM"
+  - company: StartupXYZ
+    position: "Software Engineer"
+    duration: "2020 - 2022"
+    description: "Leading development of cloud-native applications and AI solutions"
 education:
-  - degree: "BSc"
+  - degree: "B.Sc. Computer Science"
     institution: "Mumbai University"
-    year: 2020
-    gpa: ""
+    year: 2024
+    gpa: "8.00"
 achievements: []
-interests: []
+interests: ["Web Development","AI","Cloud Computing","DevOps"]
+social:
+  linkedin: "https://linkedin.com/in/testuser"
+  twitter: "https://twitter.com/testuser"
+  github: "https://github.com/testuser"
