@@ -94,7 +94,7 @@ services:
   # Python Flask API for Job Scraping
   scraper-api:
     build:
-      context: ./api
+      context: ./python_api
       dockerfile: Dockerfile
     container_name: alumni-portal-scraper
     restart: unless-stopped
@@ -119,7 +119,7 @@ services:
   # Python Flask API for AI Resume Analysis
   resume-api:
     build:
-      context: ./api
+      context: ./python_api
       dockerfile: Dockerfile
     container_name: alumni-portal-resume-api
     restart: unless-stopped

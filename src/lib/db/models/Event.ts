@@ -15,7 +15,7 @@ export interface EventDocument {
   meetingUrl?: string;
   meetingUrlActive?: boolean;  // default false — admin must activate before it's shown to attendees
   bannerUrl?: string;
-  venue?: string;      // e.g. "Main Campus Auditorium, NCIT" or "Online"
+  venue?: string;      // e.g. "Main Campus Auditorium, AIMSR" or "Online"
   location?: string;   // physical address or "Remote/Online"
   status: 'upcoming' | 'live' | 'ended' | 'cancelled';
   tags?: string[];

@@ -1,8 +1,9 @@
-# Alumni Engagement Portal 🎓
+# PrepSOM Alumni Portal 🎓
 
-A production-ready, full-stack alumni portal designed to connect current learners with alumni for mentorship, career guidance, and community support. Built with Astro, TypeScript, and Python APIs for intelligent job matching and AI-powered resume analysis.
+A production-ready, full-stack alumni portal designed to connect current learners with alumni for mentorship, career guidance, and community support. Built with Astro, React, TypeScript, and Python APIs for intelligent job matching and AI-powered resume analysis.
 
 ![Astro](https://img.shields.io/badge/Astro-4.0.0-purple?style=for-the-badge&logo=astro)
+![React](https://img.shields.io/badge/React-18.2.0-blue?style=for-the-badge&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge&logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.3-38B2AC?style=for-the-badge&logo=tailwind-css)
 ![Python](https://img.shields.io/badge/Python-3.x-3776ab?style=for-the-badge&logo=python)
@@ -13,20 +14,29 @@ A production-ready, full-stack alumni portal designed to connect current learner
 ### Core Features
 - **🎨 Fully Configurable**: Customize everything via `site.config.yml` without touching code
 - **📱 Responsive Design**: Beautiful UI that works on all devices
+- **🌗 Light/Dark Theme**: Switch between light and dark themes based on user preference
 - **🔍 Advanced Search**: Fuzzy search with faculty and year-based filtering
-- **📊 Content Collections**: Markdown-driven content using Astro Content Collections
+- **🛠️ Developer Friendly**: TypeScript, Tailwind CSS, and modular architecture
 - **🎯 SEO Optimized**: Built-in SEO features and meta tags
-- **⚡ Performance**: Fast, static site generation with minimal JavaScript
+- **⚡ Performance**: Fast, static site generation with minimal JavaScript 
 
 ### Advanced Features
 - **🤖 AI Resume Analysis**: Python-powered resume analysis and job matching using OpenAI
 - **💼 Job Board**: Intelligent job scraping and recommendations for alumni
 - **👥 Alumni Directory**: Comprehensive directory with multiple filtering options
+- **🤖 AI Career Path Recommendations**: Personalized career advice based on alumni profiles and job market trends
+- **💬 AI Chatbot Support**: AI-powered chatbot for answering alumni queries and providing support
 - **📧 Mentorship Platform**: Connect alumni with current students for guidance
+- **📅 Event Management**: Create and manage alumni events with RSVP functionality
+- **📝 Blogging System**: Share news, stories, and updates with the community
+- **🔗 Social Integration**: Connect with LinkedIn, Google, X, and more
+- **🔔 Notifications & Messaging**: In-app notifications and messaging system for alumni interactions
 - **📊 Admin Dashboard**: Engagement metrics, analytics, and user management
-- **🔐 Authentication**: Secure login system with role-based access control
+- **📈 Analytics & Reporting**: Track alumni engagement, job placements, and event attendance with built-in analytics
+- **🛡️ Security**: Role-based access control, data validation, and secure API endpoints
+- **🔐 Authentication**: Secure login system with role-based access control, multi-factor authentication, and single sign-on (SSO) support
 - **🌐 n8n Workflow Automation**: Automated workflows for email, notifications, and integrations
-- **💾 MongoDB Integration**: Scalable data storage for alumni profiles and job data
+- **💾 MongoDB Integration**: Scalable data storage for alumni profiles, job data, and other application data
 - **⚡ Redis Caching**: Performance optimization with caching layer
 
 ## 🚀 Quick Start
@@ -192,6 +202,7 @@ Alumni-Portal/
 ## 🎨 Customization
 
 ### Adding New Pages
+### Astro:
 
 1. Create a new `.astro` file in `src/pages/`
 2. Import the Layout component
@@ -212,6 +223,37 @@ const config = getSiteConfig();
 </Layout>
 ```
 
+### React: 
+1. Add React to Astro using `npm install @astrojs/react` or `npx astro add react`
+2. Add React to your Astro config (`astro.config.mjs`):
+```javascript
+import { defineConfig } from 'astro/config';
+import react from '@astrojs/react';
+
+export default defineConfig({
+  integrations: [react()],
+});
+```
+3. Create React components in `src/components/` and import them into your Astro pages
+4. Define your React components with TypeScript for type safety
+
+```tsx
+import React from 'react';
+interface MyComponentProps {
+  title: string;
+  description: string;
+}
+const MyComponent: React.FC<MyComponentProps> = ({ title, description }) => {
+  return (
+    <div className="p-4 bg-gray-100 rounded-lg">
+      <h2 className="text-xl font-bold mb-2">{title}</h2>
+      <p>{description}</p>
+    </div>
+  );
+};
+export default MyComponent;
+```
+
 ### Customizing Styles
 
 - **Global CSS**: Edit `src/styles/global.css`
@@ -228,36 +270,37 @@ const config = getSiteConfig();
 
 ### Alumni Profiles
 
-Create alumni profiles in `src/content/alumni/`:
+Create alumni profiles in MongoDB alumni_profiles collection or as markdown files in `src/content/alumni/`:
 
 ```yaml
 ---
-name: "John Doe"
-slug: "john-doe"
-faculty: "Computer Science"
-year: 2020
+name: "Test User"
+slug: "test-user"
+faculty: "Master of Computer Application (MCA)"
+year: 2026
 bio: "Software engineer passionate about..."
-short_bio: "Software Engineer at Tech Corp"
-email: "john@example.com"
-linkedin: "https://linkedin.com/in/johndoe"
-current_position: "Senior Software Engineer"
-company: "Tech Corp"
-location: "San Francisco, CA"
-skills: ["JavaScript", "React", "Node.js"]
+short_bio: "Software Engineer at PrepSOM Labs"
+email: "testuser@example.com"
+linkedin: "https://linkedin.com/in/testuser"
+current_position: "Software Engineer"
+company: "PrepSOM Labs"
+location: "Mumbai, Virtual"
+skills: ["JavaScript", "React", "Node.js", "Python", "AI"]
+open_to_mentorship: true
 featured: true
 ---
 ```
 
 ### Job Listings
 
-Jobs are populated via web scraping and stored in MongoDB:
+  Jobs are populated via web scraping and stored in MongoDB jobs collection. You can also add jobs manually:
 
 ```json
 {
-  "title": "Senior Software Engineer",
-  "company": "Tech Corp",
-  "location": "San Francisco, CA",
-  "salary": "$150k-$200k",
+  "title": "Software Engineer",
+  "company": "PrepSOM Labs",
+  "location": "Mumbai, Virtual",
+  "salary": "Rs. 8-12 LPA",
   "description": "We're looking for...",
   "posted_date": "2024-01-15",
   "featured": true
@@ -266,16 +309,16 @@ Jobs are populated via web scraping and stored in MongoDB:
 
 ### Events
 
-Add events in `src/content/events/`:
+Add events in MongoDB events collection or as markdown files in `src/content/events/`:
 
 ```yaml
 ---
 title: "Annual Alumni Meet"
-slug: "annual-alumni-meet-2024"
+slug: "annual-alumni-meet-2026"
 description: "Join us for our annual gathering..."
-date: 2024-12-15
+date: 2026-12-15
 time: "6:00 PM"
-location: "Main Campus"
+venue: "Main Campus"
 category: "Networking"
 featured: true
 image: "/events/alumni-meet.jpg"
@@ -284,15 +327,15 @@ image: "/events/alumni-meet.jpg"
 
 ### Blog Posts
 
-Create blog posts in `src/content/blog/`:
+Create blog posts in MongoDB blog_posts collection or as markdown files in `src/content/blog/`:
 
 ```markdown
 ---
 title: "Building Strong Alumni Networks"
 description: "Tips for creating meaningful connections..."
 author: "Admin"
-publishDate: 2024-01-15
-updatedDate: 2024-01-16
+publishDate: 2026-01-15
+updatedDate: 2026-01-16
 category: "Community"
 tags: ["networking", "alumni", "community"]
 image: "/blog/networking.jpg"
@@ -302,17 +345,50 @@ draft: false
 Your blog content here...
 ```
 
+### Python API
+1. Create a virtual environment using `python -m venv venv`
+2. Activate the virtual environment:
+   - On Windows: `venv\Scripts\activate`
+   - On macOS/Linux: `source venv/bin/activate`
+3. Install dependencies: `pip install -r requirements.txt`
+4. Run the scraper API: `python api/scraper_api.py`
+5. Run the job scraper: `python scripts/job_scraper.py`
+6. The scraper will populate the MongoDB jobs collection with the latest job listings.
+
+### n8n Workflow Automation
+1. Start n8n: `docker-compose up -d n8n`
+2. Access n8n at `http://localhost:5678`
+3. Import the job scraping workflow from `n8n/workflows/job-scraper-automation.json`
+4. Configure the workflow with your MongoDB connection and scraping parameters
+5. Activate the workflow to start automated job scraping
+6. Monitor workflow execution and view logs in n8n dashboard
+
 ## 🚀 Deployment
 
 ### Vercel (Recommended)
 
 1. Push your code to GitHub
+```bash
+git add .
+git commit -m "Your commit message"
+git push origin main
+```
 2. Connect your repository to Vercel
+```bash
+# If using Vercel CLI
+npm run build  # Test build locally first
+npm run preview # Preview production build locally
+npm run deploy  # Deploy to Vercel
+vercel -prod # Deploy to production
+```
 3. Configure environment variables in Vercel dashboard
 4. Deploy automatically on every push
 
 ```bash
 npm run build  # Test build locally first
+npm run preview # Preview production build locally
+npm run deploy  # Deploy to Vercel (if using Vercel CLI)
+vercel -prod # Deploy to production
 ```
 
 ### Netlify
@@ -366,7 +442,7 @@ npm run resume:api       # Start resume analysis API
 
 | Layer | Technology |
 |-------|-----------|
-| **Frontend** | Astro, TypeScript, Tailwind CSS (58.1% of codebase) |
+| **Frontend** | Astro, React, TypeScript, Tailwind CSS (58.1% of codebase) |
 | **Backend APIs** | Python Flask, OpenAI API (13.7% of codebase) |
 | **Scripting** | Python, Node.js, Shell |
 | **Database** | MongoDB (application data), PostgreSQL (n8n) |
@@ -435,24 +511,29 @@ We welcome contributions from the community! Here's how you can help:
 - Alumni Directory with search and filtering
 - Job Board with intelligent scraping
 - AI Resume Analysis
+- Mentorship matching system
 - Admin Dashboard
+- Analytics & Reporting
 - Event Management
+- Notifications & Messaging
+- Event registration and ticketing system
 - Blog System
 - Docker/Docker-Compose setup
 
 ### In Progress 🚧
 - Advanced search filters with tags
 - Enhanced mentorship matching algorithms
+- AI Chatbot for support
+- Social media integrations (LinkedIn, X, etc.)
+- Automated email campaigns and newsletters
 - Mobile app
 
 ### Planned Features 📋
 - [ ] Alumni directory export (CSV, PDF)
-- [ ] Event registration and ticketing system
 - [ ] Newsletter/Email campaign integration
-- [ ] Multi-language support
-- [ ] Dark mode theme
-- [ ] Analytics dashboard
+- [ ] Multi-language support (i18n)
 - [ ] Video mentoring sessions
+- [ ] Live event streaming and virtual meetups
 - [ ] Automated career path recommendations
 
 ## 📝 Environment Variables
@@ -489,10 +570,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Built with [Astro](https://astro.build)
+- Built with [Astro](https://astro.build) and [React](https://reactjs.org) components
 - Styled with [Tailwind CSS](https://tailwindcss.com)
 - Automation with [n8n](https://n8n.io)
-- Data management with [MongoDB](https://www.mongodb.com)
+- Data management with [MongoDB](https://www.mongodb.com), [Redis](https://redis.io), and [PostgreSQL](https://www.postgresql.org)
 - AI features powered by [OpenAI](https://openai.com)
 
 ---

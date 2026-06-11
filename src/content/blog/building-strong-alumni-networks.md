@@ -1,10 +1,10 @@
 ---
 title: "Building Strong Alumni Networks: A Guide to Meaningful Connections"
 description: "Discover effective strategies for creating and maintaining strong alumni networks that benefit both graduates and institutions. Learn from successful examples and practical tips."
-author: "NCIT Alumni Team"
+author: "PrepSOM Labs"
 author_photo: "/team/alumni-team.jpg"
 author_bio: "Dedicated team working to strengthen our alumni community and foster meaningful connections."
-publishDate: "2024-01-15"
+publishDate: "2026-01-01"
 image: "/images/blog/default-blog-banner.svg"
 category: "Community"
 tags: ["networking", "alumni", "community", "professional-development"]

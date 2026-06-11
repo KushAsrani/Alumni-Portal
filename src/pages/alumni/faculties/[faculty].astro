@@ -91,7 +91,8 @@ const truncateBio = (bio: string) => (bio && bio.length > 90 ? `${bio.slice(0, 8
   <Breadcrumbs items={breadcrumbItems} />
   <section class="section">
     <div class="container-custom">
-      <h1 class="text-3xl font-bold mb-6">{facultyName}</h1>
+      <h1 class="text-3xl text-center font-bold mb-6">{facultyName}</h1>
+      <p class="text-justify text-accent-600 mb-12">Explore profiles of alumni from {facultyName} department. Discover their career paths, skills, and achievements. Connect with fellow alumni and find inspiration for your own journey. If you're an alumni from the {facultyName} department and don't see your profile here, consider creating one to share your story and connect with others!</p>
       {alumniLoadError && (
         <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           Could not load alumni profiles from MongoDB. Check your <code>MONGODB_URI</code> and make sure the <code>alumni_profiles</code> collection exists.
@@ -130,37 +131,31 @@ const truncateBio = (bio: string) => (bio && bio.length > 90 ? `${bio.slice(0, 8
                   )}
                 </div>
 
-                <div class="name-row">
+                <div class="name-row mb-2">
                   <h3>{a.name}</h3>
-                  {recentlyActive && <span class="active-badge"><span class="active-dot"></span>Active</span>}
-                </div>
-
-                <div class="completeness-bar-container" title={`Profile ${profileCompleteness}% complete`}>
-                  <div class="completeness-bar-track">
-                    <div class="completeness-bar-fill" style={`width: ${profileCompleteness}%; background-color: ${profileCompletenessColor};`}></div>
-                  </div>
-                  <span class="completeness-label">{profileCompleteness}%</span>
                 </div>
 
                 {a.short_bio && <p class="profile-bio">{truncateBio(a.short_bio)}</p>}
 
                 {allSkills.length > 0 && (
+                  <p class="skills-label text-sm font-medium text-accent-700"><b>Skills:</b></p>
                   <div class="skill-list" aria-label="Skills">
-                    {allSkills.map((skill) => <span class="skill-pill">{skill}</span>)}
+                    {allSkills.map((skill) => <span class="skill-pill mt-4 mb-4">{skill}</span>)}
                   </div>
                 )}
 
                 {(company || position) && (
                   <p class="role-line">
-                    {company && <span>{company}</span>}
-                    {company && position && <span class="role-separator">•</span>}
-                    {position && <span>{position}</span>}
+                    {company && <span class="text-accent-700 text-center font-medium"><b>Company:</b> {company}</span>}
+                  </p>
+                  <p class="role-line">
+                    {position && <span class="text-accent-700 text-center font-medium"><b>Position:</b> {position}</span>}
                   </p>
                 )}
 
-                {location && <p class="location-line">{location}</p>}
+                {location && <p class="location-line text-accent-700 text-center font-medium"><b>Location:</b> {location}</p>}
 
-                {isOpenToMentor && <div class="mentor-pill">🤝 Open to Mentor</div>}
+                {isOpenToMentor && <div class="mentor-pill mb-4 mt-2">🤝 Open to Mentor</div>}
 
                 <div class="card-footer">
                   <span>{a.year ? `Class of ${a.year}` : 'Alumni Profile'}</span>
@@ -349,7 +344,6 @@ const truncateBio = (bio: string) => (bio && bio.length > 90 ? `${bio.slice(0, 8
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
-    color: #1f2937;
     font-size: 0.9rem;
     font-weight: 600;
     line-height: 1.35;
@@ -357,13 +351,19 @@ const truncateBio = (bio: string) => (bio && bio.length > 90 ? `${bio.slice(0, 8
   }
 
   .role-separator,
-  .location-line {
-    color: #64748b;
-  }
 
   .location-line {
     font-size: 0.86rem;
     margin-bottom: 0.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-bottom: 0.25rem;
   }
 
   .mentor-pill {

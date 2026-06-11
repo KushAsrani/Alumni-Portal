@@ -25,7 +25,7 @@ git --version
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/noskofficial/openalumns.git
+git clone https://github.com/KushAsrani/Alumni-Portal
 cd open-alumns-portal
 ```
 
@@ -74,9 +74,9 @@ Your portal will be available at `http://localhost:4321`
 
 ### Content
 
-1. **Alumni Profiles**: Add alumni data in `src/content/alumni/`
-2. **Events**: Add events in `src/content/events/`
-3. **Blog Posts**: Add blog content in `src/content/blog/`
+1. **Alumni Profiles**: Add alumni data in MongoDB alumni_profiles collection or as Markdown files in `src/content/alumni/` 
+2. **Events**: Add events in MongoDB events collection or as Markdown files in `src/content/events/`
+3. **Blog Posts**: Add blog content in MongoDB blog_posts collection or as Markdown files in `src/content/blog/`
 
 ### Navigation
 

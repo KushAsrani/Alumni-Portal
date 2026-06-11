@@ -1,7 +1,7 @@
 ---
 title: "The Future of Remote Work: Insights from Alumni Leaders"
 description: "How remote work is reshaping the tech industry and what it means for our alumni community"
-author: "Alumni Editorial Team"
+author: "PrepSOM Labs"
 publishDate: "2024-01-15"
 image: "/images/blog/default-blog-banner.svg"
 category: "Career Development"
@@ -16,7 +16,7 @@ The landscape of work has undergone a dramatic transformation in recent years, w
 
 Remote work has evolved from a pandemic necessity to a strategic advantage for both companies and employees. According to our alumni survey, **78% of tech professionals** now work remotely at least part-time, with **45% working fully remote**.
 
-> "Remote work has opened up opportunities that simply didn't exist before," says Sarah Johnson (Computer Engineering, 2022), Senior Software Engineer at TechCorp. "I can now work for companies across the country without relocating."
+> "Remote work has opened up opportunities that simply didn't exist before," says Software Engineering, 2026, Senior Software Engineer at PrepSOM Labs. "I can now work for companies across the country without relocating."
 
 ## Benefits for Alumni
 

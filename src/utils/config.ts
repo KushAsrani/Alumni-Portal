@@ -118,10 +118,10 @@ function getDefaultConfig(): SiteConfig {
       hero_image: "/hero-bg.jpg"
     },
     organization: {
-      name: "Nepal Open Source Klub (NOSK)",
-      website: "https://nosk.org.np",
-      email: "info@nosk.org.np",
-      address: "Kathmandu, Nepal"
+      name: "PrepSOM Labs",
+      website: "https://prepsomlabs.com",
+      email: "info@prepsomlabs.com",
+      address: "IIM Ventures, Ahmedabad, Gujarat, India"
     },
     colors: {
       primary: {
@@ -173,7 +173,7 @@ function getDefaultConfig(): SiteConfig {
       title_template: "%s | Open Alumns Portal",
       default_description: "Connect with alumni from your institution. Join our network and stay updated with events, news, and opportunities.",
       keywords: ["alumni", "portal", "network", "community", "education", "graduates"],
-      author: "Nepal Open Source Klub (NOSK)",
+      author: "PrepSOM Labs",
       og_image: "/og-image.jpg",
       twitter_card: "summary_large_image"
     },
@@ -192,12 +192,16 @@ function getDefaultConfig(): SiteConfig {
       categories: true,
       social_sharing: true,
       contact_forms: true,
-      newsletter: true
+      newsletter: true,
+      alumni_registration: {
+        enabled: true,
+        url: "/alumni/register"
+      }
     },
     contact: {
-      email: "alumni@nosk.org.np",
-      phone: "+977-1-1234567",
-      address: "Kathmandu, Nepal",
+      email: "alumni@prepsomlabs.com",
+      phone: "+91 8758 0761 06",
+      address: "IIM Ventures, Ahmedabad, Gujarat, India",
       office_hours: "Monday - Friday, 9:00 AM - 5:00 PM"
     }
   };

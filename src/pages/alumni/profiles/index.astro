@@ -387,7 +387,7 @@ const isRecentlyActive = (alum: any): boolean => {
 
               <h3 class="text-lg font-semibold text-accent-900 mb-1">
                 {alum.name}
-                {recent && <span class="recently-active-badge">🟢 Active</span>}
+                {recent && <span class="recently-active-badge"></span>}
               </h3>
               {alum.bio_category && <span class="bio-category-badge">{alum.bio_category}</span>}
 
@@ -419,7 +419,7 @@ const isRecentlyActive = (alum: any): boolean => {
                   {alum.company || ''}{(alum.job_designation || alum.position) ? ` • ${alum.job_designation || alum.position}` : ''}
                 </p>
               )}
-              {alum.location && <p class="text-sm text-accent-500 mb-2">📍 {alum.location}</p>}
+              {alum.location && <p class="text-sm text-accent-500 mb-2">{alum.location}</p>}
               {alum.open_to_mentorship && (
                 <span class="mentor-badge mb-3">🤝 Open to Mentor</span>
               )}
@@ -701,7 +701,7 @@ const isRecentlyActive = (alum: any): boolean => {
               <p class="text-accent-500 text-sm mb-3 line-clamp-2">${esc(alum.short_bio || 'No bio available')}</p>
               ${topSkillBadges ? `<div class="flex flex-wrap gap-1.5 justify-center mb-3">${topSkillBadges}</div>` : ''}
               ${alum.company || alum.job_designation || alum.position ? `<p class="text-sm font-medium text-accent-700 mb-1">${esc(alum.company || '')}${alum.job_designation || alum.position ? ` • ${esc(alum.job_designation || alum.position)}` : ''}</p>` : ''}
-              ${alum.location ? `<p class="text-sm text-accent-500 mb-2">📍 ${esc(alum.location)}</p>` : ''}
+              ${alum.location ? `<p class="text-sm text-accent-500 mb-2">${esc(alum.location)}</p>` : ''}
               ${alum.open_to_mentorship ? '<span class="mentor-badge mb-3">🤝 Open to Mentor</span>' : ''}
               ${expandHtml}
               <div class="card-footer">
