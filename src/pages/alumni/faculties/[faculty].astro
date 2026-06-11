@@ -1,18 +1,60 @@
 ---
+export const prerender = false;
+
 import Layout from '@/layouts/Layout.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import { getCollection } from 'astro:content';
 import { getSiteConfig } from '@/utils/config';
-
-export async function getStaticPaths() {
-  const config = getSiteConfig();
-  return config.faculties.map(f => ({ params: { faculty: f.slug }, props: { faculty: f.slug } }));
-}
+import { connectToDatabase } from '@/lib/mongodb';
+import { ALUMNI_PROFILES_COLLECTION, generateProfileSlug, toStringArray } from '@/lib/alumni-profile-service';
 
 const config = getSiteConfig();
-const { faculty } = Astro.props as { faculty: string };
-const alumni = (await getCollection('alumni')).filter(a => a.data.faculty.toLowerCase().includes(faculty.toLowerCase()));
-const facultyName = config.faculties.find(f => f.slug === faculty)?.name || faculty;
+const { faculty = '' } = Astro.params;
+const selectedFaculty = config.faculties.find((f) => f.slug === faculty);
+const facultyName = selectedFaculty?.name || faculty;
+const facultySlug = selectedFaculty?.slug || faculty;
+
+const normalizeFaculty = (value: unknown) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const selectedFacultyTokens = [facultySlug, facultyName, facultyName.match(/\(([^)]+)\)/)?.[1]]
+  .filter(Boolean)
+  .map(normalizeFaculty);
+
+function profileMatchesFaculty(profile: any) {
+  const normalizedProfileFaculty = normalizeFaculty(profile.faculty);
+  return selectedFacultyTokens.some((token) => token && normalizedProfileFaculty.includes(token));
+}
+
+function normalizeProfile(profile: any) {
+  const skills = toStringArray(profile.skills);
+  const slug = profile.slug || generateProfileSlug(profile.name || '');
+  return {
+    ...profile,
+    id: profile._id?.toString?.() || profile.id || slug,
+    slug,
+    skills,
+    photo: profile.photo || profile.photo_blob_url || '',
+    position: profile.position || profile.job_designation || '',
+    short_bio: profile.short_bio || '',
+    work_experience: Array.isArray(profile.work_experience) ? profile.work_experience : [],
+  };
+}
+
+let alumni: any[] = [];
+let alumniLoadError = '';
+
+try {
+  const { db } = await connectToDatabase();
+  const profiles = await db
+    .collection(ALUMNI_PROFILES_COLLECTION)
+    .find({ status: 'approved' })
+    .sort({ updated_at: -1, name: 1 })
+    .toArray();
+
+  alumni = profiles.map(normalizeProfile).filter(profileMatchesFaculty);
+} catch (error) {
+  alumniLoadError = error instanceof Error ? error.message : 'Unable to load alumni profiles from MongoDB';
+  console.error('Unable to load faculty alumni profiles:', error);
+}
+
 const breadcrumbItems = [
   { label: 'Home', href: '/' },
   { label: 'Profiles', href: '/alumni' },
@@ -22,7 +64,7 @@ const breadcrumbItems = [
 const calcCompleteness = (alum: any): number => {
   const fields = ['photo', 'faculty', 'year', 'short_bio', 'long_bio', 'location', 'company', 'position', 'skills', 'linkedin'];
   const filled = fields.filter((field) => {
-    const value = alum[field];
+    const value = field === 'linkedin' ? alum.social?.linkedin || alum.linkedin : alum[field];
     if (field === 'skills') {
       return Array.isArray(value) ? value.length > 0 : typeof value === 'string' && value.trim().length > 0;
     }
@@ -40,6 +82,7 @@ const isRecentlyActive = (alum: any): boolean => {
   const age = Date.now() - parsed.getTime();
   return age >= 0 && age <= ninetyDaysMs;
 };
+const getInitials = (name: string) => name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 ---
 
 <Layout title={facultyName}>
@@ -47,30 +90,38 @@ const isRecentlyActive = (alum: any): boolean => {
   <section class="section">
     <div class="container-custom">
       <h1 class="text-3xl font-bold mb-6">{facultyName}</h1>
+      {alumniLoadError && (
+        <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Could not load alumni profiles from MongoDB. Check your <code>MONGODB_URI</code> and make sure the <code>alumni_profiles</code> collection exists.
+        </div>
+      )}
+
       {alumni.length > 0 ? (
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {alumni.map(a => {
-            const profileCompleteness = calcCompleteness(a.data);
+          {alumni.map((a) => {
+            const profileCompleteness = calcCompleteness(a);
             const profileCompletenessColor = completenessColor(profileCompleteness);
-            const allSkills = Array.isArray(a.data.skills)
-              ? a.data.skills
-              : typeof a.data.skills === 'string'
-                ? a.data.skills.split(',').map((skill) => skill.trim()).filter(Boolean)
-                : [];
-            const latestWork = Array.isArray(a.data.work_experience) ? a.data.work_experience[0] : null;
-            const recentlyActive = isRecentlyActive(a.data);
+            const allSkills = a.skills;
+            const latestWork = Array.isArray(a.work_experience) ? a.work_experience[0] : null;
+            const recentlyActive = isRecentlyActive(a);
 
             return (
-              <a href={`/alumni/profiles/${a.data.slug}`} class="card card-hover block profile-card">
+              <a href={`/alumni/profiles/${a.slug}`} class="card card-hover block profile-card">
                 <div class="p-6 relative z-10">
-                  <div class="flex items-center gap-4 mb-4">
-                    <img src={a.data.photo || '/logo.svg'} alt={a.data.name} class="w-16 h-16 rounded-full object-cover border" />
+                  <div class="flex items-center gap-4 mb-4 text-left">
+                    {a.photo ? (
+                      <img src={a.photo} alt={a.name} class="w-16 h-16 rounded-full object-cover border" />
+                    ) : (
+                      <div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white font-bold text-lg border">
+                        {getInitials(a.name || 'Alumni')}
+                      </div>
+                    )}
                     <div>
                       <h3 class="text-lg font-semibold">
-                        {a.data.name}
+                        {a.name}
                         {recentlyActive && <span class="recently-active-badge">🟢 Recently Active</span>}
                       </h3>
-                      <p class="text-sm text-primary-600">{a.data.faculty}, {a.data.year}</p>
+                      <p class="text-sm text-primary-600">{a.faculty}{a.year ? `, ${a.year}` : ''}</p>
                     </div>
                   </div>
 
@@ -81,9 +132,9 @@ const isRecentlyActive = (alum: any): boolean => {
                     <span class="completeness-label">{profileCompleteness}% complete</span>
                   </div>
 
-                  <p class="text-gray-600 text-sm">{a.data.short_bio}</p>
+                  <p class="text-gray-600 text-sm">{a.short_bio}</p>
 
-                  <div class="card-hover-panel">
+                  <div class="card-hover-panel" aria-hidden="true">
                     <div class="card-hover-content">
                       {latestWork && (latestWork.position || latestWork.company || latestWork.duration) && (
                         <div class="hover-section">
@@ -100,7 +151,7 @@ const isRecentlyActive = (alum: any): boolean => {
                           </div>
                         </div>
                       )}
-                      <a href={`/alumni/profiles/${a.data.slug}`} class="hover-cta-btn">View Full Profile →</a>
+                      <span class="hover-cta-btn">View Full Profile →</span>
                     </div>
                   </div>
                 </div>
