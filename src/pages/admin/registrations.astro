@@ -379,7 +379,7 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    Generate Profile
+                    Save Profile
                   </button>
                   <button onclick="updateStatus('${reg.id}', 'rejected')" class="btn btn-sm btn-outline text-red-600 border-red-600 hover:bg-red-600 hover:text-white">
                     Revoke
@@ -550,7 +550,7 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
 };
 
     window.generateProfile = async function(id) {
-  if (!confirm('Generate alumni profile YAML file for this registration?')) {
+  if (!confirm('Save this approved alumni profile to the MongoDB alumni_profiles collection?')) {
     return;
   }
 
@@ -567,18 +567,17 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
     const result = await response.json();
 
     if (result.success) {
-      alert(`Profile generated successfully!
+      alert(`Profile saved successfully!
 
-File: ${result.data.fileName}
-Path: ${result.data.path}
-
-Note: Restart your dev server to see the new profile.`);
+Collection: ${result.data.collection}
+Profile ID: ${result.data.profileId}
+Path: ${result.data.path}`);
     } else {
       alert(`Error: ${result.message}`);
     }
   } catch (error) {
-    console.error('Profile generation error:', error);
-    alert('Failed to generate profile. Please try again.');
+    console.error('Profile save error:', error);
+    alert('Failed to save profile. Please try again.');
   }
 };
 
