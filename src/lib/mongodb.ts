@@ -130,4 +130,13 @@ export async function setupIndexes() {
   await collection.createIndex({ created_at: -1 });
   await collection.createIndex({ year: 1 });
   await collection.createIndex({ faculty: 1 });
+
+  const profiles = db.collection('alumni_profiles');
+  await profiles.createIndex({ registration_id: 1 }, { unique: true });
+  await profiles.createIndex({ slug: 1 }, { unique: true });
+  await profiles.createIndex({ email: 1 }, { unique: true, sparse: true });
+  await profiles.createIndex({ status: 1 });
+  await profiles.createIndex({ faculty: 1 });
+  await profiles.createIndex({ year: 1 });
+  await profiles.createIndex({ updated_at: -1 });
 }

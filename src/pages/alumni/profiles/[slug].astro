@@ -6,6 +6,8 @@ import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import Icon from '../../../components/Icon.astro';
 import { connectToDatabase } from '../../../lib/mongodb';
 import { getCollection } from 'astro:content';
+import { ObjectId } from 'mongodb';
+import { ALUMNI_PROFILES_COLLECTION, toProjectsArray, toStringArray } from '../../../lib/alumni-profile-service';
 import { isAlumniAuthenticated, getCurrentAlumni } from '../../../lib/alumni-auth';
 
 const { slug } = Astro.params;
@@ -18,86 +20,37 @@ function generateSlug(name: string): string {
     .replace(/\s+/g, '-');
 }
 
-function toStringArray(value: unknown) {
-  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
-  if (typeof value === 'string') return value.split(',').map((item) => item.trim()).filter(Boolean);
-  return [];
-}
-
-function toProjectsArray(value: unknown) {
-  if (Array.isArray(value)) return value;
-  if (!value) return [];
-
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) return parsed;
-      if (parsed && typeof parsed === 'object') return [parsed];
-    } catch {
-      return [];
-    }
-    return [];
-  }
-
-  if (typeof value === 'object') return [value];
-  return [];
-}
-
 let alum: any = null;
 
 if (slug) {
   try {
     const { db } = await connectToDatabase();
-    const collection = db.collection('alumni_registrations');
-    const allApproved = await collection.find({ status: 'approved' }).toArray();
-
-    const found = allApproved.find((entry: any) => {
-      const entrySlug = generateSlug(entry?.name || '');
-      const entryId = entry?._id?.toString?.();
-      return entrySlug === slug || entryId === slug;
-    });
+    const profiles = db.collection(ALUMNI_PROFILES_COLLECTION);
+    const profileQuery: any = { status: 'approved', $or: [{ slug }] };
+    if (/^[a-f\d]{24}$/i.test(slug)) {
+      profileQuery.$or.push({ _id: new ObjectId(slug) });
+    }
+    const found = await profiles.findOne(profileQuery);
 
     if (found) {
-      const normalizedSkills = toStringArray(found.skills);
-      const normalizedInterests = toStringArray(found.interests);
       alum = {
         ...found,
         slug: found.slug || generateSlug(found.name || ''),
-        skills: normalizedSkills,
-        interests: normalizedInterests,
+        skills: toStringArray(found.skills),
+        interests: toStringArray(found.interests),
         projects: toProjectsArray(found.projects),
-        photo: found.photo_blob_url || found.photo || null,
+        photo: found.photo || found.photo_blob_url || null,
         short_bio: found.short_bio || '',
         long_bio: found.long_bio || found.short_bio || '',
-        social: {
+        social: found.social || {
           linkedin: found.linkedin || null,
           github: found.github || null,
           twitter: found.twitter || null,
           portfolio: found.portfolio || null,
         },
-        position: found.job_designation || found.position || null,
-        work_experience: found.work_experience
-          ? (typeof found.work_experience === 'string'
-              ? [
-                  {
-                    company: found.company || 'N/A',
-                    position: found.job_designation || found.position || 'N/A',
-                    duration: `${found.year || ''} - Present`,
-                    description: found.work_experience,
-                  },
-                ]
-              : found.work_experience)
-          : [],
-        education: found.education || (found.university
-          ? [
-              {
-                degree: `${found.degree || 'Degree'} ${found.faculty || ''}`.trim(),
-                institution: found.university,
-                year: found.year,
-                gpa: found.gpa || null,
-              },
-            ]
-          : []),
+        position: found.position || found.job_designation || null,
+        work_experience: Array.isArray(found.work_experience) ? found.work_experience : [],
+        education: Array.isArray(found.education) ? found.education : [],
       };
     }
   } catch {
