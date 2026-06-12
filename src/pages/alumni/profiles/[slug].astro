@@ -250,8 +250,9 @@ const showNetworkButtons = viewerSession !== null && viewerAlumniId !== targetAl
               <div class="space-y-4">
                 {alum.education.map((ed: any) => (
                   <div>
-                    <h3 class="font-semibold">{ed.degree}</h3>
-                    <p class="text-gray-700 text-sm">{ed.institution} ({ed.year})</p>
+                    <h3 class="font-semibold">{ed.degree}, {ed.year}</h3>
+                    <p class="text-gray-700 text-sm">{ed.institution}</p>
+                    <p class="text-gray-700 text-sm">{ed.university}</p>
                     {ed.gpa && <p class="text-gray-500 text-sm">GPA: {ed.gpa}</p>}
                   </div>
                 ))}

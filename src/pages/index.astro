@@ -7,8 +7,16 @@ import { getSiteConfig } from "../utils/config";
 import Icon from "../components/Icon.astro";
 
 const config = getSiteConfig();
-const blogPosts = await getCollection("blog");
 
+// Get sample data for preview
+const alumni = await getCollection("alumni");
+const blogPosts = await getCollection("blog");
+const jobs = await getCollection("jobs");
+
+// Get featured alumni (first 3)
+const featuredAlumni = alumni.slice(0, 3);
+
+// Fetch live upcoming events from MongoDB
 let latestEvents: any[] = [];
 try {
   const eventsRes = await fetch(`${Astro.url.origin}/api/events?status=upcoming&limit=3`);
@@ -20,6 +28,7 @@ try {
   latestEvents = [];
 }
 
+// Get latest blog posts (first 3)
 const latestBlogPosts = blogPosts
   .filter((post) => !post.data.draft)
   .sort(
@@ -27,514 +36,835 @@ const latestBlogPosts = blogPosts
       new Date(b.data.publishDate).getTime() -
       new Date(a.data.publishDate).getTime()
   )
-  .slice(0, 2);
+  .slice(0, 3);
 
-const heroStats = [
+// Get featured jobs (first 3)
+const featuredJobs = jobs
+  .filter((job) => job.data.featured)
+  .sort((a, b) => {
+    const dateA = new Date(a.data.posted_date).getTime();
+    const dateB = new Date(b.data.posted_date).getTime();
+    return dateB - dateA;
+  })
+  .slice(0, 3);
+
+  const heroStats = [
   { value: "1:1", label: "Alumni mentoring" },
   { value: "AI", label: "Career support" },
   { value: "360°", label: "Network growth" },
 ];
 
-const portalFeatures = [
-  {
-    icon: "mdi:account-group-outline",
-    title: "Build meaningful connections",
-    description:
-      "Reconnect with peers, discover alumni in your field, and grow relationships beyond graduation.",
-  },
-  {
-    icon: "mdi:briefcase-search-outline",
-    title: "Unlock career opportunities",
-    description:
-      "Explore curated jobs, internships, referrals, and readiness tools designed around your profile.",
-  },
-  {
-    icon: "mdi:handshake-outline",
-    title: "Learn through mentorship",
-    description:
-      "Find alumni mentors for interview prep, role transitions, domain guidance, and growth plans.",
-  },
-  {
-    icon: "mdi:calendar-star",
-    title: "Attend alumni experiences",
-    description:
-      "Register for webinars, workshops, reunions, and networking events in one connected calendar.",
-  },
-];
-
-const careerTools = [
-  {
-    icon: "mdi:account-edit-outline",
-    title: "Profile readiness",
-    description: "Keep your alumni profile, skills, resume, and career interests polished and discoverable.",
-  },
-  {
-    icon: "mdi:send-check-outline",
-    title: "Smart job matching",
-    description: "Use profile signals to find relevant opportunities faster and prioritize where to apply.",
-  },
-  {
-    icon: "mdi:microphone-message",
-    title: "Interview preparation",
-    description: "Practice with mock interviews and feedback loops that help convert preparation into confidence.",
-  },
-];
-
-const jobFeatures = [
-  {
-    icon: "mdi:tune-variant",
-    title: "Smart filters",
-    description: "Filter opportunities by skills, interest, readiness level, location, and alumni relevance.",
-  },
-  {
-    icon: "mdi:lightning-bolt-outline",
-    title: "One-click workflows",
-    description: "Move from discovery to action with saved roles, quick applications, and profile-based context.",
-  },
-  {
-    icon: "mdi:chart-timeline-variant",
-    title: "Match scores",
-    description: "See how closely each role aligns with your skills so you can focus on the best-fit openings.",
-  },
-];
-
-const directoryFeatures = [
-  {
-    icon: "mdi:account-details-outline",
-    title: "Rich alumni profiles",
-    description: "Browse education, skills, experience, goals, and verified profile details in a consistent format.",
-  },
-  {
-    icon: "mdi:tag-multiple-outline",
-    title: "Skill tags and readiness",
-    description: "Find alumni by domain expertise, hiring readiness, mentorship availability, and shared interests.",
-  },
-  {
-    icon: "mdi:filter-check-outline",
-    title: "Advanced discovery",
-    description: "Search across batch, branch, industry, company, status, and career path to find the right people.",
-  },
-  {
-    icon: "mdi:account-switch-outline",
-    title: "Admin-friendly actions",
-    description: "Support moderation, tagging, outreach, and engagement programs without spreadsheet chaos.",
-  },
-];
-
-const mentorshipFeatures = [
-  {
-    icon: "mdi:target-account",
-    title: "Goal-based matching",
-    description: "Share your career goals and get connected with alumni mentors who are relevant to your path.",
-  },
-  {
-    icon: "mdi:message-text-clock-outline",
-    title: "1:1 career guidance",
-    description: "Get practical advice on interviews, internships, job switches, portfolios, and domain learning paths.",
-  },
-  {
-    icon: "mdi:rocket-launch-outline",
-    title: "Faster outcomes",
-    description: "Learn from real experiences, avoid common mistakes, and build momentum with structured support.",
-  },
-];
 ---
 
 <Layout title={config.site.name} description={config.site.description}>
-  <main class="home-page">
-    <section class="hero-section relative overflow-hidden bg-[radial-gradient(circle_at_top_left,#dbe4ff,transparent_34%),linear-gradient(135deg,#f8fafc_0%,#ffffff_45%,#eef2ff_100%)]">
-      <div class="container-custom py-16 md:py-24 lg:py-28">
-        <div class="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
-            <span class="eyebrow">
+  <!-- About Section -->
+   <section class="hero-section relative overflow-hidden bg-[radial-gradient(circle_at_top_left,#dbe4ff,transparent_34%),linear-gradient(135deg,#f8fafc_0%,#ffffff_45%,#eef2ff_100%)]">
+      <div class="container-custom">
+      <div class="grid grid-cols-1 lg:grid-cols-1">
+        <div class="text-center mt-6 mb-4">
+          <span class="eyebrow inline-flex justify-center text-center items-center rounded-full border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-bold uppercase tracking-[0.16em] text-primary-700">
               <Icon name="mdi:sparkles" class="h-4 w-4" />
               AI-powered alumni growth platform
             </span>
-            <h1 class="mt-6 max-w-4xl text-4xl font-black tracking-tight text-accent-900 md:text-6xl lg:text-7xl">
-              Connect alumni, careers, events, and mentorship in one polished portal.
-            </h1>
-            <p class="mt-6 max-w-2xl text-lg leading-8 text-accent-600 md:text-xl">
-              PrepSOM helps graduates stay connected, discover opportunities, prepare for interviews, and learn from alumni who have already walked the path.
-            </p>
-            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="/alumni/register" class="btn btn-primary btn-lg">
-                <Icon name="mdi:account-plus" class="mr-2 h-5 w-5" />
-                Join the Network
-              </a>
-              <a href="/alumni" class="btn btn-outline btn-lg bg-white/80">
-                <Icon name="mdi:account-search" class="mr-2 h-5 w-5" />
-                Explore Directory
-              </a>
-            </div>
-            <dl class="mt-10 grid max-w-2xl grid-cols-3 gap-3">
-              {heroStats.map((stat) => (
-                <div class="rounded-2xl border border-white/80 bg-white/75 p-4 shadow-sm backdrop-blur">
-                  <dt class="text-2xl font-black text-primary-700 md:text-3xl">{stat.value}</dt>
-                  <dd class="mt-1 text-xs font-semibold uppercase tracking-wide text-accent-500">{stat.label}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <div class="relative">
-            <div class="absolute -left-6 -top-6 h-28 w-28 rounded-full bg-secondary-200/70 blur-3xl"></div>
-            <div class="absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-primary-300/40 blur-3xl"></div>
-            <div class="relative rounded-[2rem] border border-white bg-white/85 p-5 shadow-2xl backdrop-blur">
-              <div class="rounded-[1.5rem] bg-accent-900 p-5 text-white">
-                <div class="flex items-center justify-between border-b border-white/10 pb-5">
-                  <div>
-                    <p class="text-sm text-white/60">Career command center</p>
-                    <p class="mt-1 text-xl font-bold">Alumni Success Snapshot</p>
-                  </div>
-                  <span class="rounded-full bg-emerald-400/15 px-3 py-1 text-sm font-semibold text-emerald-200">Live</span>
-                </div>
-                <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                  <div class="rounded-2xl bg-white/10 p-4">
-                    <Icon name="mdi:briefcase-check" class="h-7 w-7 text-secondary-300" />
-                    <p class="mt-4 text-3xl font-black">92%</p>
-                    <p class="text-sm text-white/65">Profile-match clarity</p>
-                  </div>
-                  <div class="rounded-2xl bg-white/10 p-4">
-                    <Icon name="mdi:account-heart" class="h-7 w-7 text-primary-200" />
-                    <p class="mt-4 text-3xl font-black">24h</p>
-                    <p class="text-sm text-white/65">Mentor response target</p>
-                  </div>
-                </div>
-                <div class="mt-5 rounded-2xl bg-gradient-to-r from-primary-600 to-primary-500 p-5">
-                  <p class="text-sm font-semibold text-primary-100">Recommended next step</p>
-                  <p class="mt-2 text-lg font-bold">Update skills and book a mock interview before applying.</p>
-                  <div class="mt-4 h-2 rounded-full bg-white/20">
-                    <div class="h-2 w-3/4 rounded-full bg-secondary-300"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="about" class="section bg-white">
-      <div class="container-custom">
-        <div class="section-heading mx-auto max-w-3xl text-center">
-          <span class="eyebrow mx-auto">What needed improvement</span>
-          <h2>Cleaner hierarchy, tighter spacing, and clearer actions.</h2>
-          <p>
-            The screenshots showed strong content, but the homepage felt text-heavy, unevenly spaced, and visually repetitive. The updated design creates a professional rhythm with concise copy, consistent cards, stronger CTAs, and responsive section layouts.
+          <h2 class="text-3xl text-center md:text-4xl font-bold mb-6 text-gray-900 mt-4">PrepSOM Alumni Portal</h2>
+          <h2 class="mt-6 mb-6 text-center md:text-4xl font-black tracking-tight text-accent-900">
+              Connect alumni, careers, events, and mentorship in all-in-one portal.
+            </h2>
+          <p class="text-lg text-gray-600 text-justify mb-6">
+            PrepSOM is an AI-powered interview preparation and campus placement management platform.
+            The PrepSOM Alumni Portal is dedicated to fostering lifelong connections between graduates, 
+            creating opportunities for collaboration, mentorship, and professional growth within our 
+            diverse community of alumni.
+          </p>
+          <p class="text-lg text-gray-600 text-justify mb-6">
+            PrepSOM helps graduates stay connected, discover opportunities, prepare for interviews, and learn from alumni who have already walked the path.
+          </p>
+          <p class="text-lg text-gray-600 text-justify mb-4">
+            Whether you're looking to reconnect with old friends, expand your professional network, 
+            or give back to the community through mentorship and collaboration, the PrepSOM Alumni 
+            Portal is here to support you on your journey.
           </p>
         </div>
-
-        <div class="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {portalFeatures.map((feature) => (
-            <article class="feature-card">
-              <div class="feature-icon"><Icon name={feature.icon} class="h-6 w-6" /></div>
-              <h3>{feature.title}</h3>
-              <p>{feature.description}</p>
-            </article>
-          ))}
-        </div>
       </div>
-    </section>
-
-    <section class="section bg-accent-50">
-      <div class="container-custom">
-        <div class="rounded-[2rem] border border-accent-200 bg-white p-6 shadow-xl shadow-accent-200/50 md:p-10 lg:p-12">
-          <div class="grid items-center gap-10 lg:grid-cols-[0.95fr_1.05fr]">
-            <div>
-              <span class="eyebrow"><Icon name="mdi:lightning-bolt" class="h-4 w-4" /> AI career coordinator</span>
-              <h2 class="mt-5 text-3xl font-black tracking-tight text-accent-900 md:text-5xl">Your personal career coordinator</h2>
-              <p class="mt-5 text-lg leading-8 text-accent-600">
-                Replace scattered tools with one guided career workflow: complete your profile, identify best-fit roles, practice interviews, and get alumni-backed guidance.
-              </p>
-              <div class="mt-8 space-y-4">
-                {careerTools.map((tool) => (
-                  <article class="tool-row">
-                    <div class="tool-icon"><Icon name={tool.icon} class="h-5 w-5" /></div>
-                    <div>
-                      <h3>{tool.title}</h3>
-                      <p>{tool.description}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-            <div class="rounded-[1.75rem] bg-gradient-to-br from-primary-700 via-primary-600 to-accent-900 p-8 text-white shadow-2xl">
-              <p class="text-sm font-semibold uppercase tracking-[0.2em] text-primary-100">AI suite</p>
-              <h3 class="mt-3 text-3xl font-black">Ace your next interview</h3>
-              <ul class="mt-8 space-y-4">
-                {[
-                  "Industry-leading mock interview practice",
-                  "AI-powered job and mentor matching",
-                  "Skill assessments with readiness signals",
-                  "Real-time career progress insights",
-                ].map((item) => (
-                  <li class="flex items-center gap-3 text-white/90">
-                    <Icon name="mdi:check-circle" class="h-5 w-5 text-emerald-300" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+    </div>
+    <div class="container-custom mt-12 mb-12">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+            <svg stroke="currentColor" fill="#2e4096" stroke-width="0" viewBox="0 0 640 512" class="w-6 h-6 text-white" height="2em" width="2em" xmlns="http://www.w3.org/2000/svg"><path d="M622.34 153.2L343.4 67.5c-15.2-4.67-31.6-4.67-46.79 0L17.66 153.2c-23.54 7.23-23.54 38.36 0 45.59l48.63 14.94c-10.67 13.19-17.23 29.28-17.88 46.9C38.78 266.15 32 276.11 32 288c0 10.78 5.68 19.85 13.86 25.65L20.33 428.53C18.11 438.52 25.71 448 35.94 448h56.11c10.24 0 17.84-9.48 15.62-19.47L82.14 313.65C90.32 307.85 96 298.78 96 288c0-11.57-6.47-21.25-15.66-26.87.76-15.02 8.44-28.3 20.69-36.72L296.6 284.5c9.06 2.78 26.44 6.25 46.79 0l278.95-85.7c23.55-7.24 23.55-38.36 0-45.6zM352.79 315.09c-28.53 8.76-52.84 3.92-65.59 0l-145.02-44.55L128 384c0 35.35 85.96 64 192 64s192-28.65 192-64l-14.18-113.47-145.03 44.56z"></path></svg>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section bg-white">
-      <div class="container-custom">
-        <div class="section-heading mx-auto max-w-3xl text-center">
-          <span class="eyebrow mx-auto">Jobs and internships</span>
-          <h2>Find roles that match your profile.</h2>
-          <p>
-            A professional job board should quickly explain how alumni discover, qualify, and act on opportunities without overwhelming them with long paragraphs.
+          <h3 class="text-xl text-center font-semibold mb-4">Build meaningful connections</h3>
+          <p class="text-gray-600 text-justify">
+            Reconnect with peers, discover alumni in your field, and grow relationships beyond graduation.
           </p>
         </div>
-        <div class="mt-12 grid gap-6 lg:grid-cols-3">
-          {jobFeatures.map((feature) => (
-            <article class="feature-card feature-card--tall">
-              <div class="feature-icon"><Icon name={feature.icon} class="h-6 w-6" /></div>
-              <h3>{feature.title}</h3>
-              <p>{feature.description}</p>
-            </article>
-          ))}
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl text-center font-semibold mb-4">Professional Networking</h3>
+          <p class="text-gray-600 text-justify">
+            Expand your professional network by connecting with alumni from various industries and backgrounds, fostering valuable relationships and opportunities.
+          </p>
         </div>
-        <div class="mt-10 text-center">
-          <a href="/jobs" class="btn btn-primary btn-lg">
-            <Icon name="mdi:briefcase" class="mr-2 h-5 w-5" />
-            View Job Opportunities
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="w-8 h-8 text-primary-600 bi bi-chat-left-text" viewBox="0 0 16 16">
+              <path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+              <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
+            </svg>
+          </div>
+          <h3 class="text-xl text-center font-semibold mb-4">Learn through mentorship</h3>
+          <p class="text-gray-600 text-justify">
+            Find alumni mentors for interview prep, role transitions, domain guidance, and growth plans.
+          </p>
+      </div>
+      <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="7" width="20" height="16" rx="2" ry="2"></rect>
+                <path d="M16 3H8v4h8V3z"></path>
+          </div>
+          <h3 class="text-xl text-center font-semibold mb-4">Unlock career opportunities</h3>
+          <p class="text-gray-600 text-justify">
+            Explore curated jobs, internships, referrals, and readiness tools designed around your profile.
+          </p>
+        </div>
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+          </div>
+          <h3 class="text-xl text-center font-semibold mb-4">Attend alumni experiences</h3>
+          <p class="text-gray-600 text-justify">
+            Register for webinars, workshops, reunions, and networking events in one connected calendar.
+          </p>
+        </div>
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-target w-5 h-5"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle>
+            </svg>
+          </div>
+          <h3 class="text-xl text-center font-semibold mb-4">All-in-One Portal</h3>
+          <p class="text-gray-600 text-justify">
+            No more juggling multiple apps, forms, or Excel sheets. Everything you need in one place. From profile management to job applications, event RSVPs, and mentorship connections, we've got you covered.
+          </p>
+      </div>
+    </div>
+    <dl class="mt-10 grid max-w-2xl grid-cols-3 gap-3">
+      {heroStats.map((stat) => (
+      <div class="rounded-2xl border border-white/80 bg-white/75 p-4 shadow-sm backdrop-blur">
+        <dt class="text-2xl font-black text-primary-700 md:text-3xl">{stat.value}</dt>
+        <dd class="mt-1 text-xs font-semibold uppercase tracking-wide text-accent-500">{stat.label}</dd>
+        </div>
+        ))}
+     </dl>
+  </div>
+</section>
+
+
+    <!-- Get Started Section -->
+  <section class="section bg-white border-t border-b border-gray-200">
+    <div class="container-custom text-center">
+      <h2 class="text-3xl md:text-4xl font-bold mb-2">Get Started</h2>
+      <div class="mb-2">
+        <div class="bg-gray-50 bg-opacity-10 border-black rounded-lg p-6">
+          <h1 class="text-4xl font-semibold mb-4">Build an alumni network that actually drives results</h1>
+          <p class="text-black text-2xl text-justify mb-6">
+           PrepSOM helps you engage more alumni, spark career connections, and grow giving through a fully branded, always-on digital community. Our all-in-one platform makes it easy to connect, engage, and support your alumni network with personalized profiles, smart job matching, mentorship programs, and seamless event management.
+          </p>
+        </div>
+      </div>
+      
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="/alumni/register" class="btn btn-primary btn-lg mt-4">
+          Sign Up Now
           </a>
-        </div>
+        <a href="/contact" class="btn btn-outline btn-lg mt-4">
+          Contact Us
+        </a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="section bg-gradient-to-br from-accent-50 to-primary-50">
-      <div class="container-custom">
-        <div class="grid items-start gap-10 lg:grid-cols-[0.8fr_1.2fr]">
-          <div class="section-heading section-heading--left sticky-block">
-            <span class="eyebrow">Alumni Directory</span>
-            <h2>Make the network easier to explore.</h2>
-            <p>
-              The directory now uses compact cards, cleaner descriptions, and stronger visual structure so students, alumni, and admins understand its value immediately.
-            </p>
-            <a href="/alumni" class="btn btn-primary mt-8">
-              <Icon name="mdi:account-group" class="mr-2 h-5 w-5" />
-              View Alumni Directory
-            </a>
+  <!-- Personal Career Coordinator Section -->
+  <section class="section bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 md:p-12 mb-16"><div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"><div><div class="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full text-[#0549B8] font-medium text-sm mb-6"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap w-4 h-4"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>AI-Powered</div><h3 class="text-3xl font-bold text-gray-900 mb-6">Your Personal Career Coordinator</h3><p class="text-lg text-justify text-gray-600 mb-8 leading-relaxed">Let AI handle the heavy lifting while you focus on what matters most - preparing for your dream career. Our AI-powered career coordinator is designed to support you at every step of your career journey. 
+          From personalized job recommendations to interview preparation and networking opportunities, 
+          we're here to help you succeed in your professional endeavors.</p><div class="space-y-4"><div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg"><div class="w-10 h-10 bg-[#0549B8]/10 rounded-lg flex items-center justify-center flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user w-5 h-5"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div><div><h4 class="font-semibold text-gray-900 mb-1">Manage Profile</h4><p class="text-gray-600 text-sm">Showcase your skills through comprehensive assessments and personalized profile management, ensuring you stand out to potential employers.</p></div></div><div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg"><div class="w-10 h-10 bg-[#0549B8]/10 rounded-lg flex items-center justify-center flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send w-5 h-5"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path><path d="m21.854 2.147-10.94 10.939"></path></svg></div><div><h4 class="font-semibold text-gray-900 mb-1">Auto Apply for Jobs</h4><p class="text-gray-600 text-sm">AI-powered applications to relevant opportunities based on your profile, ensuring you never miss out on a potential job match.</p></div></div><div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg"><div class="w-10 h-10 bg-[#0549B8]/10 rounded-lg flex items-center justify-center flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square w-5 h-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div><div><h4 class="font-semibold text-gray-900 mb-1">Interview Preparation</h4><p class="text-gray-600 text-sm">Industry-leading mock interview tools and feedback to help you prepare for real interviews and boost your confidence.</p></div></div></div></div><div class="bg-gradient-to-br from-[#0549B8] to-[#354FAE] rounded-xl p-8 text-white"><h4 class="text-2xl font-bold mb-6">AI Suite to Ace Your Next Interview</h4><div class="space-y-4 mb-8"><div class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-big w-5 h-5 text-green-400"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg><span>Industry-leading mock interview tool</span></div><div class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-big w-5 h-5 text-green-400"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg><span>AI-powered job matching algorithm</span></div><div class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-big w-5 h-5 text-green-400"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg><span>Comprehensive skill assessments</span></div><div class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-big w-5 h-5 text-green-400"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg><span>Real-time performance analytics</span></div></div><button class="w-full hidden bg-white text-[#0549B8] px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">Try Mock Interview Tool<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right w-4 h-4"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button></div></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-8"></div></div>
+  </section>
+
+  <!-- Stats Section -->
+   <!--
+  <section class="section-sm bg-gradient-to-r from-accent-50 to-accent-100">
+    <div class="container-custom">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div class="text-center">
+          <div
+            class="w-16 h-16 bg-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+          >
+            <Icon name="mdi:account-group" class="w-8 h-8 text-white" />
           </div>
-          <div class="grid gap-5 sm:grid-cols-2">
-            {directoryFeatures.map((feature) => (
-              <article class="feature-card bg-white/90">
-                <div class="feature-icon feature-icon--solid"><Icon name={feature.icon} class="h-6 w-6" /></div>
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
-              </article>
-            ))}
+          <h3 class="text-3xl font-bold text-primary-900 mb-2">
+            {alumni.length}+
+          </h3>
+          <p class="text-accent-700 font-medium">Alumni</p>
+        </div>
+
+        <div class="text-center">
+          <div
+            class="w-16 h-16 bg-secondary-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+          >
+            <Icon name="mdi:school" class="w-8 h-8 text-white" />
           </div>
+          <h3 class="text-3xl font-bold text-secondary-900 mb-2">
+            {config.faculties.length}
+          </h3>
+          <p class="text-accent-700 font-medium">Faculties</p>
+        </div>
+
+        <div class="text-center">
+          <div
+            class="w-16 h-16 bg-accent-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+          >
+            <Icon name="mdi:calendar" class="w-8 h-8 text-white" />
+          </div>
+          <h3 class="text-3xl font-bold text-accent-900 mb-2">
+            {config.years.end - config.years.start + 1}
+          </h3>
+          <p class="text-accent-700 font-medium">Years</p>
+        </div>
+
+        <div class="text-center">
+          <div
+            class="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+          >
+            <Icon name="mdi:map-marker" class="w-8 h-8 text-white" />
+          </div>
+          <h3 class="text-3xl font-bold text-primary-900 mb-2">Global</h3>
+          <p class="text-accent-700 font-medium">Network</p>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
+-->
 
-    <section class="section bg-white">
-      <div class="container-custom">
-        <div class="section-heading mx-auto max-w-4xl text-center">
-          <span class="eyebrow mx-auto">Alumni Mentorship</span>
-          <h2>Learn directly from alumni who have been there.</h2>
-          <p>
-            Get practical 1:1 guidance on careers, interviews, skills, internships, job switches, and domain-specific learning paths.
+<!-- Job Opportunities Section -->
+  <section class="section-md bg-white from-accent-50 to-white">
+    <div class="container-custom">
+      <!-- Section Header -->
+      <div class="text-center mb-12 mt-12">
+        <div class="inline-block mb-4">
+          <!-- <span class="badge badge-primary flex items-center space-x-2">
+            <Icon name="mdi:briefcase" class="w-4 h-4" />
+            <span>Career Opportunities</span>
+          </span> -->
+        </div>
+        <h2 class="text-3xl md:text-5xl font-bold text-accent-900 mt-2 mb-4 mt-12">
+          Job and Internship Board
+        </h2>
+        <h2 class="text-4xl text-[#0549B8] font-semibold mb-4">Find roles that match your profile.</h2>
+        <p class="text-lg text-accent-600 max-w-1xl mx-auto text-justify">
+          Discover exclusive opportunities tailored to your profile. Our smart matching ensures you find roles that fit your aspirations. Connect with leading employers and advance your career. Our job board features a curated selection of positions from top companies, tailored to our alumni network. Whether you're a recent graduate or an experienced professional, explore the latest openings and take the next step in your career journey.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-4">
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-target w-5 h-5"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">Smart Filters</h3>
+          <p class="text-gray-600 text-justify">
+            Find roles that match your skills and interests with our smart filtering system, making your job search more efficient and personalized.
           </p>
         </div>
-        <div class="mt-12 grid gap-6 lg:grid-cols-3">
-          {mentorshipFeatures.map((feature) => (
-            <article class="feature-card text-left">
-              <div class="feature-icon"><Icon name={feature.icon} class="h-6 w-6" /></div>
-              <h3>{feature.title}</h3>
-              <p>{feature.description}</p>
-            </article>
-          ))}
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap w-5 h-5"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path> 
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">One-Click Apply</h3>
+          <p class="text-gray-600 text-justify">
+            Apply instantly with smart profile matching and one-click applications, streamlining your job search and increasing your chances of landing your dream job.
+          </p>
         </div>
-        <div class="mt-10 text-center">
-          <a href="/alumni/mentorship" class="btn btn-primary btn-lg">Find My Mentor</a>
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users w-5 h-5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">Exclusive Jobs</h3>
+          <p class="text-gray-600 text-justify">
+            Exclusive Jobs Access to hidden job market opportunities shared by alumni and industry partners, giving you a competitive edge in your job search.
+          </p>
+      </div>
+      <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-5 h-5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">Match Score</h3>
+          <p class="text-gray-600 text-justify">
+            See how well you fit each role with our match score feature, providing insights into how your skills and experience align with job requirements, helping you make informed decisions about where to apply.
+          </p>
+        </div>
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square w-5 h-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">Mock Interviews</h3>
+          <p class="text-gray-600 text-justify">
+            Real-time AI feedback on your interview performance, helping you identify strengths and areas for improvement to boost your confidence and increase your chances of success in real interviews.
+          </p>
+        </div>
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-primary-100 rounded-full flex items-center justify-center">
+             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-award w-5 h-5"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">Skill Assessments</h3>
+          <p class="text-gray-600 text-justify">
+            Validate your expertise with comprehensive skill assessments, showcasing your strengths to potential employers and increasing your chances of landing your dream job.
+          </p>
         </div>
       </div>
-    </section>
+      
 
-    <section class="section bg-accent-50">
-      <div class="container-custom">
-        <div class="section-heading mx-auto max-w-3xl text-center">
-          <span class="eyebrow mx-auto">Events and webinars</span>
-          <h2>Keep the community active.</h2>
-          <p>
-            Upcoming events are presented with cleaner cards, stronger date hierarchy, consistent imagery, and obvious next actions.
-          </p>
-        </div>
-
-        <div class="mt-12 grid gap-6 lg:grid-cols-3">
-          {latestEvents.length === 0 ? (
-            <div class="empty-state lg:col-span-3">
-              <Icon name="mdi:calendar-blank" class="mx-auto h-14 w-14 text-accent-300" />
-              <p>No upcoming events at the moment. Check back soon!</p>
-            </div>
-          ) : (
-            latestEvents.map((event) => (
-              <article class="event-card group">
-                <div class="event-card__media">
-                  <Icon name="mdi:calendar-star" class="h-14 w-14 text-primary-500/70" />
-                  <span class="badge badge-secondary absolute left-4 top-4 uppercase">{event.eventType || "Event"}</span>
-                  <span class="badge badge-primary absolute right-4 top-4">
-                    {new Date(event.startTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </span>
+      <!-- Featured Jobs Grid
+      {featuredJobs.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {featuredJobs.map((job) => (
+            <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-accent-100 hover:border-primary-300">
+              Job Card Header
+              <div class="p-6">
+                Job Title & Company
+                <div class="mb-4">
+                  <h3 class="text-xl font-bold text-accent-900 mb-1">
+                    {job.data.title}
+                  </h3>
+                  <p class="text-accent-600 font-medium">{job.data.company}</p>
                 </div>
-                <h3 class="mt-5 text-xl font-bold text-accent-900 transition-colors group-hover:text-primary-700">{event.title}</h3>
-                <p class="mt-3 line-clamp-2 text-accent-600">{event.description}</p>
-                <div class="mt-6 flex items-center justify-between text-sm">
-                  <span class="text-accent-500">{event.confirmedCount ?? 0} / {event.capacity} registered</span>
-                  <a href={`/events/${event.slug}`} class="font-semibold text-primary-700 hover:text-primary-900">Learn More →</a>
-                </div>
-              </article>
-            ))
-          )}
-        </div>
-        <div class="mt-10 text-center">
-          <a href="/events" class="btn btn-outline btn-lg bg-white">
-            <Icon name="mdi:calendar-multiple" class="mr-2 h-5 w-5" />
-            View All Events
-          </a>
-        </div>
-      </div>
-    </section>
 
-    <section class="section bg-white">
-      <div class="container-custom">
-        <div class="section-heading mx-auto max-w-3xl text-center">
-          <span class="eyebrow mx-auto">News and insights</span>
-          <h2>Share practical stories from the alumni community.</h2>
-          <p>
-            Blog cards now feel more editorial, with cleaner metadata, balanced card widths, and a consistent call to read more.
-          </p>
-        </div>
-        <div class="mt-12 grid gap-6 lg:grid-cols-2">
-          {latestBlogPosts.map((post) => (
-            <article class="blog-card group overflow-hidden p-0">
-              <div class="grid h-full md:grid-cols-[0.95fr_1.05fr]">
-                <div class="relative min-h-56 overflow-hidden bg-gradient-to-br from-primary-100 to-accent-100">
-                  {post.data.image ? (
-                    <img src={post.data.image} alt={post.data.title} class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
-                  ) : (
-                    <div class="flex h-full items-center justify-center">
-                      <Icon name="mdi:newspaper-variant-outline" class="h-16 w-16 text-primary-400" />
+                Job Meta
+                <div class="space-y-3 mb-4 pb-4 border-b border-accent-100">
+                  Location
+                  <div class="flex items-center space-x-2 text-accent-600">
+                    <Icon name="mdi:map-marker" class="w-4 h-4 text-primary-500 flex-shrink-0" />
+                    <span class="text-sm">{job.data.location}</span>
+                  </div>
+
+                  Salary
+                  {job.data.salary && (
+                    <div class="flex items-center space-x-2 text-accent-600">
+                      <Icon name="mdi:cash" class="w-4 h-4 text-primary-500 flex-shrink-0" />
+                      <span class="text-sm font-medium text-green-600">
+                        ${job.data.salary.min.toLocaleString()} - ${job.data.salary.max.toLocaleString()}
+                      </span>
                     </div>
                   )}
-                  <span class="badge badge-secondary absolute left-4 top-4">{post.data.category}</span>
-                </div>
-                <div class="flex flex-col p-6">
-                  <h3 class="text-xl font-bold text-accent-900 transition-colors group-hover:text-primary-700">{post.data.title}</h3>
-                  <p class="mt-3 line-clamp-3 text-accent-600">{post.data.description}</p>
-                  <div class="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-accent-500">
-                    <span>{new Date(post.data.publishDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
-                    <span>By {post.data.author}</span>
+
+                  Job Type & Level
+                  <div class="flex items-center space-x-2">
+                    <span class={`badge badge-sm ${
+                      job.data.jobType === 'full-time' ? 'bg-green-100 text-green-800' :
+                      job.data.jobType === 'part-time' ? 'bg-blue-100 text-blue-800' :
+                      job.data.jobType === 'contract' ? 'bg-purple-100 text-purple-800' :
+                      'bg-orange-100 text-orange-800'
+                    }`}>
+                      {job.data.jobType}
+                    </span>
+                    <span class={`badge badge-sm ${
+                      job.data.experienceLevel === 'entry' ? 'bg-emerald-100 text-emerald-800' :
+                      job.data.experienceLevel === 'mid' ? 'bg-yellow-100 text-yellow-800' :
+                      job.data.experienceLevel === 'senior' ? 'bg-red-100 text-red-800' :
+                      'bg-indigo-100 text-indigo-800'
+                    }`}>
+                      {job.data.experienceLevel}
+                    </span>
                   </div>
-                  <a href={`/blog/${post.slug}`} class="mt-auto pt-6 font-semibold text-primary-700 hover:text-primary-900">Read More →</a>
                 </div>
+
+                 Skills
+                {job.data.skills && job.data.skills.length > 0 && (
+                  <div class="mb-4">
+                    <p class="text-xs font-semibold text-accent-500 uppercase tracking-wider mb-2">
+                      Required Skills
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      {job.data.skills.slice(0, 3).map((skill) => (
+                        <span class="text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded-full">
+                          {skill}
+                        </span>
+                      ))}
+                      {job.data.skills.length > 3 && (
+                        <span class="text-xs bg-accent-100 text-accent-600 px-2 py-1 rounded-full">
+                          +{job.data.skills.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                Apply Button
+                <a
+                  href={job.data.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center w-full btn btn-primary btn-sm"
+                >
+                  <Icon name="mdi:open-in-new" class="w-4 h-4 mr-2" />
+                  View Job
+                </a>
               </div>
-            </article>
+            </div>
           ))}
         </div>
-        <div class="mt-10 text-center">
-          <a href="/blog" class="btn btn-outline btn-lg bg-white">
-            <Icon name="mdi:newspaper" class="mr-2 h-5 w-5" />
-            View More Posts
-          </a>
+      ) : (
+        <div class="text-center py-12">
+          <Icon name="mdi:briefcase" class="w-16 h-16 mx-auto text-accent-300 mb-4" />
+          <p class="text-accent-600">No featured jobs available at the moment.</p>
         </div>
-      </div>
-    </section>
+      )}
+      -->
 
-    <section class="section bg-gradient-to-br from-primary-700 via-primary-600 to-accent-900">
-      <div class="container-custom text-center">
-        <span class="mx-auto inline-flex items-center rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-primary-100 ring-1 ring-white/15">Ready to connect?</span>
-        <h2 class="mx-auto mt-6 max-w-3xl text-4xl font-black tracking-tight text-white md:text-6xl">Build a stronger alumni network today.</h2>
-        <p class="mx-auto mt-6 max-w-2xl text-lg leading-8 text-white/80">
-          Join the PrepSOM Alumni Portal to discover opportunities, share experiences, and create relationships that continue after graduation.
-        </p>
-        <div class="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
-          <a href="/alumni/register" class="btn btn-secondary btn-lg">
-            <Icon name="mdi:account-plus" class="mr-2 h-5 w-5" />
-            Sign Up Now
-          </a>
-          <a href="/about" class="btn btn-outline btn-lg border-white text-white hover:bg-white hover:text-primary-700">
-            <Icon name="mdi:information-outline" class="mr-2 h-5 w-5" />
-            Learn More
-          </a>
-        </div>
+      <!-- View All Jobs Button -->
+      <div class="text-center">
+        <a
+          href="/jobs"
+          class="inline-flex items-center btn btn-primary btn-lg gap-2 mt-6"
+        >
+          View Job Opportunities
+        </a>
+        <p class="text-accent-600 text-sm mt-4">
+          Browse job opportunities across the industry
+        </p><br/>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
+      
+  <!-- Alumni Directory Section -->
+  <section class="section bg-gradient-to-br from-accent-50 to-primary-50">
+    <div class="container-custom">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">
+        Alumni Directory
+        </h2>
+        <h2 class="text-4xl font-bold text-accent-900 mb-4">Make the network easier to explore.</h2>
+        <p class="text-xl text-justify text-accent-600 max-w-5xl mx-auto">
+          Meet some of our outstanding alumni who are making a difference in
+          their fields. Explore their journeys, achievements, and insights to get inspired and learn from their experiences. Whether you're looking for career advice, industry insights, or just want to connect with fellow alumni, our featured profiles offer a glimpse into the diverse paths and successes of our community.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mb-4">
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-[#2e4096] rounded-full flex items-center justify-center">
+             <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 448 512" class="w-4 h-4 text-white" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.2-60.2-134.4-134.4-134.4z"></path></svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">Student Profiles</h3>
+          <p class="text-gray-600 text-justify">
+            Complete student information including name, email, course, branch, resume, and status tracking, providing a comprehensive overview of each student's academic and professional journey.
+          </p>
+        </div>
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-[#2e4096] rounded-full flex items-center justify-center">
+             <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 576 512" class="w-4 h-4 text-white" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M208 0c-29.9 0-54.7 20.5-61.8 48.2-.8 0-1.4-.2-2.2-.2-35.3 0-64 28.7-64 64 0 4.8.6 9.5 1.7 14C52.5 138 32 166.6 32 200c0 12.6 3.2 24.3 8.3 34.9C16.3 248.7 0 274.3 0 304c0 33.3 20.4 61.9 49.4 73.9-.9 4.6-1.4 9.3-1.4 14.1 0 39.8 32.2 72 72 72 4.1 0 8.1-.5 12-1.2 9.6 28.5 36.2 49.2 68 49.2 39.8 0 72-32.2 72-72V64c0-35.3-28.7-64-64-64zm368 304c0-29.7-16.3-55.3-40.3-69.1 5.2-10.6 8.3-22.3 8.3-34.9 0-33.4-20.5-62-49.7-74 1-4.5 1.7-9.2 1.7-14 0-35.3-28.7-64-64-64-.8 0-1.5.2-2.2.2C422.7 20.5 397.9 0 368 0c-35.3 0-64 28.6-64 64v376c0 39.8 32.2 72 72 72 31.8 0 58.4-20.7 68-49.2 3.9.7 7.9 1.2 12 1.2 39.8 0 72-32.2 72-72 0-4.8-.5-9.5-1.4-14.1 29-12 49.4-40.6 49.4-73.9z"></path></svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">Skill Tags & Readiness Levels</h3>
+          <p class="text-gray-600 text-justify">
+            Advanced skill categorization and readiness assessment for better placement matching and personalized career guidance, helping students identify their strengths and areas for improvement, and allowing us to provide targeted support and resources to help them succeed in their careers.
+          </p>
+        </div>
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-[#2e4096] rounded-full flex items-center justify-center">
+             <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" class="w-4 h-4 text-white" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M487.976 0H24.028C2.71 0-8.047 25.866 7.058 40.971L192 225.941V432c0 7.831 3.821 15.17 10.237 19.662l80 55.98C298.02 518.69 320 507.493 320 487.98V225.941l184.947-184.97C520.021 25.896 509.338 0 487.976 0z"></path></svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">Advanced Filters</h3>
+          <p class="text-gray-600 text-justify">
+            Filter students by batch, industry, skill sets, placement status, and custom criteria for targeted outreach and support, allowing us to efficiently connect students with relevant opportunities and resources based on their unique profiles and needs.
+          </p>
+        </div>
+        <div class="card text-center p-8">
+          <div class="w-16 h-16 mx-auto mb-6 bg-[#2e4096] rounded-full flex items-center justify-center">
+             <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" class="w-4 h-4 text-white" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z"></path></svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">Bulk Actions</h3>
+          <p class="text-gray-600 text-justify">
+            Efficiently share jobs, assign tests, and tag students for mentorship programs in bulk, streamlining administrative tasks and enhancing student engagement by allowing us to quickly connect students with relevant opportunities and resources based on their profiles and needs.
+          </p>
+        </div>
+        </div>
+      
+      <!--
+      <div class="grid-responsive mb-12">
+        {
+          featuredAlumni.map((alum) => (
+            <div class="profile-card text-center group">
+              <div class="relative mb-6">
+                {alum.data.photo ? (
+                  <img
+                    src={alum.data.photo}
+                    alt={alum.data.name}
+                    class="profile-avatar group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="profile-avatar-placeholder group-hover:scale-105 transition-transform duration-300">
+                    {alum.data.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()}
+                  </div>
+                )}
+                <div class="absolute top-0 right-0">
+                  <span class="badge badge-primary">{alum.data.faculty}</span>
+                </div>
+              </div>
+
+              <h3 class="text-xl font-semibold text-accent-900 mb-2">
+                {alum.data.name}
+              </h3>
+              <p class="text-accent-600 mb-4 line-clamp-3">
+                {alum.data.short_bio}
+              </p>
+
+              <div class="flex items-center justify-center space-x-2 mb-4">
+                {alum.data.linkedin && (
+                  <a
+                    href={alum.data.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-accent-400 hover:text-primary-600 transition-colors duration-200"
+                  >
+                    <Icon name="mdi:linkedin" class="w-5 h-5" />
+                  </a>
+                )}
+                {alum.data.twitter && (
+                  <a
+                    href={alum.data.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-accent-400 hover:text-primary-600 transition-colors duration-200"
+                  >
+                    <Icon name="mdi:twitter" class="w-5 h-5" />
+                  </a>
+                )}
+                {alum.data.github && (
+                  <a
+                    href={alum.data.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-accent-400 hover:text-primary-600 transition-colors duration-200"
+                  >
+                    <Icon name="mdi:github" class="w-5 h-5" />
+                  </a>
+                )}
+              </div>
+
+              <div class="text-sm text-accent-500 mb-4">
+                Class of {alum.data.year}
+              </div>
+
+              <a
+                href={`/alumni/profiles/${alum.data.slug}`}
+                class="btn btn-primary btn-sm w-full"
+              >
+                View Profile
+              </a>
+            </div>
+          ))
+        }
+      </div>
+       -->
+
+      <div class="text-center">
+        <a href="/alumni/profiles" class="btn btn-primary btn-lg text-white mt-6">
+          View Alumni Directory
+        </a>
+      </div>
+    </div>
+  </section>
+
+<!-- ===== Mentorship Section ===== -->
+<section id="mentorship" class="py-20 bg-slate-50">
+  <div class="container-custom">
+    <div class="text-center max-w-4xl mx-auto mb-12">
+      <h1 class="text-center text-4xl md:text-4xl font-bold text-slate-900 mb-4">
+        Alumni Mentorship
+      </h1>
+      <h3 class="text-2xl text-center md:text-4xl font-bold text-slate-900 mb-4">
+        Learn Directly From Alumni Who've Been There
+      </h3>
+      <p class="text-slate-600 text-center text-base md:text-lg leading-relaxed">
+        Get 1:1 guidance from experienced alumni on careers, interviews, skills, and growth paths.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+      <!-- Card 1 -->
+      <article class="mentorship-card">
+        <div class="mentorship-card-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-[#2e4096]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 12a9 9 0 1 0 18 0A9 9 0 1 0 3 12" />
+          <path d="M7 12a5 5 0 1 0 10 0A5 5 0 1 0 7 12" />
+          <path d="M12 12h8" />
+          <path d="M22 10l-2 2 2 2" />
+          <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+        </svg>
+        </div>
+        <h3 class="mentorship-card-title">Goal-Based Mentor Matching</h3>
+        <p class="mentorship-card-text">
+          Share your career goals and skills you want to build. Our mentorship matcher recommends relevant alumni mentors.
+        </p>
+      </article>
+
+      <!-- Card 2 -->
+      <article class="mentorship-card">
+        <div class="mentorship-card-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-[#2e4096]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            <path d="M8 9h8M8 13h5"></path>
+          </svg>
+        </div>
+        <h3 class="mentorship-card-title">1:1 Career Guidance</h3>
+        <p class="mentorship-card-text">
+          Connect with alumni for practical advice on internships, job switches, interview prep, and domain-specific learning paths.
+        </p>
+      </article>
+
+      <!-- Card 3 -->
+      <article class="mentorship-card">
+        <div class="mentorship-card-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-[#2e4096] bi bi-rocket-takeoff mt-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+          <path d="M9.752 6.193c.599.6 1.73.437 2.528-.362s.96-1.932.362-2.531c-.599-.6-1.73-.438-2.528.361-.798.8-.96 1.933-.362 2.532"/>
+          <path d="M15.811 3.312c-.363 1.534-1.334 3.626-3.64 6.218l-.24 2.408a2.56 2.56 0 0 1-.732 1.526L8.817 15.85a.51.51 0 0 1-.867-.434l.27-1.899c.04-.28-.013-.593-.131-.956a9 9 0 0 0-.249-.657l-.082-.202c-.815-.197-1.578-.662-2.191-1.277-.614-.615-1.079-1.379-1.275-2.195l-.203-.083a10 10 0 0 0-.655-.248c-.363-.119-.675-.172-.955-.132l-1.896.27A.51.51 0 0 1 .15 7.17l2.382-2.386c.41-.41.947-.67 1.524-.734h.006l2.4-.238C9.005 1.55 11.087.582 12.623.208c.89-.217 1.59-.232 2.08-.188.244.023.435.06.57.093q.1.026.16.045c.184.06.279.13.351.295l.029.073a3.5 3.5 0 0 1 .157.721c.055.485.051 1.178-.159 2.065m-4.828 7.475.04-.04-.107 1.081a1.54 1.54 0 0 1-.44.913l-1.298 1.3.054-.38c.072-.506-.034-.993-.172-1.418a9 9 0 0 0-.164-.45c.738-.065 1.462-.38 2.087-1.006M5.205 5c-.625.626-.94 1.351-1.004 2.09a9 9 0 0 0-.45-.164c-.424-.138-.91-.244-1.416-.172l-.38.054 1.3-1.3c.245-.246.566-.401.91-.44l1.08-.107zm9.406-3.961c-.38-.034-.967-.027-1.746.163-1.558.38-3.917 1.496-6.937 4.521-.62.62-.799 1.34-.687 2.051.107.676.483 1.362 1.048 1.928.564.565 1.25.941 1.924 1.049.71.112 1.429-.067 2.048-.688 3.079-3.083 4.192-5.444 4.556-6.987.183-.771.18-1.345.138-1.713a3 3 0 0 0-.045-.283 3 3 0 0 0-.3-.041Z"/>
+          <path d="M7.009 12.139a7.6 7.6 0 0 1-1.804-1.352A7.6 7.6 0 0 1 3.794 8.86c-1.102.992-1.965 5.054-1.839 5.18.125.126 3.936-.896 5.054-1.902Z"/>
+          </svg>
+        </div>
+        <h3 class="mentorship-card-title">Accelerate Outcomes</h3>
+        <p class="mentorship-card-text">
+          Learn from real experiences, avoid common mistakes, and grow faster with structured support from your alumni community.
+        </p>
+      </article>
+    </div>
+
+    <div class="text-center">
+      <a href="/alumni/mentorship" class="mentorship-cta-btn">
+        Find My Mentor
+      </a>
+    </div>
+  </div>
+</section>
+
+  <!-- Latest Blog Posts Section -->
+  <section class="section">
+    <div class="container-custom">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">
+          Latest News & Insights
+        </h2>
+        <h2 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">Share practical stories from the alumni community.
+        </h2>
+        <p class="text-xl text-accent-600 max-w-3xl mx-auto">
+          Stay informed with the latest updates, stories, and insights from our
+          alumni community.
+        </p>
+      </div>
+
+      <div class="grid-responsive mb-12">
+        {
+          latestBlogPosts.map((post) => (
+            <div class="blog-card group">
+              <div class="relative mb-4">
+                {post.data.image ? (
+                  <img
+                    src={post.data.image}
+                    alt={post.data.title}
+                    class="w-full h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="w-full h-48 bg-gradient-to-br from-accent-100 to-primary-100 rounded-xl flex items-center justify-center">
+                    <Icon
+                      name="mdi:newspaper"
+                      class="w-16 h-16 text-accent-400"
+                    />
+                  </div>
+                )}
+                <div class="absolute top-4 left-4">
+                  <span class="badge badge-secondary">
+                    {post.data.category}
+                  </span>
+                </div>
+              </div>
+
+              <h3 class="text-xl font-semibold text-accent-900 mb-2 group-hover:text-primary-600 transition-colors duration-200 line-clamp-2">
+                {post.data.title}
+              </h3>
+              <p class="text-accent-600 mb-4 line-clamp-3">
+                {post.data.description}
+              </p>
+
+              <div class="flex items-center justify-between text-sm text-accent-500 mb-4">
+                <span>
+                  {new Date(post.data.publishDate).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+                <span>By {post.data.author}</span>
+              </div>
+
+              <a
+                href={`/blog/${post.slug}`}
+                class="text-primary-600 hover:text-primary-700 font-medium"
+              >
+                Read More →
+              </a>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="text-center">
+        <a href="/blog" class="btn btn-outline btn-lg">
+          View More Posts
+        </a>
+      </div>
+    </div>
+  </section>
+
+    <!-- Latest Events Section -->
+  <section class="section bg-gradient-to-br from-accent-50 to-secondary-50">
+    <div class="container-custom">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">
+          Events and Webinars
+        </h2>
+        <p class="text-xl text-accent-600 max-w-3xl mx-auto text-justify">
+          Stay updated with the latest events, webinars, workshops, discussions, hackathons, reunions, and networking
+          opportunities in our alumni community. Explore upcoming events, register for those that interest you, and connect with fellow alumni. Whether you're looking to learn new skills, catch up with old friends, or just have fun, there's something for everyone in our vibrant event calendar. Don't miss out on the chance to engage with your alumni network and make lasting connections!
+      </div>
+      <!--
+      <div class="grid-responsive mb-12">
+        {
+          latestEvents.length === 0 ? (
+            <div class="text-center py-12 col-span-3">
+              <Icon name="mdi:calendar-blank" class="w-16 h-16 mx-auto text-accent-300 mb-4" />
+              <p class="text-accent-600">No upcoming events at the moment. Check back soon!</p>
+            </div>
+          ) : (
+            latestEvents.map((event) => {
+              const eventType = event.eventType || '';
+              return (
+                <div class="event-card group">
+                  <div class="relative mb-4">
+                    <div class={`w-full h-48 rounded-xl flex items-center justify-center ${
+                      eventType === 'ama' ? 'bg-gradient-to-br from-purple-100 to-purple-200' :
+                      eventType === 'workshop' ? 'bg-gradient-to-br from-green-100 to-green-200' :
+                      'bg-gradient-to-br from-primary-100 to-secondary-100'
+                    }`}>
+                      <Icon name="mdi:calendar-event" class="w-16 h-16 text-primary-400" />
+                    </div>
+                    <div class="absolute top-4 right-4">
+                      <span class="badge badge-primary">
+                        {new Date(event.startTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                    <div class="absolute top-4 left-4">
+                      <span class="badge badge-secondary uppercase text-xs">{event.eventType}</span>
+                    </div>
+                  </div>
+
+                  <h3 class="text-xl font-semibold text-accent-900 mb-2 group-hover:text-primary-600 transition-colors duration-200">
+                    {event.title}
+                  </h3>
+                  <p class="text-accent-600 mb-4 line-clamp-2">{event.description}</p>
+
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-accent-500">
+                      {event.confirmedCount ?? 0} / {event.capacity} registered
+                    </span>
+                    <a href={`/events/${event.slug}`} class="text-primary-600 hover:text-primary-700 font-medium">
+                      Learn More →
+                    </a>
+                  </div>
+                </div>
+              );
+            })
+          )
+        }
+      </div>
+    -->
+
+      <div class="text-center">
+        <a href="/events" class="btn btn-outline btn-lg">
+          View All Events
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action Section -->
+  <section class="section bg-gradient-to-br from-primary-600 to-secondary-600">
+    <div class="container-custom text-center">
+      <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">
+        Ready to Connect?
+      </h2>
+      <p class="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
+        Join our thriving alumni network and stay connected with your fellow
+        graduates. Discover opportunities, share experiences, and build lasting
+        relationships.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a
+          href="/alumni"
+          class="btn btn-primary btn-lg text-white hover:bg-primary-700 transition-colors duration-200"
+        >
+          <Icon name="mdi:account-plus" class="w-6 h-6 mr-2" />
+          Join the Network
+        </a>
+
+        <a
+          href="/about"
+          class="btn btn-primary btn-lg text-white hover:bg-primary-700 transition-colors duration-200"
+        >
+          <Icon name="mdi:information" class="w-6 h-6 mr-2" />
+          Learn More
+        </a>
+      </div>
+    </div>
+  </section>
 
   <style>
-    .home-page :global(.section) {
-      scroll-margin-top: 5rem;
-    }
+  .mentorship-card {
+    @apply bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300;
+  }
 
-    .eyebrow {
-      @apply inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-bold uppercase tracking-[0.16em] text-primary-700;
-    }
+  .mentorship-card-icon {
+    @apply w-12 h-12 rounded-xl bg-blue-50 text-2xl flex items-center justify-center mb-4;
+  }
 
-    .section-heading h2,
-    .section-heading--left h2 {
-      @apply mt-4 text-3xl font-black tracking-tight text-accent-900 md:text-5xl;
-    }
+  .mentorship-card-title {
+    @apply text-lg font-semibold text-slate-900 mb-2;
+  }
 
-    .section-heading p,
-    .section-heading--left p {
-      @apply mt-5 text-lg leading-8 text-accent-600;
-    }
+  .mentorship-card-text {
+    @apply text-slate-600 leading-relaxed text-sm md:text-base;
+  }
 
-    .feature-card {
-      @apply rounded-3xl border border-accent-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-xl;
-    }
+  .mentorship-cta-btn {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-white bg-[#2e4096] hover:bg-[#25357f] transition-colors duration-200;
+  }
+</style>
 
-    .feature-card--tall {
-      @apply min-h-[260px];
-    }
-
-    .feature-card h3 {
-      @apply mt-5 text-xl font-bold text-accent-900;
-    }
-
-    .feature-card p {
-      @apply mt-3 leading-7 text-accent-600;
-    }
-
-    .feature-icon,
-    .tool-icon {
-      @apply flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-primary-700;
-    }
-
-    .feature-icon--solid {
-      @apply bg-primary-600 text-white;
-    }
-
-    .tool-row {
-      @apply flex gap-4 rounded-2xl border border-accent-100 bg-accent-50 p-4;
-    }
-
-    .tool-row h3 {
-      @apply font-bold text-accent-900;
-    }
-
-    .tool-row p {
-      @apply mt-1 text-sm leading-6 text-accent-600;
-    }
-
-    .sticky-block {
-      @apply lg:sticky lg:top-28;
-    }
-
-    .event-card__media {
-      @apply relative flex h-48 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-100 via-white to-accent-100;
-    }
-
-    .empty-state {
-      @apply rounded-3xl border border-dashed border-accent-300 bg-white p-12 text-center text-accent-600;
-    }
-  </style>
 </Layout>

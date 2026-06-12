@@ -86,11 +86,12 @@ export function buildAlumniProfileDocument(registration: any) {
           },
         ]
       : [],
-    education: registration.university || registration.degree || registration.faculty
+    education: registration.university || registration.degree || registration.faculty || registration.college_name
       ? [
           {
-            degree: `${registration.degree || 'Degree'} ${registration.faculty || ''}`.trim(),
-            institution: registration.university || registration.college_name || '',
+            degree: `${registration.faculty || ''}`.trim(),
+            institution: `${registration.college_name || ''}`.trim(),
+            university: `${registration.university || ''}`.trim(),
             year: registration.year ? Number(registration.year) : null,
             gpa: registration.gpa || '',
           },

@@ -337,9 +337,8 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <p class="text-sm text-accent-500">Education</p>
-                  <p class="text-accent-900 font-medium">${reg.degree || 'N/A'} ${reg.faculty || ''}</p>
-                  <p class="text-sm text-accent-600">${reg.university || 'N/A'} - ${reg.college_name || 'N/A'}</p>
-                  <p class="text-sm text-accent-500">Class of ${reg.year || 'N/A'}</p>
+                  <p class="text-accent-900 font-medium">${reg.faculty || ''}</p>
+                  <p class="text-sm text-accent-600">${reg.college_name || 'N/A'} - ${reg.university || 'N/A'}</p>
                   ${reg.gpa ? `<p class="text-sm text-accent-500">CGPA: ${reg.gpa}</p>` : ''}
                 </div>
                 <div>
@@ -438,8 +437,8 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><span class="text-accent-500">University:</span> <span class="font-medium">${reg.university || 'N/A'}</span></div>
               <div><span class="text-accent-500">College:</span> <span class="font-medium">${reg.college_name || 'N/A'}</span></div>
-              <div><span class="text-accent-500">Faculty:</span> <span class="font-medium">${reg.faculty || 'N/A'}</span></div>
-              <div><span class="text-accent-500">Degree:</span> <span class="font-medium">${reg.degree || 'N/A'}</span></div>
+              <div><span class="text-accent-500">Department:</span> <span class="font-medium">${reg.faculty || 'N/A'}</span></div>
+              <div><span class="text-accent-500">Graduation Degree:</span> <span class="font-medium">${reg.degree || 'N/A'}</span></div>
               <div><span class="text-accent-500">Year:</span> <span class="font-medium">${reg.year || 'N/A'}</span></div>
               <div><span class="text-accent-500">CGPA:</span> <span class="font-medium">${reg.gpa || 'N/A'}</span></div>
             </div>

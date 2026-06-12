@@ -7,7 +7,7 @@ export interface EventDocument {
   description?: string;
   hostEmail: string;
   hostName?: string;   // display name for host
-  eventType: 'webinar' | 'ama' | 'workshop' | 'networking' | 'panel' | 'hackathon';
+  eventType: 'webinar' | 'seminar' | 'ama' | 'workshop' | 'networking' | 'panel' | 'hackathon';
   startTime: Date;
   endTime: Date;
   registrationDeadline?: Date;   // optional deadline for RSVP/registration; falls back to startTime if not set

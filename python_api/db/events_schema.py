@@ -27,7 +27,7 @@ def init_events_collections(db):
                 'title':     {'bsonType': 'string'},
                 'slug':      {'bsonType': 'string'},
                 'hostEmail': {'bsonType': 'string'},
-                'eventType': {'enum': ['webinar', 'ama', 'workshop']},
+                'eventType': {'enum': ['webinar', 'seminar', 'ama', 'workshop', 'networking', 'panel', 'hackathon']},
                 'startTime': {'bsonType': 'date'},
                 'endTime':   {'bsonType': 'date'},
                 'capacity':  {'bsonType': 'int'},

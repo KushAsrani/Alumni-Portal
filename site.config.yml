@@ -87,21 +87,6 @@ faculties:
     description: ""
     icon: "code"
     color: "#22c55e"
-  - name: "MMS (Masters in Management Studies)"
-    slug: "mms"
-    description: ""
-    icon: "briefcase"
-    color: "#3b82f6"
-  - name: "BMS (Bachelor of Management Studies)"
-    slug: "bms"
-    description: ""
-    icon: "university"
-    color: "#f59e0b"
-  - name: "PGDM (Post Graduate Diploma in Management)"
-    slug: "pgdm"
-    description: ""
-    icon: "school"
-    color: "#8b5cf6"
 
 # Year Range Configuration
 years:

@@ -284,7 +284,7 @@ if (isEnded && event._id) {
       </div>
       <h1 class="text-3xl text-black md:text-5xl font-bold mb-4 drop-shadow-md">{event.title}</h1>
       {event.description && (
-        <p class="text-black/85 text-lg max-w-2xl mx-auto mb-6">{event.description}</p>
+        <p class="text-black/85 text-lg max-w-2xl mx-auto mb-6"></p>
       )}
       <div class="flex items-center justify-center gap-6 text-sm text-black/80 flex-wrap">
         <span><b>Date:</b> {new Date(event.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
@@ -320,6 +320,7 @@ if (isEnded && event._id) {
               <span class={`badge ${event.status === 'upcoming' ? 'badge-primary' : event.status === 'live' ? 'badge-accent' : 'badge-secondary'}`}>
                 {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
               </span>
+              <!-- 
               <div class="ml-auto">
                 <button id="bookmark-btn"
                   class={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition border ${isEventSaved ? 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
@@ -330,6 +331,7 @@ if (isEnded && event._id) {
                   <span id="bookmark-label">{isEventSaved ? 'Saved' : 'Bookmark Event'}</span>
                 </button>
               </div>
+              -->
             </div>
             <h1 class="text-3xl font-bold mb-2">{event.title}</h1>
             {event.description && <p class="text-gray-600 mb-4">{event.description}</p>}
@@ -804,23 +806,30 @@ if (isEnded && event._id) {
               <p class="text-xs text-amber-600 mt-1">{event.waitlistCount} on waitlist</p>
             )}
 
-            {/* Admin-gated join link — only shown when meetingUrlActive is true */}
+            {/* Admin-gated join link — only shown when meetingUrlActive is true*/}
             {event.meetingUrl && event.meetingUrlActive === true ? (
-              <div class="mt-4 pt-4 border-t border-gray-100">
-                <p class="text-sm font-semibold text-gray-700 mb-2">Join Link</p>
-                <a href={`/api/events/${event._id}/join`} target="_blank" rel="noopener noreferrer"
-                   class="btn btn-primary btn-sm w-full text-center">
-                  Join the webinar
-                </a>
+            <div class="mt-4 pt-4 border-t border-gray-100">
+              <p class="text-sm font-semibold text-gray-700 mb-2">Join Link</p>
+              <a href={`/api/events/${event._id}/join`} target="_blank" rel="noopener noreferrer"
+                class="btn btn-primary btn-sm w-full text-center">
+                Join the webinar
+              </a>
+            </div>
+          ) : event.meetingUrl && event.status === 'ended' ? (
+            <div class="mt-4 pt-4 border-t border-gray-100">
+              <div class="bg-gray-50 border border-gray-200 rounded p-3 text-sm text-gray-500">
+                <span class="font-medium">This event has ended.</span>
+                <p class="mt-1 text-xs"></p>
               </div>
-            ) : event.meetingUrl ? (
-              <div class="mt-4 pt-4 border-t border-gray-100">
-                <div class="bg-gray-50 border border-gray-200 rounded p-3 text-sm text-gray-500">
-                  <span class="font-medium">The event has not started yet. Join link not yet available.</span>
-                  <p class="mt-1 text-xs">The host will activate the join link before the event starts. Check back closer to the event time.</p>
-                </div>
+            </div>
+          ) : event.meetingUrl && event.status === 'upcoming' ? (
+            <div class="mt-4 pt-4 border-t border-gray-100">
+              <div class="bg-gray-50 border border-gray-200 rounded p-3 text-sm text-gray-500">
+                <span class="font-medium">The event has not started yet. Join link not yet available.</span>
+                <p class="mt-1 text-xs">The host will activate the join link before the event starts. Check back closer to the event time.</p>
               </div>
-            ) : null}
+            </div>
+          ) : null}
           </div>
 
           {!isEnded && event.status !== 'cancelled' && (

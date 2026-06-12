@@ -145,12 +145,13 @@ try {
             {allTags.map((t: any) => <option value={t}>{t}</option>)}
           </select>
 
-          <!-- Sort dropdown -->
+          <!-- Sort dropdown
           <select id="filter-sort" class="input input-sm max-w-[160px]">
             <option value="soonest">Soonest First</option>
             <option value="newest">Newest Added</option>
             <option value="popular">Most Popular</option>
           </select>
+           -->
 
           <!-- Result count -->
           <span id="result-count" class="text-sm text-gray-500 ml-auto"></span>
@@ -311,7 +312,7 @@ try {
             <a href="/events/${e.slug}" class="block">
             <div class="p-6">
               <div class="flex items-center gap-2 mb-3">
-                <span class="badge ${badgeClass(e.status)} text-xs">${e.status.charAt(0).toUpperCase() + e.status.slice(1)}</span>
+                <span class="badge ${badgeClass(e.status)}">${e.status === 'upcoming' ? 'Upcoming' : e.status === 'live' ? 'Live' : 'Past'}</span>
                 ${e.eventType ? `<span class="badge badge-secondary text-xs uppercase">${e.eventType}</span>` : ''}
                 <span class="flex items-center gap-1 text-sm text-gray-500">${seriesBadge}${featuredBadge}</span>
               </div>
@@ -330,13 +331,14 @@ try {
               ${e.startTime && e.endTime ? `<p class="text-gray-500 mb-3 text-sm"><svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Time: ${new Date(e.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(e.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>` : ''}
               ${e.tags && e.tags.length ? `<div class="flex flex-wrap gap-1 mb-3">${e.tags.map((t: string) => `<span class="badge badge-secondary text-xs">${t}</span>`).join('')}</div>` : ''}
               <div class="mt-2">
-                <div class="flex items-center justify-between text-sm mb-1">
+                <!-- <div class="flex items-center justify-between text-sm mb-1">
                   <span class="text-gray-500">${isFull ? 'Full' : `${spots} spot${spots !== 1 ? 's' : ''} left`}</span>
                   ${isFull ? '<span class="badge badge-accent text-xs">Waitlist</span>' : ''}
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2">
                   <div class="bg-primary h-2 rounded-full" style="width: ${pct}%"></div>
                 </div>
+                 -->
               </div>
             </div>
             </a>
