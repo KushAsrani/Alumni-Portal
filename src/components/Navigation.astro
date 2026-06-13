@@ -65,7 +65,7 @@ const config = getSiteConfig();
                       
                       <!-- Faculties Section -->
                       <div class="mega-menu-section">
-                        <h3 class="mega-menu-title">Browse by Faculty</h3>
+                        <h3 class="mega-menu-title">Browse by Department</h3>
                         <div class="mega-menu-links max-h-64 overflow-y-auto scrollbar-hide">
                           <div class="grid grid-cols-1 gap-2">
                             {config.faculties.map((faculty) => (
@@ -86,27 +86,18 @@ const config = getSiteConfig();
                     <div class="mt-6 xl:mt-8 pt-4 xl:pt-6 border-t border-accent-100">
                       <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
                         <a href="/alumni" class="btn btn-primary btn-sm w-full justify-center">
-                          <Icon name="mdi:account-search" class="w-4 h-4 mr-2" />
                           <span class="hidden sm:inline">View All Alumni</span>
                           <span class="sm:hidden">All Alumni</span>
                         </a>
-                        <a href="/alumni/analytics" class="btn btn-outline btn-sm w-full justify-center">
-                          <iconify-icon icon="mdi:chart-bar" class="w-4 h-4 mr-2"></iconify-icon>
-                          <span class="hidden sm:inline">Analytics</span>
-                          <span class="sm:hidden">Analytics</span>
-                        </a>
                         <a href="/alumni/years" class="btn btn-outline btn-sm w-full justify-center">
-                          <Icon name="mdi:calendar-multiple" class="w-4 h-4 mr-2" />
                           <span class="hidden sm:inline">Browse by Year</span>
                           <span class="sm:hidden">By Year</span>
                         </a>
                         <a href="/alumni/faculties" class="btn btn-outline btn-sm w-full justify-center">
-                          <Icon name="mdi:school-outline" class="w-4 h-4 mr-2" />
-                          <span class="hidden sm:inline">Browse by Faculty</span>
-                          <span class="sm:hidden">By Faculty</span>
+                          <span class="hidden sm:inline">Browse by Department</span>
+                          <span class="sm:hidden">By Department</span>
                         </a>
                         <a href="/alumni/mentorship-match" class="btn btn-outline btn-sm w-full justify-center">
-                          <Icon name="mdi:handshake-outline" class="w-4 h-4 mr-2" />
                           <span class="hidden sm:inline">Mentorship Match</span>
                           <span class="sm:hidden">Mentorship</span>
                         </a>

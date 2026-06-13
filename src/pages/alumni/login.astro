@@ -97,11 +97,7 @@ if (Astro.request.method === 'POST') {
     <div class="login-container">
       <div class="login-card">
         <div class="login-header">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-          <h1>Alumni Login</h1>
+          <h1><img src="/logo.png" alt="Alumni Portal logo" class="w-300 h-10 lg:w-300 lg:h-12 flex text-center items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-100" style="margin-left: 5rem;" />Alumni Login</h1>
           <p>Sign in to your account</p>
         </div>
 
@@ -216,7 +212,7 @@ if (Astro.request.method === 'POST') {
 
   .login-container {
     width: 100%;
-    max-width: 420px;
+    max-width: 450px;
   }
 
   .login-card {

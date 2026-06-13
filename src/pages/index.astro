@@ -686,10 +686,6 @@ const featuredJobs = jobs
               <div class="relative mb-4">
                 {post.data.image ? (
                   <img
-                    src={post.data.image}
-                    alt={post.data.title}
-                    class="w-full h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
                   />
                 ) : (
                   <div class="w-full h-48 bg-gradient-to-br from-accent-100 to-primary-100 rounded-xl flex items-center justify-center">
@@ -699,11 +695,6 @@ const featuredJobs = jobs
                     />
                   </div>
                 )}
-                <div class="absolute top-4 left-4">
-                  <span class="badge badge-secondary">
-                    {post.data.category}
-                  </span>
-                </div>
               </div>
 
               <h3 class="text-xl font-semibold text-accent-900 mb-2 group-hover:text-primary-600 transition-colors duration-200 line-clamp-2">
@@ -809,37 +800,6 @@ const featuredJobs = jobs
       <div class="text-center">
         <a href="/events" class="btn btn-outline btn-lg">
           View All Events
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Call to Action Section -->
-  <section class="section bg-gradient-to-br from-primary-600 to-secondary-600">
-    <div class="container-custom text-center">
-      <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">
-        Ready to Connect?
-      </h2>
-      <p class="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
-        Join our thriving alumni network and stay connected with your fellow
-        graduates. Discover opportunities, share experiences, and build lasting
-        relationships.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a
-          href="/alumni"
-          class="btn btn-primary btn-lg text-white hover:bg-primary-700 transition-colors duration-200"
-        >
-          <Icon name="mdi:account-plus" class="w-6 h-6 mr-2" />
-          Join the Network
-        </a>
-
-        <a
-          href="/about"
-          class="btn btn-primary btn-lg text-white hover:bg-primary-700 transition-colors duration-200"
-        >
-          <Icon name="mdi:information" class="w-6 h-6 mr-2" />
-          Learn More
         </a>
       </div>
     </div>
