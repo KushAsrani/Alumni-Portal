@@ -3,7 +3,7 @@ export const prerender = false;
 
 import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
 if (!isAlumniAuthenticated(Astro.cookies)) {
-  return Astro.redirect('/alumni/login?redirect=/events');
+  return Astro.redirect('/alumni/login?authRequired=1&redirect=/events');
 }
 
 import Layout from '../../layouts/Layout.astro';

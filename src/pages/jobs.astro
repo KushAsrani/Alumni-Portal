@@ -3,8 +3,13 @@ import Layout from '../layouts/Layout.astro';
 import JobBoard from '../components/JobBoard.astro';
 import { getCollection } from 'astro:content';
 import Icon from '../components/Icon.astro';
+import { isAlumniAuthenticated } from '../lib/alumni-auth';
 
 export const prerender = false; // Enable SSR for dynamic filtering
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login?authRequired=1&redirect=/jobs');
+}
 
 // Get all jobs from content collection
 const jobsData = await getCollection('jobs');
