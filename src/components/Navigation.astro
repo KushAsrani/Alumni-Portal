@@ -295,7 +295,7 @@ const config = getSiteConfig();
   </div>
 </div>
 
-<style>
+<style is:global>
   .portal-modal-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, .58); backdrop-filter: blur(8px); }
   .portal-modal-overlay.hidden { display: none; }
   .portal-modal-card { width: min(100%, 28rem); border-radius: 1.5rem; background: white; border: 1px solid #e2e8f0; box-shadow: 0 28px 80px rgba(15, 23, 42, .3); padding: 2rem; text-align: center; }
@@ -304,8 +304,8 @@ const config = getSiteConfig();
   .portal-modal-icon.warning { background: linear-gradient(135deg, #fee2e2, #fff1f2); color: #b91c1c; }
   .portal-modal-card h2 { margin: 0 0 .75rem; color: #0f172a; font-size: 1.5rem; font-weight: 800; }
   .portal-modal-card p { margin: 0; color: #475569; line-height: 1.6; }
-  .portal-modal-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
-  .portal-modal-btn { flex: 1; border: 0; border-radius: .9rem; padding: .85rem 1rem; font-weight: 800; cursor: pointer; }
+  .portal-modal-actions { display: flex; justify-content: center; align-items: center; gap: .75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .portal-modal-btn { flex: 0 0 auto; min-width: 8.75rem; border: 0; border-radius: .9rem; padding: .85rem 1rem; font-weight: 800; cursor: pointer; text-align: center; }
   .portal-modal-btn.primary { background: #1e3a8a; color: white; box-shadow: 0 12px 24px rgba(30, 58, 138, .22); }
   .portal-modal-btn.secondary { background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; }
   .portal-modal-btn.danger { background: #b91c1c; color: white; box-shadow: 0 12px 24px rgba(185, 28, 28, .18); }
@@ -471,7 +471,7 @@ const config = getSiteConfig();
       message: 'Are you sure you want to logout from your alumni account?',
       icon: 'warning',
       actions: [
-        { label: 'No', className: 'secondary', onClick: hideModal },
+        { label: 'No', className: 'primary', onClick: hideModal },
         { label: 'Yes, logout', className: 'danger', onClick: async () => {
           try {
             await fetch('/api/auth/alumni-logout', { method: 'POST' });
