@@ -233,42 +233,54 @@ const isRecentlyActive = (alum: any): boolean => {
 <Layout title="Alumni Directory" description="Browse alumni by faculty, year, and search.">
   <Breadcrumbs items={breadcrumbItems} />
 
-  <section class="section bg-gray-50">
+  <section class="alumni-directory-page section bg-slate-50">
     <div class="container-custom">
-      <div class="text-center mb-12">
-        <h1 class="text-4xl md:text-5xl font-bold text-accent-900 mb-4">Alumni Directory</h1>
-        <p class="text-xl text-justify text-accent-600 max-w-5xl mx-auto">
-          Connect with fellow alumni from our college. Discover alumni by faculty, year, skills, location, and availability. Use the search and filters to find and connect with alumni who share your interests, career goals, or industry. Whether you're looking for mentorship, job opportunities, or just want to network, our directory is here to help you engage with our vibrant alumni community. Explore profiles, reach out, and stay connected with the amazing individuals who have been part of our journey.
-        </p>
+      <div class="directory-hero">
+        <div class="directory-hero-copy">
+          <span class="directory-kicker">Alumni Network</span>
+          <h1>Alumni Directory</h1>
+          <p>
+            Find the right alumni faster with focused search, practical filters, and polished profile cards for mentorship, referrals, career conversations, and community connections.
+          </p>
+          <div class="directory-actions">
+            <a href="#directory-search" class="btn btn-primary">Explore Alumni</a>
+            <a href="/alumni/faculties" class="btn btn-outline">Browse Departments</a>
+          </div>
+        </div>
+        <div class="directory-stats-panel" aria-label="Directory overview">
+          <div class="directory-stat-card stat-primary">
+            <div class="stat-icon"><Icon name="mdi:account-group" class="w-6 h-6" /></div>
+            <div>
+              <h3>{statsTotalAlumni}</h3>
+              <p>Total Alumni</p>
+            </div>
+          </div>
+          <div class="directory-stat-card stat-secondary">
+            <div class="stat-icon"><Icon name="mdi:school" class="w-6 h-6" /></div>
+            <div>
+              <h3>{statsFaculties}</h3>
+              <p>Departments</p>
+            </div>
+          </div>
+          <div class="directory-stat-card stat-accent">
+            <div class="stat-icon"><Icon name="mdi:calendar" class="w-6 h-6" /></div>
+            <div>
+              <h3>{statsYears}</h3>
+              <p>Graduation Years</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <div class="bg-gradient-to-br from-primary-50 to-primary-100 p-6 rounded-2xl text-center">
-          <div class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="mdi:account-group" class="w-16 h-16 flex items-center justify-center mx-auto mb-4 text-white" />
+      <div id="directory-search" class="directory-search-card">
+        <div class="directory-toolbar">
+          <div>
+            <p class="directory-toolbar-eyebrow">Refine your search</p>
+            <h2>Find alumni by role, skill, or department</h2>
           </div>
-          <h3 class="text-2xl font-bold text-primary-900">{statsTotalAlumni}</h3>
-          <p class="text-primary-700">Total Alumni</p>
-        </div>
-        <div class="bg-gradient-to-br from-secondary-50 to-secondary-100 p-6 rounded-2xl text-center">
-          <div class="w-16 h-16 bg-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="mdi:school" class="w-16 h-16 flex items-center justify-center mx-auto mb-4 text-white" />
-          </div>
-          <h3 class="text-2xl font-bold text-secondary-900">{statsFaculties}</h3>
-          <p class="text-secondary-700">Faculties</p>
-        </div>
-        <div class="bg-gradient-to-br from-accent-50 to-accent-100 p-6 rounded-2xl text-center">
-          <div class="w-16 h-16 bg-accent-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="mdi:calendar" class="w-16 h-16 flex items-center justify-center mx-auto mb-4 text-white" />
-          </div>
-          <h3 class="text-2xl font-bold text-accent-900">{statsYears}</h3>
-          <p class="text-accent-700">Graduation Years</p>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl shadow-sm border border-accent-100 p-6 mb-8 space-y-5">
-        <div class="space-y-3">
           <button id="nl-toggle" type="button" class="btn btn-outline btn-sm">Ask AI</button>
+        </div>
+        <div class="space-y-3">
           <div id="nl-panel" class="hidden bg-primary-50 border border-primary-100 rounded-xl p-4 space-y-3">
             <input id="nl-query" type="text" class="input input-bordered w-full" placeholder="e.g. Find alumni working in web development in PrepSOM with Python skills" />
             <div class="flex flex-wrap items-center gap-2">
@@ -284,10 +296,6 @@ const isRecentlyActive = (alum: any): boolean => {
             </div>
           </div>
         </div>
-        <a href="/alumni/faculties" class="btn btn-outline btn-sm">
-         <span class="hidden sm:inline">Browse by Department</span>
-         <span class="sm:hidden">By Department</span>
-        </a>
 
         <div>
           <label for="search" class="block text-sm font-medium text-accent-700 mb-2">Search</label>
@@ -375,12 +383,12 @@ const isRecentlyActive = (alum: any): boolean => {
           const extraSkills = allSkills.slice(10);
           const latestJob = (alum.work_experience && alum.work_experience.length > 0) ? alum.work_experience[0] : null;
           return (
-            <div class="profile-card">
-              <div class="absolute top-3 right-3">
+            <div class="profile-card directory-profile-card">
+              <div class="directory-card-badge">
                 <span class="badge badge-primary text-xs">{alum.faculty || 'Alumni'}</span>
               </div>
 
-              <div class="mb-3">
+              <div class="directory-avatar-wrap">
                 {alum.photo || alum.photo_blob_url ? (
                   <img src={alum.photo || alum.photo_blob_url} alt={alum.name} class="profile-avatar" loading="lazy" />
                 ) : (
@@ -390,16 +398,16 @@ const isRecentlyActive = (alum: any): boolean => {
                 )}
               </div>
 
-              <h3 class="text-lg font-semibold text-accent-900 mb-1">
+              <h3 class="directory-card-name">
                 {alum.name}
                 {recent && <span class="recently-active-badge"></span>}
               </h3>
               {alum.bio_category && <span class="bio-category-badge">{alum.bio_category}</span>}
 
-              <p class="text-accent-500 text-sm mb-3 line-clamp-2">{alum.short_bio || 'No bio available'}</p>
+              <p class="directory-card-bio line-clamp-2">{alum.short_bio || 'No bio available'}</p>
 
               {topSkills.length > 0 && (
-                <div class="flex flex-wrap gap-1.5 justify-center mb-3">
+                <div class="directory-skill-list">
                   {topSkills.map((skill: string) => {
                     const readiness = alum.skill_readiness?.[skill];
                     return (
@@ -413,11 +421,11 @@ const isRecentlyActive = (alum: any): boolean => {
               )}
 
               {(alum.company || alum.job_designation || alum.position) && (
-                <p class="text-sm font-medium text-accent-700 mb-1">
+                <p class="directory-card-role">
                   {alum.company || ''}{(alum.job_designation || alum.position) ? ` • ${alum.job_designation || alum.position}` : ''}
                 </p>
               )}
-              {alum.location && <p class="text-sm text-accent-500 mb-2">{alum.location}</p>}
+              {alum.location && <p class="directory-card-location">{alum.location}</p>}
               {alum.open_to_mentorship && (
                 <span class="mentor-badge mb-3">🤝 Open to Mentor</span>
               )}
@@ -687,15 +695,15 @@ const isRecentlyActive = (alum: any): boolean => {
               return `<div class="card-expand"><div class="card-expand-inner">${parts.join('')}</div></div>`;
             })();
 
-            return `<div class="profile-card">
-              <div class="absolute top-3 right-3"><span class="badge badge-primary text-xs">${esc(alum.faculty || 'Alumni')}</span></div>
-              <div class="mb-3">${avatarHtml}</div>
-              <h3 class="text-lg font-semibold text-accent-900 mb-1">${esc(alum.name)}</h3>
+            return `<div class="profile-card directory-profile-card">
+              <div class="directory-card-badge"><span class="badge badge-primary text-xs">${esc(alum.faculty || 'Alumni')}</span></div>
+              <div class="directory-avatar-wrap">${avatarHtml}</div>
+              <h3 class="directory-card-name">${esc(alum.name)}</h3>
               ${alum.bio_category ? `<span class="bio-category-badge">${esc(alum.bio_category)}</span>` : ''}
-              <p class="text-accent-500 text-sm mb-3 line-clamp-2">${esc(alum.short_bio || 'No bio available')}</p>
-              ${topSkillBadges ? `<div class="flex flex-wrap gap-1.5 justify-center mb-3">${topSkillBadges}</div>` : ''}
-              ${alum.company || alum.job_designation || alum.position ? `<p class="text-sm font-medium text-accent-700 mb-1">${esc(alum.company || '')}${alum.job_designation || alum.position ? ` • ${esc(alum.job_designation || alum.position)}` : ''}</p>` : ''}
-              ${alum.location ? `<p class="text-sm text-accent-500 mb-2">${esc(alum.location)}</p>` : ''}
+              <p class="directory-card-bio line-clamp-2">${esc(alum.short_bio || 'No bio available')}</p>
+              ${topSkillBadges ? `<div class="directory-skill-list">${topSkillBadges}</div>` : ''}
+              ${alum.company || alum.job_designation || alum.position ? `<p class="directory-card-role">${esc(alum.company || '')}${alum.job_designation || alum.position ? ` • ${esc(alum.job_designation || alum.position)}` : ''}</p>` : ''}
+              ${alum.location ? `<p class="directory-card-location">${esc(alum.location)}</p>` : ''}
               ${alum.open_to_mentorship ? '<span class="mentor-badge mb-3">🤝 Open to Mentor</span>' : ''}
               ${expandHtml}
               <div class="card-footer">
@@ -1188,4 +1196,159 @@ const isRecentlyActive = (alum: any): boolean => {
     transition: color 0.2s;
   }
   .view-profile-link:hover { color: #1d4ed8; }
+  /* Professional alumni directory layout */
+  .alumni-directory-page {
+    background:
+      radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 32rem),
+      linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  }
+  .directory-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.75fr);
+    gap: 2rem;
+    align-items: stretch;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 2rem;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.97), rgba(30, 64, 175, 0.92));
+    color: #fff;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
+    overflow: hidden;
+    position: relative;
+  }
+  .directory-hero::after {
+    content: '';
+    position: absolute;
+    inset: auto -6rem -8rem auto;
+    width: 22rem;
+    height: 22rem;
+    border-radius: 9999px;
+    background: rgba(96, 165, 250, 0.22);
+    filter: blur(2px);
+  }
+  .directory-hero-copy,
+  .directory-stats-panel { position: relative; z-index: 1; }
+  .directory-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid rgba(191, 219, 254, 0.28);
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #bfdbfe;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .directory-hero h1 {
+    margin-top: 1rem;
+    font-size: clamp(2.5rem, 6vw, 4.75rem);
+    line-height: 0.95;
+    font-weight: 800;
+    letter-spacing: -0.055em;
+  }
+  .directory-hero p {
+    margin-top: 1rem;
+    max-width: 44rem;
+    color: #dbeafe;
+    font-size: 1.05rem;
+    line-height: 1.75;
+  }
+  .directory-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+  .directory-stats-panel {
+    display: grid;
+    gap: 0.9rem;
+  }
+  .directory-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(14px);
+  }
+  .directory-stat-card .stat-icon {
+    display: inline-flex;
+    width: 3rem;
+    height: 3rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1rem;
+    background: #fff;
+    color: #1d4ed8;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  }
+  .directory-stat-card h3 { font-size: 1.75rem; font-weight: 800; line-height: 1; }
+  .directory-stat-card p { margin: 0.25rem 0 0; color: #dbeafe; font-size: 0.9rem; }
+  .directory-search-card {
+    margin-bottom: 2rem;
+    padding: 1.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 1.5rem;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(12px);
+  }
+  .directory-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .directory-toolbar-eyebrow {
+    margin-bottom: 0.2rem;
+    color: #2563eb;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .directory-toolbar h2 { font-size: 1.35rem; font-weight: 800; color: #0f172a; }
+  .directory-profile-card {
+    min-height: 100%;
+    padding: 1.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 1.5rem;
+    background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+    text-align: left;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.07);
+  }
+  .directory-profile-card:hover {
+    border-color: rgba(37, 99, 235, 0.26);
+    box-shadow: 0 24px 55px rgba(37, 99, 235, 0.14);
+  }
+  .directory-card-badge { position: absolute; top: 1rem; right: 1rem; }
+  .directory-avatar-wrap { margin-bottom: 1rem; }
+  .directory-profile-card .profile-avatar,
+  .directory-profile-card .profile-avatar-placeholder {
+    width: 5.25rem;
+    height: 5.25rem;
+    margin: 0 0 1rem;
+    border-width: 3px;
+  }
+  .directory-card-name { padding-right: 5rem; margin-bottom: 0.35rem; color: #0f172a; font-size: 1.15rem; font-weight: 800; }
+  .directory-card-bio { min-height: 2.5rem; margin-bottom: 0.9rem; color: #64748b; font-size: 0.9rem; line-height: 1.45; }
+  .directory-skill-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+  .directory-card-role { margin-bottom: 0.25rem; color: #334155; font-size: 0.9rem; font-weight: 700; }
+  .directory-card-location { margin-bottom: 0.75rem; color: #64748b; font-size: 0.85rem; }
+  .directory-profile-card .card-footer { margin-top: 1rem; }
+  @media (max-width: 900px) {
+    .directory-hero { grid-template-columns: 1fr; padding: 1.5rem; }
+  }
+  @media (max-width: 640px) {
+    .directory-toolbar { align-items: flex-start; flex-direction: column; }
+    .directory-hero h1 { font-size: 2.6rem; }
+  }
+
 </style>
