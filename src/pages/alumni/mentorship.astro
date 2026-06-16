@@ -6,7 +6,7 @@ import { isAlumniAuthenticated, getCurrentAlumni } from '../../lib/alumni-auth';
 import { connectToDatabase } from '../../lib/mongodb';
 
 if (!isAlumniAuthenticated(Astro.cookies)) {
-  return Astro.redirect('/alumni/login?redirect=/alumni/mentorship');
+  return Astro.redirect('/alumni/login?authRequired=1&redirect=/alumni/mentorship');
 }
 
 const session = getCurrentAlumni(Astro.cookies)!;
