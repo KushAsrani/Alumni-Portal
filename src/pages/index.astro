@@ -5,8 +5,10 @@ import Layout from "../layouts/Layout.astro";
 import { getCollection } from "astro:content";
 import { getSiteConfig } from "../utils/config";
 import Icon from "../components/Icon.astro";
+import { isAlumniAuthenticated } from "../lib/alumni-auth";
 
 const config = getSiteConfig();
+const isLoggedIn = isAlumniAuthenticated(Astro.cookies);
 
 // Get sample data for preview
 const alumni = await getCollection("alumni");
@@ -170,6 +172,7 @@ const featuredJobs = jobs
 
 
     <!-- Get Started Section -->
+  {!isLoggedIn && (
   <section class="section bg-white border-t border-b border-gray-200">
     <div class="container-custom text-center">
       <h2 class="text-3xl md:text-4xl font-bold mb-2">Get Started</h2>
@@ -192,6 +195,7 @@ const featuredJobs = jobs
       </div>
     </div>
   </section>
+  )}
 
   <!-- Personal Career Coordinator Section -->
   <section class="section bg-gray-50">

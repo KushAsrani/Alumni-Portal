@@ -286,6 +286,31 @@ const config = getSiteConfig();
     </div>
   </div>
 </nav>
+<div id="portal-feedback-modal" class="portal-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="portal-modal-title">
+  <div class="portal-modal-card">
+    <div id="portal-modal-icon" class="portal-modal-icon" aria-hidden="true"></div>
+    <h2 id="portal-modal-title"></h2>
+    <p id="portal-modal-message"></p>
+    <div id="portal-modal-actions" class="portal-modal-actions"></div>
+  </div>
+</div>
+
+<style>
+  .portal-modal-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, .58); backdrop-filter: blur(8px); }
+  .portal-modal-overlay.hidden { display: none; }
+  .portal-modal-card { width: min(100%, 28rem); border-radius: 1.5rem; background: white; border: 1px solid #e2e8f0; box-shadow: 0 28px 80px rgba(15, 23, 42, .3); padding: 2rem; text-align: center; }
+  .portal-modal-icon { width: 4rem; height: 4rem; border-radius: 999px; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #dbeafe, #eef2ff); color: #1e3a8a; }
+  .portal-modal-icon.success { background: linear-gradient(135deg, #dcfce7, #f0fdf4); color: #15803d; }
+  .portal-modal-icon.warning { background: linear-gradient(135deg, #fee2e2, #fff1f2); color: #b91c1c; }
+  .portal-modal-card h2 { margin: 0 0 .75rem; color: #0f172a; font-size: 1.5rem; font-weight: 800; }
+  .portal-modal-card p { margin: 0; color: #475569; line-height: 1.6; }
+  .portal-modal-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
+  .portal-modal-btn { flex: 1; border: 0; border-radius: .9rem; padding: .85rem 1rem; font-weight: 800; cursor: pointer; }
+  .portal-modal-btn.primary { background: #1e3a8a; color: white; box-shadow: 0 12px 24px rgba(30, 58, 138, .22); }
+  .portal-modal-btn.secondary { background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; }
+  .portal-modal-btn.danger { background: #b91c1c; color: white; box-shadow: 0 12px 24px rgba(185, 28, 28, .18); }
+</style>
+
 
 <script>
   // ============ MOBILE MENU ============
@@ -397,15 +422,67 @@ const config = getSiteConfig();
     }
   });
 
+  // ============ PROFESSIONAL FEEDBACK MODALS ============
+  const modal = document.getElementById('portal-feedback-modal');
+  const modalIcon = document.getElementById('portal-modal-icon');
+  const modalTitle = document.getElementById('portal-modal-title');
+  const modalMessage = document.getElementById('portal-modal-message');
+  const modalActions = document.getElementById('portal-modal-actions');
+  const icons = {
+    success: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>',
+    warning: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"></path></svg>'
+  };
+
+  function showModal(options: { title: string; message: string; icon?: 'success' | 'warning'; actions: Array<{ label: string; className: string; onClick: () => void }> }) {
+    if (!modal || !modalIcon || !modalTitle || !modalMessage || !modalActions) return;
+    modalIcon.className = `portal-modal-icon ${options.icon || ''}`;
+    modalIcon.innerHTML = icons[options.icon || 'success'];
+    modalTitle.textContent = options.title;
+    modalMessage.textContent = options.message;
+    modalActions.innerHTML = '';
+    options.actions.forEach((action) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `portal-modal-btn ${action.className}`;
+      button.textContent = action.label;
+      button.addEventListener('click', action.onClick);
+      modalActions.appendChild(button);
+    });
+    modal.classList.remove('hidden');
+  }
+
+  function hideModal() { modal?.classList.add('hidden'); }
+
+  const pageParams = new URLSearchParams(window.location.search);
+  if (pageParams.get('login') === 'success') {
+    showModal({
+      title: 'Login successful',
+      message: 'Welcome back. You can now access the protected alumni portal features.',
+      icon: 'success',
+      actions: [{ label: 'Continue', className: 'primary', onClick: () => { pageParams.delete('login'); history.replaceState({}, '', `${window.location.pathname}${pageParams.toString() ? `?${pageParams}` : ''}${window.location.hash}`); hideModal(); } }]
+    });
+  }
+
   // ============ LOGOUT ============
   async function handleLogout() {
-    try {
-      await fetch('/api/auth/alumni-logout', { method: 'POST' });
-      showLoggedOutState();
-      window.location.href = '/';
-    } catch {
-      window.location.href = '/api/auth/alumni-logout';
-    }
+    dropdown?.classList.add('hidden');
+    showModal({
+      title: 'Confirm logout',
+      message: 'Are you sure you want to logout from your alumni account?',
+      icon: 'warning',
+      actions: [
+        { label: 'No', className: 'secondary', onClick: hideModal },
+        { label: 'Yes, logout', className: 'danger', onClick: async () => {
+          try {
+            await fetch('/api/auth/alumni-logout', { method: 'POST' });
+            showLoggedOutState();
+            showModal({ title: 'Logout successful', message: 'You have been safely signed out of your account.', icon: 'success', actions: [{ label: 'Return home', className: 'primary', onClick: () => { window.location.href = '/'; } }] });
+          } catch {
+            window.location.href = '/api/auth/alumni-logout';
+          }
+        } }
+      ]
+    });
   }
 
   document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
