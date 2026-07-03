@@ -1,3 +1,5 @@
+@import './darkmode.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -307,6 +309,8 @@ body * {
 :root[data-theme='dark'] .bg-white,
 :root[data-theme='dark'] .bg-accent-50,
 :root[data-theme='dark'] .bg-accent-100,
+:root[data-theme='dark'] .bg-gray-50,
+:root[data-theme='dark'] .bg-slate-50,
 :root[data-theme='dark'] .card,
 :root[data-theme='dark'] .profile-card,
 :root[data-theme='dark'] .event-card,
@@ -319,7 +323,10 @@ body * {
 :root[data-theme='dark'] #directory-toast,
 :root[data-theme='dark'] #empty-state,
 :root[data-theme='dark'] #alumni-map,
-:root[data-theme='dark'] #alumniDropdown {
+:root[data-theme='dark'] #alumniDropdown,
+:root[data-theme='dark'] .mentorship-card,
+:root[data-theme='dark'] .stat-card,
+:root[data-theme='dark'] .ra-card {
   background-color: var(--color-surface) !important;
   border-color: var(--color-border) !important;
   color: var(--color-text-primary) !important;

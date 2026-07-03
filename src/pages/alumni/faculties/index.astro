@@ -1,7 +1,14 @@
 ---
+export const prerender = false;
+
 import Layout from '@/layouts/Layout.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import { getSiteConfig } from '@/utils/config';
+import { isAlumniAuthenticated } from '@/lib/alumni-auth';
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login?authRequired=1&redirect=/alumni/faculties/');
+}
 
 const config = getSiteConfig();
 const breadcrumbItems = [

@@ -235,7 +235,7 @@ const showNetworkButtons = viewerSession !== null && viewerAlumniId !== targetAl
                 {alum.work_experience.map((exp: any) => (
                   <div>
                     <h3 class="font-semibold">{exp.position} - {exp.company}</h3>
-                    <p class="text-gray-500 text-sm">{exp.duration}</p>
+                    <p class="text-gray-500 text-sm mb-4">{exp.duration}</p>
                     <p class="text-gray-700 text-sm">{exp.description}</p>
                   </div>
                 ))}
@@ -250,8 +250,8 @@ const showNetworkButtons = viewerSession !== null && viewerAlumniId !== targetAl
               <div class="space-y-4">
                 {alum.education.map((ed: any) => (
                   <div>
-                    <h3 class="font-semibold">{ed.degree}, {ed.year}</h3>
-                    <p class="text-gray-700 text-sm">{ed.institution}</p>
+                    <h3 class="font-semibold">{ed.institution}</h3>
+                    <p class="text-gray-700 text-sm">{ed.degree}, {ed.year}</h3>
                     <p class="text-gray-700 text-sm">{ed.university}</p>
                     {ed.gpa && <p class="text-gray-500 text-sm">GPA: {ed.gpa}</p>}
                   </div>

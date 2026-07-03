@@ -112,7 +112,7 @@ if (Astro.request.method === 'POST') {
             </svg>
           </div>
           <h2 id="auth-required-title">Login required</h2>
-          <p>Please login before accessing protected alumni resources such as the directory, job board, mentorship, and events.</p>
+          <p>Please login to access all features.</p>
           <button type="button" id="auth-required-close" class="auth-modal-button">Continue to login</button>
         </div>
       </div>
@@ -189,11 +189,6 @@ if (Astro.request.method === 'POST') {
           </div>
 
           <button type="submit" class="login-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-              <polyline points="10 17 15 12 10 7"></polyline>
-              <line x1="15" y1="12" x2="3" y2="12"></line>
-            </svg>
             Sign In
           </button>
         </form>
@@ -234,7 +229,8 @@ if (Astro.request.method === 'POST') {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #f8fafc; 0%, #f8fafc; 100%);
+    --tw-bg-opacity: 1;
+    background-color: rgb(249 250 251 / var(--tw-bg-opacity, 1));
     padding: 2rem;
   }
 

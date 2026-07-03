@@ -252,29 +252,6 @@ const isRecentlyActive = (alum: any): boolean => {
             <a href="/alumni/faculties" class="btn btn-outline">Browse Departments</a>
           </div>
         </div>
-        <div class="directory-stats-panel" aria-label="Directory overview">
-          <div class="directory-stat-card stat-primary">
-            <div class="stat-icon"><Icon name="mdi:account-group" class="w-6 h-6" /></div>
-            <div>
-              <h3>{statsTotalAlumni}</h3>
-              <p>Total Alumni</p>
-            </div>
-          </div>
-          <div class="directory-stat-card stat-secondary">
-            <div class="stat-icon"><Icon name="mdi:school" class="w-6 h-6" /></div>
-            <div>
-              <h3>{statsFaculties}</h3>
-              <p>Departments</p>
-            </div>
-          </div>
-          <div class="directory-stat-card stat-accent">
-            <div class="stat-icon"><Icon name="mdi:calendar" class="w-6 h-6" /></div>
-            <div>
-              <h3>{statsYears}</h3>
-              <p>Graduation Years</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div id="directory-search" class="directory-search-card">
@@ -592,7 +569,7 @@ const isRecentlyActive = (alum: any): boolean => {
                 <input type="checkbox" data-group="${groupKey}" data-value="${esc(item.value)}" ${selected.includes(String(item.value)) ? 'checked' : ''}>
                 <span>${esc(item.value)}</span>
               </span>
-              <span class="text-xs text-accent-500">${item.count ?? 0}</span>
+              <span class="text-xs text-accent-500"></span>
             </label>`
           )
           .join('')
@@ -663,7 +640,7 @@ const isRecentlyActive = (alum: any): boolean => {
               ${alum.bio_category ? `<span class="bio-category-badge">${esc(alum.bio_category)}</span>` : ''}
               <p class="directory-card-bio line-clamp-2">${esc(alum.short_bio || 'No bio available')}</p>
               ${topSkillBadges ? `<div class="directory-skill-list">${topSkillBadges}</div>` : ''}
-              ${alum.company || alum.job_designation || alum.position ? `<p class="directory-card-role">${esc(alum.company || '')}${alum.job_designation || alum.position ? ` • ${esc(alum.job_designation || alum.position)}` : ''}</p>` : ''}
+              ${alum.company || alum.job_designation || alum.position ? `<p class="directory-card-role">${esc(alum.job_designation || '')}${alum.job_designation || alum.position ? ` @ ${esc(alum.company|| alum.position)}` : ''}</p>` : ''}
               ${alum.location ? `<p class="directory-card-location">${esc(alum.location)}</p>` : ''}
               ${alum.open_to_mentorship ? '<span class="mentor-badge mb-3">🤝 Open to Mentor</span>' : ''}
               <div class="card-footer">
@@ -1163,10 +1140,8 @@ const isRecentlyActive = (alum: any): boolean => {
       linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   }
   .directory-hero {
-    display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.75fr);
-    gap: 2rem;
-    align-items: stretch;
+    align-items: justify;
     margin-bottom: 2rem;
     padding: 2rem;
     border: 1px solid rgba(148, 163, 184, 0.24);
@@ -1202,7 +1177,6 @@ const isRecentlyActive = (alum: any): boolean => {
   }
   .directory-hero p {
     margin-top: 1rem;
-    max-width: 44rem;
     color: #334155;
     font-size: 1.05rem;
     line-height: 1.75;

@@ -62,7 +62,7 @@ navigation:
   - label: "Alumni Directory"
     url: "/alumni/profiles"
     icon: "users"
-    mega_menu: true
+    mega_menu: false
     submenu:
       - label: "By Year"
         url: "/alumni/years"
@@ -128,7 +128,7 @@ seo:
 # Content Configuration
 content:
   posts_per_page: 12
-  alumni_per_page: 3
+  alumni_per_page: 9
   events_per_page: 10
   featured_alumni_count: 3
   latest_events_count: 4

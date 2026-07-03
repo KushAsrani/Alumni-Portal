@@ -1,0 +1,121 @@
+/* Dark Mode Complete Override */
+
+/* Background surfaces - All light backgrounds should be dark */
+:root[data-theme='dark'] {
+  --bg-light: #1e293b;
+  --bg-lighter: #334155;
+}
+
+/* Hero sections */
+:root[data-theme='dark'] .hero-section {
+  background: linear-gradient(135deg, #0f172a, #1e293b, #0f172a) !important;
+}
+
+/* All card variations */
+:root[data-theme='dark'] .card,
+:root[data-theme='dark'] .mentorship-card,
+:root[data-theme='dark'] .stat-card,
+:root[data-theme='dark'] .feature-card,
+:root[data-theme='dark'] .profile-card,
+:root[data-theme='dark'] .event-card,
+:root[data-theme='dark'] .blog-card,
+:root[data-theme='dark'] .ra-card {
+  background-color: var(--color-surface, #1e293b) !important;
+  border-color: var(--color-border, #334155) !important;
+  color: var(--color-text-primary, #f1f5f9) !important;
+}
+
+/* Backgrounds - Section backgrounds */
+:root[data-theme='dark'] .bg-white,
+:root[data-theme='dark'] .bg-slate-50,
+:root[data-theme='dark'] .bg-gray-50,
+:root[data-theme='dark'] .bg-accent-50,
+:root[data-theme='dark'] .bg-accent-100 {
+  background-color: var(--color-bg-secondary, #1e293b) !important;
+  color: var(--color-text-primary, #f1f5f9) !important;
+}
+
+/* Form inputs and selects */
+:root[data-theme='dark'] .input,
+:root[data-theme='dark'] .select,
+:root[data-theme='dark'] input[type="text"],
+:root[data-theme='dark'] input[type="email"],
+:root[data-theme='dark'] select {
+  background-color: #334155 !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+/* Text colors */
+:root[data-theme='dark'] .text-gray-600,
+:root[data-theme='dark'] .text-gray-700,
+:root[data-theme='dark'] .text-gray-900,
+:root[data-theme='dark'] .text-slate-600,
+:root[data-theme='dark'] .text-slate-700,
+:root[data-theme='dark'] .text-slate-900 {
+  color: var(--color-text-secondary, #cbd5e1) !important;
+}
+
+/* Headings */
+:root[data-theme='dark'] h1,
+:root[data-theme='dark'] h2,
+:root[data-theme='dark'] h3,
+:root[data-theme='dark'] h4,
+:root[data-theme='dark'] h5,
+:root[data-theme='dark'] h6 {
+  color: var(--color-text-primary, #f1f5f9) !important;
+}
+
+/* Border colors */
+:root[data-theme='dark'] .border-gray-200,
+:root[data-theme='dark'] .border-slate-200,
+:root[data-theme='dark'] .border-accent-100,
+:root[data-theme='dark'] .border-accent-200 {
+  border-color: var(--color-border, #334155) !important;
+}
+
+/* Buttons - Dark mode variants */
+:root[data-theme='dark'] .btn-outline {
+  border-color: #3b82f6 !important;
+  color: #bfdbfe !important;
+  background-color: transparent !important;
+}
+
+:root[data-theme='dark'] .btn-outline:hover {
+  background-color: #1d4ed8 !important;
+  color: #f8fafc !important;
+}
+
+/* Specific component fixes */
+:root[data-theme='dark'] .stats-section {
+  background: var(--color-bg-secondary, #1e293b) !important;
+  border-color: var(--color-border, #334155) !important;
+}
+
+:root[data-theme='dark'] .section {
+  background-color: transparent !important;
+}
+
+:root[data-theme='dark'] section {
+  background: var(--color-bg-primary, #0f172a) !important;
+}
+
+/* Paragraphs and text */
+:root[data-theme='dark'] p {
+  color: var(--color-text-secondary, #cbd5e1);
+}
+
+/* Links */
+:root[data-theme='dark'] a {
+  color: #3b82f6;
+}
+
+:root[data-theme='dark'] a:hover {
+  color: #60a5fa;
+}
+
+/* Badge styles */
+:root[data-theme='dark'] .badge {
+  background-color: var(--color-bg-tertiary, #334155) !important;
+  color: var(--color-text-primary, #f1f5f9) !important;
+}

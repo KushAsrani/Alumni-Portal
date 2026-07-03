@@ -64,10 +64,12 @@ try {
 
 <Layout title="Events">
   <Breadcrumbs items={breadcrumbItems} />
-  <section class="section">
+  <section class="section bg-gray-50">
     <div class="container-custom">
+      <div class="events-hero">
       <h1 class="text-3xl text-center font-bold mb-6">Events and Webinars</h1>
       <p class="text-black mb-6"> Stay updated with the latest events, webinars, workshops, reunions, and networking opportunities in our alumni community. Explore upcoming events, register for those that interest you, and connect with fellow alumni. Whether you're looking to learn new skills, catch up with old friends, or just have fun, there's something for everyone in our vibrant event calendar. </p>
+      </div>
 
       <!-- Featured Event Banner (populated by JS) -->
       <div id="featured-event-banner" class="hidden mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-6">
@@ -666,4 +668,48 @@ try {
       renderWeekCalendar();
     });
   </script>
+
+  <style>
+.events-hero {
+    grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.75fr);
+    align-items: justify;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 2rem;
+    background: rgba(255, 255, 255, 0.92);
+    color: black;
+    overflow: hidden;
+    position: relative;
+  }
+  .events-hero-copy,
+  .directory-stats-panel { position: relative; z-index: 1; }
+  .directory-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid rgba(191, 219, 254, 0.28);
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #bfdbfe;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .events-hero h1 {
+    margin-top: 1rem;
+    font-size: 3.5rem;
+    line-height: 0.95;
+    font-weight: 800;
+    letter-spacing: -0.055em;
+  }
+  .events-hero p {
+    margin-top: 1rem;
+    color: #334155;
+    font-size: 1.05rem;
+    line-height: 1.75;
+  }
+  </style>
 </Layout>

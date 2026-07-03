@@ -369,10 +369,10 @@ const config = getSiteConfig();
     const alumniUsernameMobile = document.getElementById('alumniUsernameMobile');
     const alumniAvatarMobile = document.getElementById('alumniAvatarMobile');
 
-    if (alumniNameDesktop) alumniNameDesktop.textContent = data.name;
-    if (alumniDropdownName) alumniDropdownName.textContent = data.name;
+    if (alumniNameDesktop) alumniNameDesktop.textContent = data.username;
+    if (alumniDropdownName) alumniDropdownName.textContent = data.username;
     if (alumniDropdownUsername) alumniDropdownUsername.textContent = `@${data.username}`;
-    if (alumniNameMobile) alumniNameMobile.textContent = data.name;
+    if (alumniNameMobile) alumniNameMobile.textContent = data.username;
     if (alumniUsernameMobile) alumniUsernameMobile.textContent = `@${data.username}`;
 
     if (data.photoUrl) {
@@ -457,7 +457,7 @@ const config = getSiteConfig();
   if (pageParams.get('login') === 'success') {
     showModal({
       title: 'Login successful',
-      message: 'Welcome back. You can now access the protected alumni portal features.',
+      message: '',
       icon: 'success',
       actions: [{ label: 'Continue', className: 'primary', onClick: () => { pageParams.delete('login'); history.replaceState({}, '', `${window.location.pathname}${pageParams.toString() ? `?${pageParams}` : ''}${window.location.hash}`); hideModal(); } }]
     });
@@ -467,16 +467,16 @@ const config = getSiteConfig();
   async function handleLogout() {
     dropdown?.classList.add('hidden');
     showModal({
-      title: 'Confirm logout',
-      message: 'Are you sure you want to logout from your alumni account?',
+      title: 'Confirm Logout',
+      message: 'Are you sure you want to logout from your account?',
       icon: 'warning',
       actions: [
         { label: 'No', className: 'primary', onClick: hideModal },
-        { label: 'Yes, logout', className: 'danger', onClick: async () => {
+        { label: 'Yes', className: 'danger', onClick: async () => {
           try {
             await fetch('/api/auth/alumni-logout', { method: 'POST' });
             showLoggedOutState();
-            showModal({ title: 'Logout successful', message: 'You have been safely signed out of your account.', icon: 'success', actions: [{ label: 'Return home', className: 'primary', onClick: () => { window.location.href = '/'; } }] });
+            showModal({ title: 'Logout successful', message: 'You have been safely signed out of your account.', icon: 'success', actions: [{ label: 'Return to homepage', className: 'primary', onClick: () => { window.location.href = '/'; } }] });
           } catch {
             window.location.href = '/api/auth/alumni-logout';
           }

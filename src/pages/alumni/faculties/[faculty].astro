@@ -6,6 +6,11 @@ import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import { getSiteConfig } from '@/utils/config';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ALUMNI_PROFILES_COLLECTION, generateProfileSlug, toStringArray } from '@/lib/alumni-profile-service';
+import { isAlumniAuthenticated } from '@/lib/alumni-auth';
+
+if (!isAlumniAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/alumni/login?authRequired=1&redirect=/alumni/faculties/' + (Astro.params.faculty || ''));
+}
 
 const config = getSiteConfig();
 const { faculty = '' } = Astro.params;

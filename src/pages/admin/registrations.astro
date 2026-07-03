@@ -322,7 +322,6 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
                   <div class="mt-2 flex flex-wrap gap-2">
                     ${reg.is_verified ? '<span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold">Verified</span>' : ''}
                     ${reg.gdpr_deletion_requested ? '<span class="px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">GDPR Request</span>' : ''}
-                    ${reg.updated_at ? `<span class="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">Updated ${timeAgo(reg.updated_at)}</span>` : ''}
                   </div>
                 </div>
                 <span class="px-3 py-1 text-xs font-medium rounded-full ${
@@ -342,7 +341,7 @@ const adminApiKey = import.meta.env.ADMIN_API_KEY || process.env.ADMIN_API_KEY |
                   ${reg.gpa ? `<p class="text-sm text-accent-500">CGPA: ${reg.gpa}</p>` : ''}
                 </div>
                 <div>
-                  <p class="text-sm text-accent-500">Professional</p>
+                  <p class="text-sm text-accent-500">Professional Information</p>
                   <p class="text-accent-900 font-medium">${reg.job_designation || 'N/A'}</p>
                   <p class="text-sm text-accent-600">${reg.company || 'N/A'}</p>
                   ${reg.location ? `<p class="text-sm text-accent-500">${reg.location}</p>` : ''}

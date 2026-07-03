@@ -144,3 +144,4 @@ __pycache__/
 
 #template
 --template/scripts/python/__pycache__
+.aider*

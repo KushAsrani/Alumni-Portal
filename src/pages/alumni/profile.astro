@@ -192,7 +192,7 @@ if (alumni?._id) {
 
               <div class="profile-identity">
                 <div class="profile-name-row">
-                  <h1 class="profile-name">{alumni.name}</h1>
+                  <h1 class="profile-name">{alumni.username}</h1>
                   <VerifiedBadge verified={Boolean(alumni.is_verified)} />
                   <span class={`status-badge ${statusColor(alumni.status)}`}>
                     {alumni.status.charAt(0).toUpperCase() + alumni.status.slice(1)}
@@ -576,34 +576,7 @@ if (alumni?._id) {
             </div><!-- /info-right -->
 
           </div><!-- /info-grid -->
-
-          {alumni.status === 'approved' && (
-            <div class="similar-section">
-              <h2 class="similar-title">Similar Alumni</h2>
-              {similarSource === 'mongodb' && (
-                <p class="similar-source-note">(Showing matches based on your skills and faculty)</p>
-              )}
-              {similarAlumni.length > 0 ? (
-                <div class="similar-row">
-                  {similarAlumni.map((item) => (
-                    <article class="similar-card">
-                      {item.photo_blob_url ? (
-                        <img src={item.photo_blob_url} alt={item.name} class="similar-avatar" />
-                      ) : (
-                        <div class="similar-avatar similar-avatar-placeholder">{getInitials(item.name || 'A')}</div>
-                      )}
-                      <h3>{item.name}</h3>
-                      <p>{item.faculty || 'Alumni'}</p>
-                      <a href={getSimilarProfileHref(item)} class="similar-link">View Profile</a>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p class="similar-empty">{similarMessage || 'No similar alumni found yet.'}</p>
-              )}
-            </div>
-          )}
-
+ 
           <!-- Edit Profile placeholder section -->
           <div id="edit" class="edit-placeholder">
             <h2>Edit Profile</h2>
